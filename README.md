@@ -5,7 +5,7 @@
 <h1 align="center">Claude HUD</h1>
 
 <p align="center">
-  <strong>A lightweight status line for Claude Code</strong><br/>
+  <strong>A lightweight status line + menu bar pet for Claude Code</strong><br/>
   Rate limits &bull; Session time &bull; Context usage &bull; Tool calls &bull; Agents &bull; Model info
 </p>
 
@@ -102,6 +102,48 @@ rm -rf ~/.claude-hud
 - **Node.js >= 18**
 - **jq** (for `install.sh` only — `brew install jq`)
 - **Claude Code** with OAuth login (for rate limit data)
+
+---
+
+## Claude Pet — Menu Bar Companion
+
+A **Tamagotchi-style pixel art cat** that lives in your macOS menu bar and reacts to Claude Code activity across all sessions.
+
+| State | Trigger | Cat Behavior |
+|-------|---------|-------------|
+| Sleeping | No active sessions | Curled up with Zzz |
+| Walking | Normal usage | Happy walk cycle |
+| Running | 50+ tool calls | Fast run with sweat drops |
+| Bloated | Context >= 70% | Puffy round body |
+| Stressed | Rate limit >= 80% | Shaking with "!" |
+| Tired | Session > 45 min | Slouched, droopy eyes |
+| Collab | 2+ agents | Two cats walking |
+
+### Pet Install
+
+Requires HUD to be installed first, then:
+
+```bash
+~/.claude-hud/pet/install.sh
+```
+
+### Pet Uninstall
+
+```bash
+~/.claude-hud/pet/install.sh remove
+```
+
+### How Pet Works
+
+```
+Claude Code sessions → hud.mjs writes session-state.json
+  → pet-aggregator.mjs (daemon) aggregates all sessions
+    → ClaudePet.app reads pet-state.json → menu bar animation
+```
+
+- **Multi-session**: Aggregates across all running Claude Code windows
+- **Lightweight**: Native Swift app (~10MB RAM), no Electron
+- **Programmatic art**: 16x16 pixel art rendered with Core Graphics (no external assets)
 
 ## License
 
