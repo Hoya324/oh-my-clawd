@@ -45,4 +45,9 @@ enum PetState: Int, CaseIterable {
         if data.aggregate.longestSessionMinutes >= 45 { return .tired }
         return .normal
     }
+
+    static func resolveMuscle(from data: PetStateData) -> MuscleStage {
+        let agents = data.aggregate.totalRunningAgents
+        return MuscleStage.resolve(agentCount: agents)
+    }
 }
