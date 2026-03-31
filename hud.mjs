@@ -428,9 +428,21 @@ function processEntry(entry, agentMap, result) {
 // HUD State
 // ============================================================================
 
-function getStatePath() {
+function getHudDir() {
   const root = process.env.PROJECT_PATH || process.cwd();
-  return join(root, '.claude', '.hud', 'hud-state.json');
+  return join(root, '.claude', '.hud');
+}
+
+function getStatePath() {
+  return join(getHudDir(), 'hud-state.json');
+}
+
+function writeSessionState(data) {
+  try {
+    const p = join(getHudDir(), 'session-state.json');
+    mkdirSync(dirname(p), { recursive: true });
+    writeFileSync(p, JSON.stringify(data));
+  } catch {}
 }
 
 function readHudState() {
@@ -568,6 +580,18 @@ function render(stdin, transcript, usage) {
       .toLowerCase();
     parts.push(`${DIM}${short}${RESET}`);
   }
+
+  // 9. Write session state for claude-pet
+  const ctxPct = stdin ? getContextPercent(stdin) : 0;
+  const sessMins = sessionStart ? Math.floor((Date.now() - sessionStart.getTime()) / 60_000) : 0;
+  writeSessionState({
+    timestamp: Date.now(),
+    contextPercent: ctxPct,
+    model: modelName || '',
+    toolCalls: transcript.toolCallCount,
+    runningAgents: transcript.agents.length,
+    sessionMinutes: sessMins,
+  });
 
   return parts.join(sep);
 }
