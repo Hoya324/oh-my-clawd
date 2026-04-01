@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Collection — Claude Pet</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .pixel-canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+    @keyframes walk {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+    .animated { animation: walk 0.6s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="collection.html" class="active">Pet Collection</a>
+    </nav>
+
+    <h1>Pet Collection</h1>
+    <p>12 unique pets, each with 3 muscle stages. Unlock them through your Claude Code usage!</p>
+
+    <div class="pet-grid" id="pet-grid"></div>
+
+    <footer>
+      Claude Pet — Part of <a href="https://github.com/Hoya324/claude-hud">claude-hud</a>
+    </footer>
+  </div>
+
+  <script>
+    const PETS = [
+      { id: 'cat', name: 'Cat', unlock: 'Default pet', concept: 'Your loyal coding companion' },
+      { id: 'hamster', name: 'Hamster', unlock: 'Total 10 sessions', concept: 'Your first friend' },
+      { id: 'chick', name: 'Chick', unlock: '5 hours total usage', concept: 'Small but mighty' },
+      { id: 'penguin', name: 'Penguin', unlock: '500K tokens used', concept: 'The silent worker' },
+      { id: 'fox', name: 'Fox', unlock: '50 agent runs', concept: 'Clever helper' },
+      { id: 'rabbit', name: 'Rabbit', unlock: '3+ concurrent sessions', concept: 'Fast multitasker' },
+      { id: 'goose', name: 'Goose', unlock: '30 hours total usage', concept: 'Veteran coder' },
+      { id: 'capybara', name: 'Capybara', unlock: '10 rate limit hits', concept: 'Chill under pressure' },
+      { id: 'sloth', name: 'Sloth', unlock: '20 long sessions (45m+)', concept: 'Marathon specialist' },
+      { id: 'owl', name: 'Owl', unlock: '10 hours on Opus', concept: 'Wise model user' },
+      { id: 'dragon', name: 'Dragon', unlock: '5+ concurrent agents', concept: 'Legendary multi-agent' },
+      { id: 'unicorn', name: 'Unicorn', unlock: 'Unlock all pets', concept: 'Hidden collector reward' },
+    ];
+
+    const STAGES = ['Normal', 'Buff', 'Macho'];
+
+    const grid = document.getElementById('pet-grid');
+
+    PETS.forEach(pet => {
+      const card = document.createElement('div');
+      card.className = 'pet-card';
+      card.innerHTML = `
+        <h3>${pet.name}</h3>
+        <p style="font-size: 0.85rem; color: var(--text); margin-bottom: 0.5rem;">${pet.concept}</p>
+        <div class="stages">
+          ${STAGES.map((stage, i) => `
+            <div class="stage">
+              <canvas class="pixel-canvas" width="48" height="48"
+                data-pet="${pet.id}" data-stage="${i}"></canvas>
+              <div class="stage-label ${stage.toLowerCase()}">${stage}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="unlock-condition">Unlock: ${pet.unlock}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    // Render pixel art previews on canvases
+    document.querySelectorAll('.pixel-canvas').forEach(canvas => {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, 48, 48);
+      const petId = canvas.dataset.pet;
+      const stage = parseInt(canvas.dataset.stage);
+      const colors = {
+        cat: '#06B6D4', hamster: '#8B5E3C', chick: '#FFD93D',
+        penguin: '#2D2D2D', fox: '#FF8C42', rabbit: '#FFFFFF',
+        goose: '#CCCCCC', capybara: '#8B5E3C', sloth: '#6B4226',
+        owl: '#1A237E', dragon: '#FF5722', unicorn: '#CC6BFF'
+      };
+      const size = 24 + stage * 6;
+      const offset = (48 - size) / 2;
+      ctx.fillStyle = colors[petId] || '#888';
+      ctx.fillRect(offset, offset, size, size);
+      if (stage >= 1) {
+        ctx.fillStyle = '#F59E0B';
+        ctx.fillRect(offset + size - 4, offset, 4, 4);
+      }
+      if (stage >= 2) {
+        ctx.fillStyle = '#F59E0B';
+        ctx.fillRect(offset, offset, 4, 4);
+        ctx.fillRect(offset + size - 4, offset + size - 4, 4, 4);
+      }
+    });
+  </script>
+</body>
+</html>

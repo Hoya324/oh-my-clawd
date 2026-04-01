@@ -1,0 +1,158 @@
+/* Claude Pet — Retro Dark Theme */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap');
+
+:root {
+  --bg: #0f0f1a;
+  --card: #1a1a2e;
+  --border: #16213e;
+  --cyan: #06B6D4;
+  --dcyan: #059BB0;
+  --text: #E0E0E0;
+  --muted: #888;
+  --gold: #F59E0B;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+h1, h2, h3 {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--cyan);
+}
+
+h1 { font-size: 1.4rem; margin-bottom: 1.5rem; line-height: 1.8; }
+h2 { font-size: 0.9rem; margin: 2rem 0 1rem; }
+h3 { font-size: 0.75rem; margin: 1rem 0 0.5rem; color: var(--gold); }
+
+p { margin-bottom: 1rem; color: var(--muted); }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+nav {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+nav a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+nav a:hover, nav a.active {
+  border-color: var(--cyan);
+  text-decoration: none;
+}
+
+/* Pet Cards */
+.pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.pet-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+
+.pet-card:hover { border-color: var(--cyan); }
+
+.pet-card .stages {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.pet-card .stage {
+  text-align: center;
+}
+
+.pet-card .stage-label {
+  font-size: 0.6rem;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+.pet-card .stage-label.macho { color: var(--gold); }
+
+.pixel-preview {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.unlock-condition {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.75rem;
+}
+
+.badge-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+code {
+  background: #0d0d1a;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  color: var(--cyan);
+}
+
+pre {
+  background: #0d0d1a;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+pre code { padding: 0; background: none; }
+
+.hero {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.hero p { color: var(--text); font-size: 1.1rem; }
+
+footer {
+  text-align: center;
+  padding: 2rem 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+}

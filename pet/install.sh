@@ -45,10 +45,28 @@ swiftc -o "build/$APP_NAME" \
   Sources/AppDelegate.swift \
   Sources/PetStateReader.swift \
   Sources/PetStateMachine.swift \
+  Sources/PetType.swift \
+  Sources/ProgressTracker.swift \
+  Sources/NotificationManager.swift \
   Sources/PixelArtRenderer.swift \
+  Sources/CollectionView.swift \
   Sources/StatusMenuController.swift \
+  Sources/Sprites/CatSprites.swift \
+  Sources/Sprites/HamsterSprites.swift \
+  Sources/Sprites/ChickSprites.swift \
+  Sources/Sprites/PenguinSprites.swift \
+  Sources/Sprites/FoxSprites.swift \
+  Sources/Sprites/RabbitSprites.swift \
+  Sources/Sprites/GooseSprites.swift \
+  Sources/Sprites/CapybaraSprites.swift \
+  Sources/Sprites/SlothSprites.swift \
+  Sources/Sprites/OwlSprites.swift \
+  Sources/Sprites/DragonSprites.swift \
+  Sources/Sprites/UnicornSprites.swift \
   -framework Cocoa \
   -framework ServiceManagement \
+  -framework SwiftUI \
+  -framework UserNotifications \
   -O 2>&1 || { echo -e "${RED}Build failed${NC}"; exit 1; }
 
 # Install app bundle

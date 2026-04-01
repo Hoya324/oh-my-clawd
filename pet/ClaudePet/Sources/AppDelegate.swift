@@ -8,21 +8,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var frameTimer: Timer?
     private var stateTimer: Timer?
     private var currentState: PetState = .idle
+    private var currentMuscle: MuscleStage = .normal
+    private var currentPet: PetType = .cat
+    private var friendPets: [PetType] = []
     private var frameIndex = 0
-    private var frames: [PetState: [NSImage]] = [:]
+    private var currentFrames: [NSImage] = []
+    private var activeSessions: Int = 0
     private var stateReader = PetStateReader()
-    private var lastStateData: PetStateData?
+    private var progressTracker = ProgressTracker()
     private var menuController: StatusMenuController!
+    private var notificationManager = NotificationManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        frames = PixelArtRenderer.allFrames()
+        notificationManager.requestPermission()
+
+        // Load selected pet from progress
+        currentPet = progressTracker.selectedPet()
+
         menuController = StatusMenuController()
+        let _ = menuController.setupPopover()
 
         setupStatusItem()
         startStatePolling()
-        startAnimation(for: .idle)
+        reloadFramesAndAnimate()
 
-        // Handle sleep/wake
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(onSleep),
             name: NSWorkspace.willSleepNotification, object: nil
@@ -34,10 +43,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupStatusItem() {
-        if let stateFrames = frames[.idle], let first = stateFrames.first {
-            statusItem.button?.image = first
+        if let button = statusItem.button {
+            button.action = #selector(togglePopover)
+            button.target = self
+            // Remove menu so click triggers action instead
+            statusItem.menu = nil
         }
-        statusItem.menu = menuController.buildMenu(state: nil)
+    }
+
+    @objc private func togglePopover() {
+        guard let button = statusItem.button else { return }
+        menuController.togglePopover(relativeTo: button)
     }
 
     private func startStatePolling() {
@@ -48,28 +64,83 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func pollState() {
         let data = stateReader.read()
-        lastStateData = data
 
         let newState: PetState
+        let newMuscle: MuscleStage
         if let data = data {
             newState = PetState.resolve(from: data)
+            newMuscle = PetState.resolveMuscle(from: data)
+            notificationManager.checkAndNotify(rateLimit: data.rateLimit)
         } else {
             newState = .idle
+            newMuscle = .normal
         }
 
-        if newState != currentState {
-            currentState = newState
+        // Check if selected pet changed
+        let newPet = progressTracker.selectedPet()
+        let newSessions = data?.activeSessions ?? 0
+
+        // Determine friend pets based on session count
+        var newFriends: [PetType] = []
+        if newSessions >= 2, let progress = progressTracker.read() {
+            let unlocked = PetType.allCases.filter {
+                $0 != newPet && progress.unlocked.contains($0.rawValue)
+            }
+            // Pick most recently unlocked friends
+            let sorted = unlocked.sorted { a, b in
+                let aDate = progress.unlockedAt[a.rawValue] ?? ""
+                let bDate = progress.unlockedAt[b.rawValue] ?? ""
+                return aDate > bDate
+            }
+            let friendCount = min(newSessions - 1, 2)
+            newFriends = Array(sorted.prefix(friendCount))
+        }
+
+        let needsReload = (newState != currentState)
+                       || (newMuscle != currentMuscle)
+                       || (newPet != currentPet)
+                       || (newFriends != friendPets)
+
+        currentState = newState
+        currentMuscle = newMuscle
+        currentPet = newPet
+        friendPets = newFriends
+        activeSessions = newSessions
+
+        if needsReload {
             frameIndex = 0
-            startAnimation(for: newState)
+            reloadFramesAndAnimate()
         }
 
-        statusItem.menu = menuController.buildMenu(state: data)
+        menuController.updateState(data)
     }
 
-    private func startAnimation(for state: PetState) {
+    private func reloadFramesAndAnimate() {
+        if friendPets.isEmpty {
+            currentFrames = PixelArtRenderer.renderedFrames(
+                pet: currentPet,
+                muscle: currentMuscle,
+                state: currentState
+            )
+        } else {
+            // Pre-render combined frames (main + friends)
+            let provider = PixelArtRenderer.spriteProvider(for: currentPet)
+            let mainFrames = provider.frames(state: currentState, muscle: currentMuscle)
+            currentFrames = (0..<mainFrames.count).map { i in
+                PixelArtRenderer.renderMenuBarImage(
+                    mainPet: currentPet, muscle: currentMuscle,
+                    state: currentState, frameIndex: i,
+                    friendPets: friendPets
+                )
+            }
+        }
+        if let first = currentFrames.first {
+            statusItem.button?.image = first
+        }
+
         frameTimer?.invalidate()
         frameTimer = Timer.scheduledTimer(
-            timeInterval: state.frameInterval,
+            timeInterval: currentState.frameInterval,
             target: self,
             selector: #selector(nextFrame),
             userInfo: nil,
@@ -79,9 +150,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func nextFrame() {
-        guard let stateFrames = frames[currentState], !stateFrames.isEmpty else { return }
-        frameIndex = (frameIndex + 1) % stateFrames.count
-        statusItem.button?.image = stateFrames[frameIndex]
+        guard !currentFrames.isEmpty else { return }
+        frameIndex = (frameIndex + 1) % currentFrames.count
+        statusItem.button?.image = currentFrames[frameIndex]
     }
 
     @objc private func onSleep() {
@@ -91,6 +162,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func onWake() {
         startStatePolling()
-        startAnimation(for: currentState)
+        reloadFramesAndAnimate()
     }
 }
