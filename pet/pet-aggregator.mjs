@@ -25,6 +25,24 @@ const IDLE_THRESHOLD_MS = 5 * 60_000;
 
 const MODEL_PRIORITY = { opus: 3, sonnet: 2, haiku: 1 };
 
+const PROGRESS_PATH = join(PET_DIR, 'progress.json');
+const PROGRESS_TMP = join(PET_DIR, 'progress.json.tmp');
+
+const UNLOCK_CONDITIONS = {
+  cat:      { type: 'default' },
+  hamster:  { type: 'totalSessions', threshold: 10 },
+  chick:    { type: 'totalTimeMinutes', threshold: 300 },
+  penguin:  { type: 'totalTokens', threshold: 500000 },
+  fox:      { type: 'totalAgentRuns', threshold: 50 },
+  rabbit:   { type: 'maxConcurrentSessions', threshold: 3 },
+  goose:    { type: 'totalTimeMinutes', threshold: 1800 },
+  capybara: { type: 'rateLimitHits', threshold: 10 },
+  sloth:    { type: 'longSessions', threshold: 20 },
+  owl:      { type: 'opusTimeMinutes', threshold: 600 },
+  dragon:   { type: 'maxConcurrentAgents', threshold: 5 },
+  unicorn:  { type: 'allUnlocked' },
+};
+
 function isPidAlive(pid) {
   try { process.kill(pid, 0); return true; } catch { return false; }
 }
@@ -63,6 +81,37 @@ async function writeAtomicJson(data) {
   await rename(PET_STATE_TMP, PET_STATE_PATH);
 }
 
+function defaultProgress() {
+  return {
+    stats: {
+      totalSessions: 0,
+      totalTimeMinutes: 0,
+      totalTokens: 0,
+      totalAgentRuns: 0,
+      maxConcurrentSessions: 0,
+      maxConcurrentAgents: 0,
+      rateLimitHits: 0,
+      longSessions: 0,
+      opusTimeMinutes: 0,
+    },
+    unlocked: ['cat'],
+    selectedPet: 'cat',
+    unlockedAt: { cat: new Date().toISOString() },
+  };
+}
+
+async function loadProgress() {
+  const data = await readJsonSafe(PROGRESS_PATH);
+  if (!data || !data.stats) return defaultProgress();
+  return data;
+}
+
+async function writeProgressAtomic(progress) {
+  const json = JSON.stringify(progress, null, 2) + '\n';
+  await writeFile(PROGRESS_TMP, json, 'utf-8');
+  await rename(PROGRESS_TMP, PROGRESS_PATH);
+}
+
 async function discoverSessions() {
   try {
     const entries = await readdir(SESSIONS_DIR);
@@ -73,6 +122,94 @@ async function discoverSessions() {
     }
     return sessions;
   } catch { return []; }
+}
+
+const seenPids = new Set();
+let lastRateLimitHigh = false;
+
+function updateStats(progress, sessionDetails) {
+  const stats = progress.stats;
+
+  for (const s of sessionDetails) {
+    if (!seenPids.has(s.pid)) {
+      seenPids.add(s.pid);
+      stats.totalSessions++;
+    }
+  }
+
+  const totalActiveMinutes = sessionDetails.reduce((sum, s) => sum + s.sessionMinutes, 0);
+  if (totalActiveMinutes > stats.totalTimeMinutes) {
+    stats.totalTimeMinutes = totalActiveMinutes;
+  }
+
+  const totalTokensNow = sessionDetails.reduce((sum, s) => sum + Math.round(s.contextPercent / 100 * 200000), 0);
+  if (totalTokensNow > stats.totalTokens) {
+    stats.totalTokens = totalTokensNow;
+  }
+
+  const currentAgents = sessionDetails.reduce((sum, s) => sum + s.runningAgents, 0);
+  stats.totalAgentRuns = Math.max(stats.totalAgentRuns, currentAgents);
+
+  const currentSessions = sessionDetails.length;
+  if (currentSessions > stats.maxConcurrentSessions) {
+    stats.maxConcurrentSessions = currentSessions;
+  }
+
+  if (currentAgents > stats.maxConcurrentAgents) {
+    stats.maxConcurrentAgents = currentAgents;
+  }
+
+  const longNow = sessionDetails.filter(s => s.sessionMinutes >= 45).length;
+  if (longNow > stats.longSessions) {
+    stats.longSessions = longNow;
+  }
+
+  const opusMinutes = sessionDetails
+    .filter(s => s.model && s.model.toLowerCase().includes('opus'))
+    .reduce((sum, s) => sum + s.sessionMinutes, 0);
+  if (opusMinutes > stats.opusTimeMinutes) {
+    stats.opusTimeMinutes = opusMinutes;
+  }
+
+  return stats;
+}
+
+function checkUnlocks(progress) {
+  const { stats, unlocked } = progress;
+  let changed = false;
+
+  for (const [petId, condition] of Object.entries(UNLOCK_CONDITIONS)) {
+    if (unlocked.includes(petId)) continue;
+
+    let met = false;
+    if (condition.type === 'default') {
+      met = true;
+    } else if (condition.type === 'allUnlocked') {
+      const otherPets = Object.keys(UNLOCK_CONDITIONS).filter(id => id !== 'unicorn');
+      met = otherPets.every(id => unlocked.includes(id));
+    } else {
+      met = (stats[condition.type] || 0) >= condition.threshold;
+    }
+
+    if (met) {
+      unlocked.push(petId);
+      progress.unlockedAt[petId] = new Date().toISOString();
+      changed = true;
+      process.stderr.write(`[pet-aggregator] unlocked: ${petId}\n`);
+    }
+  }
+
+  return changed;
+}
+
+function checkRateLimitHit(progress, rateLimit) {
+  const fh = rateLimit.fiveHourPercent;
+  if (fh != null && fh >= 80 && !lastRateLimitHigh) {
+    progress.stats.rateLimitHits++;
+    lastRateLimitHigh = true;
+  } else if (fh == null || fh < 80) {
+    lastRateLimitHigh = false;
+  }
 }
 
 async function tick() {
@@ -143,6 +280,15 @@ async function tick() {
     };
 
     if (!existsSync(PET_DIR)) await mkdir(PET_DIR, { recursive: true });
+
+    // --- Progress tracking ---
+    const progress = await loadProgress();
+    updateStats(progress, sessionDetails);
+    checkRateLimitHit(progress, rateLimit);
+    checkUnlocks(progress);
+    await writeProgressAtomic(progress);
+    // --- End progress tracking ---
+
     await writeAtomicJson(petState);
   } catch (err) {
     process.stderr.write(`[pet-aggregator] tick error: ${err.message}\n`);
