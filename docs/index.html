@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Pet — Menu Bar Companion</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="index.html" class="active">Home</a>
+      <a href="collection.html">Pet Collection</a>
+    </nav>
+
+    <div class="hero">
+      <h1>Claude Pet</h1>
+      <p>A Tamagotchi-style menu bar companion that lives alongside your Claude Code sessions.</p>
+      <p>12 collectible pets. 3 muscle stages. Condition-based unlocks.</p>
+    </div>
+
+    <h2>Features</h2>
+    <p>Your pet reacts to your coding activity in real-time:</p>
+    <ul style="color: var(--muted); margin-left: 1.5rem; margin-bottom: 1rem;">
+      <li>More agents running = your pet gets buffer (Normal &rarr; Buff &rarr; Macho)</li>
+      <li>Multiple sessions = friend pets appear in the menu bar</li>
+      <li>Use more AI = unlock new pets (12 total, each with unique unlock conditions)</li>
+      <li>Rate limit warnings via macOS notifications</li>
+    </ul>
+
+    <h2>Install</h2>
+    <pre><code>git clone https://github.com/Hoya324/claude-hud.git
+cd claude-hud
+./install.sh        # HUD status line
+./pet/install.sh    # Claude Pet menu bar app</code></pre>
+
+    <h2>README Badge</h2>
+    <div class="badge-section">
+      <p>Show your pet collection in your GitHub README:</p>
+      <pre><code>node pet/generate-badge.mjs > docs/pet-badge.svg
+git add docs/pet-badge.svg && git push</code></pre>
+      <p>Then add to your README:</p>
+      <pre><code>![My Claude Pet](https://YOUR_USERNAME.github.io/claude-hud/pet-badge.svg)</code></pre>
+    </div>
+
+    <footer>
+      Claude Pet — Part of <a href="https://github.com/Hoya324/claude-hud">claude-hud</a>
+    </footer>
+  </div>
+</body>
+</html>
