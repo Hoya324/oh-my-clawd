@@ -105,19 +105,56 @@ rm -rf ~/.claude-hud
 
 ---
 
-## Claude Pet — Menu Bar Companion
+## Claude Pet v2 — Menu Bar Companion
 
-A **Tamagotchi-style pixel art cat** that lives in your macOS menu bar and reacts to Claude Code activity across all sessions.
+A **Tamagotchi-style pixel art pet** that lives in your macOS menu bar and reacts to Claude Code activity across all sessions. Collect 12 unique pets, each with 3 muscle stages!
 
-| State | Trigger | Cat Behavior |
-|-------|---------|-------------|
+![Claude Pet Badge](https://Hoya324.github.io/claude-hud/pet-badge.svg)
+
+### Pet States
+
+| State | Trigger | Behavior |
+|-------|---------|----------|
 | Sleeping | No active sessions | Curled up with Zzz |
 | Walking | Normal usage | Happy walk cycle |
 | Running | 50+ tool calls | Fast run with sweat drops |
 | Bloated | Context >= 70% | Puffy round body |
 | Stressed | Rate limit >= 80% | Shaking with "!" |
 | Tired | Session > 45 min | Slouched, droopy eyes |
-| Collab | 2+ agents | Two cats walking |
+| Collab | 2+ agents | Team walking |
+
+### Muscle Stages
+
+Your pet grows based on concurrent agent count:
+
+| Stage | Condition | Effect |
+|-------|-----------|--------|
+| Normal | 0-1 agents | Standard size |
+| Buff | 2-3 agents | Wider shoulders, defined muscles |
+| Macho | 4+ agents | Absurdly huge body, tiny head, gold sparkles |
+
+### Pet Collection (12 Pets)
+
+| Pet | Unlock Condition |
+|-----|-----------------|
+| Cat | Default pet |
+| Hamster | Total 10 sessions |
+| Chick | 5 hours total usage |
+| Penguin | 500K tokens used |
+| Fox | 50 agent runs |
+| Rabbit | 3+ concurrent sessions |
+| Goose | 30 hours total usage |
+| Capybara | 10 rate limit hits |
+| Sloth | 20 long sessions (45m+) |
+| Owl | 10 hours on Opus |
+| Dragon | 5+ concurrent agents |
+| Unicorn | Unlock all other pets |
+
+> View the full collection with pixel art previews at [Hoya324.github.io/claude-hud/collection.html](https://Hoya324.github.io/claude-hud/collection.html)
+
+### Friend Pets
+
+When you have 2+ concurrent sessions and multiple pets unlocked, friend pets appear alongside your main pet in the menu bar!
 
 ### Pet Install
 
@@ -133,14 +170,28 @@ Requires HUD to be installed first, then:
 ~/.claude-hud/pet/install.sh remove
 ```
 
+### README Badge
+
+Show your pet collection in your GitHub README:
+
+```bash
+node pet/generate-badge.mjs > docs/pet-badge.svg
+```
+
 ### How Pet Works
 
 ```
 Claude Code sessions → hud.mjs writes session-state.json
   → pet-aggregator.mjs (daemon) aggregates all sessions
-    → ClaudePet.app reads pet-state.json → menu bar animation
+    → writes pet-state.json + progress.json
+      → ClaudePet.app reads state → menu bar animation
+      → SwiftUI popover shows collection & unlock progress
 ```
 
+- **12 collectible pets** with condition-based unlocks
+- **3 muscle stages** based on concurrent agent count
+- **Friend pets** appear with multiple sessions
+- **Rate limit notifications** via macOS notification center
 - **Multi-session**: Aggregates across all running Claude Code windows
 - **Lightweight**: Native Swift app (~10MB RAM), no Electron
 - **Programmatic art**: 16x16 pixel art rendered with Core Graphics (no external assets)
