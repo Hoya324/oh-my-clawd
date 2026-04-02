@@ -75,6 +75,9 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "build/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 cp "$SCRIPT_DIR/ClaudePet/Info.plist" "$APP_BUNDLE/Contents/"
+if [[ -f "$SCRIPT_DIR/ClaudePet/AppIcon.icns" ]]; then
+  cp "$SCRIPT_DIR/ClaudePet/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+fi
 echo -e "  ${GREEN}App → $APP_BUNDLE${NC}"
 
 # Install aggregator daemon
