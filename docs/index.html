@@ -3,49 +3,278 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude Pet — Menu Bar Companion</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <title>Claude HUD — Status Line + Menu Bar Pet</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <nav>
-      <a href="index.html" class="active">Home</a>
-      <a href="collection.html">Pet Collection</a>
-    </nav>
 
-    <div class="hero">
-      <h1>Claude Pet</h1>
-      <p>A Tamagotchi-style menu bar companion that lives alongside your Claude Code sessions.</p>
-      <p>12 collectible pets. 3 muscle stages. Condition-based unlocks.</p>
+  <!-- ============================================================
+       Navbar (fixed)
+       ============================================================ -->
+  <nav class="navbar">
+    <div class="nav-logo">Claude <span>HUD</span></div>
+
+    <button class="nav-toggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="nav-links">
+      <a href="docs.html" data-i18n="nav.docs">Docs</a>
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#collection" data-i18n="nav.collection">Collection</a>
+      <a href="https://github.com/Hoya324/claude-hud" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
 
-    <h2>Features</h2>
-    <p>Your pet reacts to your coding activity in real-time:</p>
-    <ul style="color: var(--muted); margin-left: 1.5rem; margin-bottom: 1rem;">
-      <li>More agents running = your pet gets buffer (Normal &rarr; Buff &rarr; Macho)</li>
-      <li>Multiple sessions = friend pets appear in the menu bar</li>
-      <li>Use more AI = unlock new pets (12 total, each with unique unlock conditions)</li>
-      <li>Rate limit warnings via macOS notifications</li>
-    </ul>
+    <div class="lang-switcher">
+      <button class="lang-switcher-btn">EN</button>
+      <div class="lang-dropdown">
+        <a href="#" class="lang-option" data-lang="en">English</a>
+        <a href="#" class="lang-option" data-lang="ko">한국어</a>
+      </div>
+    </div>
+  </nav>
 
-    <h2>Install</h2>
-    <pre><code>git clone https://github.com/Hoya324/claude-hud.git
-cd claude-hud
-./install.sh        # HUD status line
-./pet/install.sh    # Claude Pet menu bar app</code></pre>
+  <!-- ============================================================
+       Hero Section
+       ============================================================ -->
+  <section class="hero">
+    <canvas id="hero-icon" width="128" height="128" style="image-rendering: pixelated; margin-bottom: 1.5rem;"></canvas>
 
-    <h2>README Badge</h2>
-    <div class="badge-section">
-      <p>Show your pet collection in your GitHub README:</p>
-      <pre><code>node pet/generate-badge.mjs > docs/pet-badge.svg
-git add docs/pet-badge.svg && git push</code></pre>
-      <p>Then add to your README:</p>
-      <pre><code>![My Claude Pet](https://YOUR_USERNAME.github.io/claude-hud/pet-badge.svg)</code></pre>
+    <h1 class="hero-title" data-i18n="hero.title">Claude HUD</h1>
+    <p class="hero-subtitle" data-i18n="hero.subtitle">A lightweight status line + menu bar pet for Claude Code</p>
+    <p class="hero-description" data-i18n="hero.description">Rate Limit, Session Time, Context Usage, Tool Calls, Agents, Model Info — all at a glance. Plus a Tamagotchi-style pixel art pet that reacts to your coding activity.</p>
+
+    <div class="hero-cta">
+      <a href="https://github.com/Hoya324/claude-hud/releases/latest" class="btn-primary" data-i18n="hero.cta.download">Download DMG</a>
+      <a href="docs.html" class="btn-outline" data-i18n="hero.cta.docs">Read Docs</a>
     </div>
 
-    <footer>
-      Claude Pet — Part of <a href="https://github.com/Hoya324/claude-hud">claude-hud</a>
-    </footer>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value" data-i18n="hero.stat.pets">12 Pets</div>
+        <div class="hero-stat-label">Collectible</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" data-i18n="hero.stat.states">7 States</div>
+        <div class="hero-stat-label">Emotional</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" data-i18n="hero.stat.muscles">3 Muscles</div>
+        <div class="hero-stat-label">Growth</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" data-i18n="hero.stat.hud">HUD</div>
+        <div class="hero-stat-label">Status Line</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Features Section
+       ============================================================ -->
+  <div id="features" class="section-alt">
+    <div class="section">
+      <h2 class="section-title" data-i18n="features.title">Features</h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-card-icon" style="font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; color: var(--accent);">HUD</div>
+          <h3 data-i18n="features.hud.title">HUD Status Line</h3>
+          <p data-i18n="features.hud.desc">Real-time rate limits, session duration, context usage, tool calls, and active model info displayed in your terminal.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card-icon" style="font-family: 'Space Mono', monospace; font-size: 1.1rem;">~(^.^)~</div>
+          <h3 data-i18n="features.pet.title">Pet System</h3>
+          <p data-i18n="features.pet.desc">12 collectible pets with 7 emotional states and 3 muscle stages. Each pet has unique unlock conditions based on your Claude Code usage.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card-icon" style="font-family: 'Space Mono', monospace; font-size: 1rem; color: var(--accent);">&#8635;</div>
+          <h3 data-i18n="features.update.title">Auto Updates</h3>
+          <p data-i18n="features.update.desc">Check for updates directly from the app. Download the latest DMG from GitHub Releases with one click.</p>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- ============================================================
+       Pet Collection Section
+       ============================================================ -->
+  <div id="collection" class="section">
+    <h2 class="section-title" data-i18n="collection.title">Pet Collection</h2>
+
+    <div class="pet-grid">
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.cat">Cat</div>
+        <p class="pet-unlock" data-i18n="unlock.cat">Default pet</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.hamster">Hamster</div>
+        <p class="pet-unlock" data-i18n="unlock.hamster">Total 10 sessions</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.chick">Chick</div>
+        <p class="pet-unlock" data-i18n="unlock.chick">5 hours total usage</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.penguin">Penguin</div>
+        <p class="pet-unlock" data-i18n="unlock.penguin">500K tokens used</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.fox">Fox</div>
+        <p class="pet-unlock" data-i18n="unlock.fox">50 agent runs</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.rabbit">Rabbit</div>
+        <p class="pet-unlock" data-i18n="unlock.rabbit">3+ concurrent sessions</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.goose">Goose</div>
+        <p class="pet-unlock" data-i18n="unlock.goose">30 hours total usage</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.capybara">Capybara</div>
+        <p class="pet-unlock" data-i18n="unlock.capybara">10 rate limit hits</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.sloth">Sloth</div>
+        <p class="pet-unlock" data-i18n="unlock.sloth">20 long sessions (45m+)</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.owl">Owl</div>
+        <p class="pet-unlock" data-i18n="unlock.owl">10 hours on Opus</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.dragon">Dragon</div>
+        <p class="pet-unlock" data-i18n="unlock.dragon">5+ concurrent agents</p>
+      </div>
+      <div class="pet-card">
+        <div class="pet-name" data-i18n="pet.unicorn">Unicorn</div>
+        <p class="pet-unlock" data-i18n="unlock.unicorn">Unlock all other pets</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Installation Section
+       ============================================================ -->
+  <div class="section-alt">
+    <div class="section">
+      <h2 class="section-title" data-i18n="install.title">Get Started</h2>
+
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="install-step-number">1</div>
+          <h3 data-i18n="install.step1.title">Download</h3>
+          <p data-i18n="install.step1.desc">Get the latest DMG from GitHub Releases</p>
+        </div>
+
+        <div class="install-step">
+          <div class="install-step-number">2</div>
+          <h3 data-i18n="install.step2.title">Install</h3>
+          <p data-i18n="install.step2.desc">Drag ClaudePet.app to Applications</p>
+        </div>
+
+        <div class="install-step">
+          <div class="install-step-number">3</div>
+          <h3 data-i18n="install.step3.title">Launch</h3>
+          <p data-i18n="install.step3.desc">Open the app and check your menu bar</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Footer
+       ============================================================ -->
+  <footer class="footer">
+    <p><strong>Claude HUD</strong></p>
+    <p><a href="https://github.com/Hoya324/claude-hud" target="_blank" rel="noopener noreferrer" data-i18n="footer.github">GitHub</a> &middot; <span data-i18n="footer.license">MIT License</span></p>
+  </footer>
+
+  <!-- ============================================================
+       Scripts
+       ============================================================ -->
+  <script src="i18n.js"></script>
+  <script>
+    // Mobile nav toggle
+    (function () {
+      var toggle = document.querySelector('.nav-toggle');
+      var navLinks = document.querySelector('.nav-links');
+      if (toggle && navLinks) {
+        toggle.addEventListener('click', function () {
+          navLinks.classList.toggle('open');
+        });
+      }
+    })();
+
+    // Capybara pixel art renderer for hero icon
+    (function () {
+      var T = null;
+      var K = '#1A1A1A';  // outline/eye
+      var B = '#A07040';  // main body
+      var D = '#7A5228';  // dark shading
+      var L = '#BA8C54';  // lighter body
+      var X = '#5C3820';  // darkest (legs)
+      var P = '#C4986C';  // pale muzzle
+      var E = '#6B4E30';  // ear inner
+      var N = '#5C3318';  // nose (dark warm brown)
+      var H = '#C8A468';  // forehead highlight
+
+      // Walking capybara v5
+      var pixels = [
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,K,K,T,T,T,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,K,E,E,K,T,K,E,E,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,K,B,B,B,B,K,B,B,B,K,K,K,K,K,K,K,K,K,K,T,T,T,T,T,T,T,T,T],
+        [T,T,T,K,L,L,H,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T],
+        [T,T,K,L,L,H,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T],
+        [T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+        [T,T,K,B,B,K,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+        [T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+        [T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+        [T,T,K,P,P,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+        [T,T,K,N,P,P,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T],
+        [T,T,T,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T],
+        [T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T],
+        [T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+        [T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+        [T,T,T,T,K,B,B,D,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,D,B,K,T,T,T,T,T,T],
+        [T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,B,B,B,B,B,B,D,D,K,T,T,T,T,T,T,T],
+        [T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,B,B,B,B,B,D,D,D,K,T,T,T,T,T,T,T],
+        [T,T,T,T,T,K,K,D,K,K,B,B,B,B,B,B,B,B,B,K,K,D,K,K,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,K,K,K,K,K,K,T,T,T,T,T,T,T,K,K,K,K,K,K,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T]
+      ];
+
+      var canvas = document.getElementById('hero-icon');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      var size = 32;
+      var px = canvas.width / size;
+
+      for (var y = 0; y < size; y++) {
+        for (var x = 0; x < pixels[y].length; x++) {
+          if (pixels[y][x] !== null) {
+            ctx.fillStyle = pixels[y][x];
+            ctx.fillRect(x * px, y * px, px, px);
+          }
+        }
+      }
+    })();
+  </script>
+
 </body>
 </html>
