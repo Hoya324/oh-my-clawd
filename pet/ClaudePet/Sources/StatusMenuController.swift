@@ -7,7 +7,7 @@ class StatusMenuController {
 
     func setupPopover() -> NSPopover {
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 400)
+        popover.contentSize = NSSize(width: 280, height: 470)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: CollectionPopoverView(viewModel: viewModel)

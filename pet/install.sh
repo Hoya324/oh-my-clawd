@@ -51,6 +51,7 @@ swiftc -o "build/$APP_NAME" \
   Sources/PixelArtRenderer.swift \
   Sources/CollectionView.swift \
   Sources/StatusMenuController.swift \
+  Sources/UpdateChecker.swift \
   Sources/Sprites/CatSprites.swift \
   Sources/Sprites/HamsterSprites.swift \
   Sources/Sprites/ChickSprites.swift \
