@@ -81,11 +81,23 @@ if [[ -f "$PET_DIR/AppIcon.icns" ]]; then
   cp "$PET_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 fi
 
-xattr -cr "$APP_BUNDLE"
 echo -e "  ${GREEN}App bundle created${NC}"
 
 # ---------------------------------------------------------------------------
-# 5. Create the DMG
+# 5. Code sign
+# ---------------------------------------------------------------------------
+SIGN_IDENTITY="Developer ID Application: GYEONGHO NA (H7825NYH4G)"
+TEAM_ID="H7825NYH4G"
+
+echo "  Signing app bundle …"
+codesign --force --deep --options runtime \
+  --sign "$SIGN_IDENTITY" \
+  "$APP_BUNDLE" 2>&1 || { echo -e "${RED}Code signing failed${NC}"; exit 1; }
+
+echo -e "  ${GREEN}Code signed${NC}"
+
+# ---------------------------------------------------------------------------
+# 6. Create the DMG
 # ---------------------------------------------------------------------------
 DMG_NAME="ClaudeHud.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
@@ -109,7 +121,28 @@ hdiutil create \
 
 rm -rf "$DMG_STAGING"
 
+# Sign the DMG too
+codesign --force --sign "$SIGN_IDENTITY" "$DMG_PATH" 2>&1
+
+# ---------------------------------------------------------------------------
+# 7. Notarize
+# ---------------------------------------------------------------------------
+echo "  Submitting for notarization …"
+xcrun notarytool submit "$DMG_PATH" \
+  --keychain-profile "notarytool-profile" \
+  --wait 2>&1 || {
+    echo -e "${YELLOW}Notarization failed. To set up credentials run:${NC}"
+    echo "  xcrun notarytool store-credentials notarytool-profile --apple-id YOUR_APPLE_ID --team-id $TEAM_ID"
+    echo -e "${YELLOW}Then re-run this script.${NC}"
+    echo ""
+    echo -e "${GREEN}DMG ready (unsigned):${NC} $DMG_PATH"
+    exit 0
+  }
+
+# Staple the notarization ticket
+xcrun stapler staple "$DMG_PATH" 2>&1
+
 echo ""
-echo -e "${GREEN}DMG ready:${NC} $DMG_PATH"
+echo -e "${GREEN}DMG ready (signed + notarized):${NC} $DMG_PATH"
 echo -e "  Version : $VERSION"
 echo -e "  Size    : $(du -h "$DMG_PATH" | cut -f1)"
