@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let petSelectionChanged = Notification.Name("petSelectionChanged")
+}
+
 // MARK: - Data bridge from AppKit to SwiftUI
 class PetViewModel: ObservableObject {
     @Published var currentState: PetState = .idle
@@ -11,8 +15,16 @@ class PetViewModel: ObservableObject {
     @Published var nextUnlockPet: PetType?
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
+    @Published var fiveHourPercent: Double?
+    @Published var weeklyPercent: Double?
+    @Published var fiveHourResetsAt: String?
+    @Published var weeklyResetsAt: String?
+    @Published var isHudEnabled: Bool = false
+    @Published var updateStatus: UpdateStatus = .idle
 
     private let progressTracker = ProgressTracker()
+    private static let hudSettingsPath = NSHomeDirectory() + "/.claude/settings.json"
+    private static let hudEnabledKey = "claudePet.hudEnabled"
 
     func refresh(stateData: PetStateData?) {
         if let data = stateData {
@@ -20,17 +32,25 @@ class PetViewModel: ObservableObject {
             muscleStage = PetState.resolveMuscle(from: data)
             activeSessions = data.activeSessions
             activeAgents = data.aggregate.totalRunningAgents
+            fiveHourPercent = data.rateLimit.fiveHourPercent
+            weeklyPercent = data.rateLimit.weeklyPercent
+            fiveHourResetsAt = data.rateLimit.fiveHourResetsAt
+            weeklyResetsAt = data.rateLimit.weeklyResetsAt
         } else {
             currentState = .idle
             muscleStage = .normal
             activeSessions = 0
             activeAgents = 0
+            fiveHourPercent = nil
+            weeklyPercent = nil
+            fiveHourResetsAt = nil
+            weeklyResetsAt = nil
         }
 
         if let progress = progressTracker.read() {
             unlockedPets = PetType.allCases.filter { progress.unlocked.contains($0.rawValue) }
-            selectedPet = PetType(rawValue: progress.selectedPet) ?? .cat
         }
+        selectedPet = progressTracker.selectedPet()
 
         if let next = progressTracker.nextUnlock(),
            let (current, target) = progressTracker.unlockProgress(for: next) {
@@ -40,12 +60,71 @@ class PetViewModel: ObservableObject {
         } else {
             nextUnlockPet = nil
         }
+
+        isHudEnabled = Self.readHudEnabled()
+    }
+
+    // MARK: - HUD Toggle
+
+    static func readHudEnabled() -> Bool {
+        guard let data = FileManager.default.contents(atPath: hudSettingsPath),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let statusLine = json["statusLine"] as? [String: Any],
+              let command = statusLine["command"] as? String else {
+            return false
+        }
+        return command.contains("hud.mjs")
+    }
+
+    func toggleHud() {
+        isHudEnabled.toggle()
+        let url = URL(fileURLWithPath: Self.hudSettingsPath)
+
+        var json: [String: Any]
+        if let data = try? Data(contentsOf: url),
+           let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            json = parsed
+        } else {
+            json = [:]
+        }
+
+        if isHudEnabled {
+            json["statusLine"] = [
+                "type": "command",
+                "command": "bash -c 'node \"$HOME/.claude-hud/hud.mjs\"'"
+            ]
+        } else {
+            json.removeValue(forKey: "statusLine")
+        }
+
+        if let newData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+            try? newData.write(to: url)
+        }
+    }
+
+    func checkForUpdates() {
+        updateStatus = .checking
+        UpdateChecker.check { [weak self] status in
+            self?.updateStatus = status
+            if case .upToDate = status {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    self?.updateStatus = .idle
+                }
+            }
+        }
+    }
+
+    func openReleasePage() {
+        if let url = URL(string: UpdateChecker.releasePageURL) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     func selectPet(_ pet: PetType) {
         guard unlockedPets.contains(pet) else { return }
         selectedPet = pet
         progressTracker.selectPet(pet)
+        NotificationCenter.default.post(name: .petSelectionChanged, object: pet)
     }
 }
 
@@ -63,7 +142,8 @@ struct CollectionPopoverView: View {
                 progressSection
             }
             Divider()
-            quitSection
+            footerSection
+            Spacer(minLength: 0)
         }
         .frame(width: 280)
         .background(Color(NSColor.windowBackgroundColor))
@@ -89,8 +169,73 @@ struct CollectionPopoverView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
+            if viewModel.fiveHourPercent != nil || viewModel.weeklyPercent != nil {
+                rateLimitSection
+            }
         }
         .padding(12)
+    }
+
+    // MARK: - Rate Limit
+    private var rateLimitSection: some View {
+        HStack(spacing: 0) {
+            if let pct5h = viewModel.fiveHourPercent {
+                let intPct = Int(pct5h.rounded())
+                Text("5h:")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary)
+                Text("\(intPct)%")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(rateLimitColor(intPct))
+                if let reset = formatResetTime(viewModel.fiveHourResetsAt) {
+                    Text("(\(reset))")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.secondary)
+                }
+            }
+            if viewModel.fiveHourPercent != nil && viewModel.weeklyPercent != nil {
+                Text(" | ")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.5))
+            }
+            if let pctWk = viewModel.weeklyPercent {
+                let intPct = Int(pctWk.rounded())
+                Text("wk:")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary)
+                Text("\(intPct)%")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(rateLimitColor(intPct))
+                if let reset = formatResetTime(viewModel.weeklyResetsAt) {
+                    Text("(\(reset))")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+        }
+    }
+
+    private func rateLimitColor(_ percent: Int) -> Color {
+        if percent >= 90 { return .red }
+        if percent >= 70 { return .yellow }
+        return .green
+    }
+
+    private func formatResetTime(_ isoString: String?) -> String? {
+        guard let isoString = isoString, !isoString.isEmpty else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        guard let date = formatter.date(from: isoString) ?? ISO8601DateFormatter().date(from: isoString) else { return nil }
+        let diffSeconds = date.timeIntervalSinceNow
+        guard diffSeconds > 0 else { return nil }
+        let diffMinutes = Int(diffSeconds / 60)
+        let diffHours = diffMinutes / 60
+        let diffDays = diffHours / 24
+        if diffDays > 0 {
+            return "\(diffDays)d\(diffHours % 24)h"
+        }
+        return "\(diffHours)h\(diffMinutes % 60)m"
     }
 
     // MARK: - Pet Grid
@@ -134,19 +279,91 @@ struct CollectionPopoverView: View {
         .padding(12)
     }
 
-    // MARK: - Quit
-    private var quitSection: some View {
-        HStack {
-            Spacer()
+    // MARK: - Footer
+    private var footerSection: some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text("HUD")
+                    .font(.system(size: 11, weight: .medium))
+                Spacer()
+                Button(action: { viewModel.toggleHud() }) {
+                    Text(viewModel.isHudEnabled ? "ON" : "OFF")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(viewModel.isHudEnabled ? .green : .secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(viewModel.isHudEnabled ? Color.green.opacity(0.15) : Color.secondary.opacity(0.1))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            updateButton
             Button("Quit Claude Pet") {
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.plain)
             .font(.system(size: 11))
             .foregroundColor(.secondary)
-            Spacer()
         }
-        .padding(8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    @ViewBuilder
+    private var updateButton: some View {
+        switch viewModel.updateStatus {
+        case .idle:
+            Button(action: { viewModel.checkForUpdates() }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 10))
+                    Text("Check for Updates")
+                        .font(.system(size: 11))
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+        case .checking:
+            HStack(spacing: 4) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Checking...")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        case .upToDate(let version):
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.green)
+                Text("Up to date (v\(version))")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        case .available(let version):
+            Button(action: { viewModel.openReleasePage() }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.cyan)
+                    Text("Update Available: \(version)")
+                        .font(.system(size: 11))
+                        .foregroundColor(.cyan)
+                }
+            }
+            .buttonStyle(.plain)
+        case .failed:
+            HStack(spacing: 4) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.yellow)
+                Text("Check failed")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        }
     }
 }
 
