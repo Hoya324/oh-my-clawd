@@ -2,4 +2,5 @@ node_modules/
 .claude/
 *.tmp
 pet/ClaudePet/build/
+build/
 .DS_Store
