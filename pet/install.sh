@@ -79,6 +79,7 @@ cp "$SCRIPT_DIR/ClaudePet/Info.plist" "$APP_BUNDLE/Contents/"
 if [[ -f "$SCRIPT_DIR/ClaudePet/AppIcon.icns" ]]; then
   cp "$SCRIPT_DIR/ClaudePet/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 fi
+xattr -cr "$APP_BUNDLE"
 echo -e "  ${GREEN}App → $APP_BUNDLE${NC}"
 
 # Install aggregator daemon

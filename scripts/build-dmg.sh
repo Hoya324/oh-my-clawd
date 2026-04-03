@@ -81,6 +81,7 @@ if [[ -f "$PET_DIR/AppIcon.icns" ]]; then
   cp "$PET_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 fi
 
+xattr -cr "$APP_BUNDLE"
 echo -e "  ${GREEN}App bundle created${NC}"
 
 # ---------------------------------------------------------------------------
