@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hoya324/claude-hud/releases/latest"><img src="https://img.shields.io/badge/DMG-download-blue?style=flat-square" alt="DMG Download" /></a>
+  <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg"><img src="https://img.shields.io/badge/DMG-download-blue?style=flat-square" alt="DMG Download" /></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square" alt="macOS" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green?style=flat-square" alt="Node >= 18" />
   <img src="https://img.shields.io/github/license/Hoya324/claude-hud?style=flat-square" alt="License" />
@@ -31,7 +31,7 @@
 
 ### DMG Download (Recommended)
 
-Download the `.dmg` file from the [latest release page](https://github.com/Hoya324/claude-hud/releases/latest) and install.
+Download the `.dmg` file from the [latest release page](https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg) and install.
 
 ### Manual Install
 
@@ -82,6 +82,21 @@ Your pet grows based on concurrent agent count.
 | Macho | 4+ agents | Absurdly huge body, tiny head, gold sparkles |
 
 ### Pet Collection (12 Pets)
+
+<p>
+  <img src="docs/assets/pets/cat.gif" width="48" alt="Cat" />
+  <img src="docs/assets/pets/hamster.gif" width="48" alt="Hamster" />
+  <img src="docs/assets/pets/chick.gif" width="48" alt="Chick" />
+  <img src="docs/assets/pets/penguin.gif" width="48" alt="Penguin" />
+  <img src="docs/assets/pets/fox.gif" width="48" alt="Fox" />
+  <img src="docs/assets/pets/rabbit.gif" width="48" alt="Rabbit" />
+  <img src="docs/assets/pets/goose.gif" width="48" alt="Goose" />
+  <img src="docs/assets/pets/capybara.gif" width="48" alt="Capybara" />
+  <img src="docs/assets/pets/sloth.gif" width="48" alt="Sloth" />
+  <img src="docs/assets/pets/owl.gif" width="48" alt="Owl" />
+  <img src="docs/assets/pets/dragon.gif" width="48" alt="Dragon" />
+  <img src="docs/assets/pets/unicorn.gif" width="48" alt="Unicorn" />
+</p>
 
 | Pet | Unlock Condition |
 |-----|-----------------|

@@ -2,7 +2,7 @@
 # Build a distributable DMG for Claude Pet
 # Usage: ./scripts/build-dmg.sh
 #
-# Outputs: build/ClaudePet-{version}-arm64.dmg
+# Outputs: build/ClaudeHud.dmg
 
 set -euo pipefail
 
@@ -86,7 +86,7 @@ echo -e "  ${GREEN}App bundle created${NC}"
 # ---------------------------------------------------------------------------
 # 5. Create the DMG
 # ---------------------------------------------------------------------------
-DMG_NAME="$APP_NAME-${VERSION}-arm64.dmg"
+DMG_NAME="ClaudeHud.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
 DMG_STAGING="$BUILD_DIR/dmg-staging"
 
