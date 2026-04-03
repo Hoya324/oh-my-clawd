@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hoya324/claude-hud/releases/latest"><img src="https://img.shields.io/badge/DMG-다운로드-blue?style=flat-square" alt="DMG 다운로드" /></a>
+  <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg"><img src="https://img.shields.io/badge/DMG-다운로드-blue?style=flat-square" alt="DMG 다운로드" /></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square" alt="macOS" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green?style=flat-square" alt="Node >= 18" />
   <img src="https://img.shields.io/github/license/Hoya324/claude-hud?style=flat-square" alt="License" />
@@ -31,7 +31,7 @@
 
 ### DMG 다운로드 (권장)
 
-[최신 릴리스 페이지](https://github.com/Hoya324/claude-hud/releases/latest)에서 `.dmg` 파일을 다운로드하여 설치합니다.
+[최신 릴리스 페이지](https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg)에서 `.dmg` 파일을 다운로드하여 설치합니다.
 
 ### 수동 설치
 
@@ -82,6 +82,21 @@ macOS 메뉴바에 상주하는 타마고치 스타일의 픽셀아트 펫입니
 | 마초 | 에이전트 4개 이상 | 거대한 몸, 작은 머리, 금색 반짝임 |
 
 ### 펫 컬렉션 (12종)
+
+<p>
+  <img src="docs/assets/pets/cat.gif" width="48" alt="Cat" />
+  <img src="docs/assets/pets/hamster.gif" width="48" alt="Hamster" />
+  <img src="docs/assets/pets/chick.gif" width="48" alt="Chick" />
+  <img src="docs/assets/pets/penguin.gif" width="48" alt="Penguin" />
+  <img src="docs/assets/pets/fox.gif" width="48" alt="Fox" />
+  <img src="docs/assets/pets/rabbit.gif" width="48" alt="Rabbit" />
+  <img src="docs/assets/pets/goose.gif" width="48" alt="Goose" />
+  <img src="docs/assets/pets/capybara.gif" width="48" alt="Capybara" />
+  <img src="docs/assets/pets/sloth.gif" width="48" alt="Sloth" />
+  <img src="docs/assets/pets/owl.gif" width="48" alt="Owl" />
+  <img src="docs/assets/pets/dragon.gif" width="48" alt="Dragon" />
+  <img src="docs/assets/pets/unicorn.gif" width="48" alt="Unicorn" />
+</p>
 
 | 펫 | 해금 조건 |
 |----|-----------|
