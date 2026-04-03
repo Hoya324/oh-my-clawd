@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hoya324/claude-hud/releases/latest"><img src="https://img.shields.io/badge/DMG-다운로드-blue?style=flat-square" alt="DMG 다운로드" /></a>
+  <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg"><img src="https://img.shields.io/badge/DMG-다운로드-blue?style=flat-square" alt="DMG 다운로드" /></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square" alt="macOS" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green?style=flat-square" alt="Node >= 18" />
   <img src="https://img.shields.io/github/license/Hoya324/claude-hud?style=flat-square" alt="License" />
@@ -31,7 +31,7 @@
 
 ### DMG 다운로드 (권장)
 
-[최신 릴리스 페이지](https://github.com/Hoya324/claude-hud/releases/latest)에서 `.dmg` 파일을 다운로드하여 설치합니다.
+[최신 릴리스 페이지](https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg)에서 `.dmg` 파일을 다운로드하여 설치합니다.
 
 ### 수동 설치
 

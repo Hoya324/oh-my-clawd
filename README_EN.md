@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hoya324/claude-hud/releases/latest"><img src="https://img.shields.io/badge/DMG-download-blue?style=flat-square" alt="DMG Download" /></a>
+  <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg"><img src="https://img.shields.io/badge/DMG-download-blue?style=flat-square" alt="DMG Download" /></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square" alt="macOS" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green?style=flat-square" alt="Node >= 18" />
   <img src="https://img.shields.io/github/license/Hoya324/claude-hud?style=flat-square" alt="License" />
@@ -31,7 +31,7 @@
 
 ### DMG Download (Recommended)
 
-Download the `.dmg` file from the [latest release page](https://github.com/Hoya324/claude-hud/releases/latest) and install.
+Download the `.dmg` file from the [latest release page](https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg) and install.
 
 ### Manual Install
 
