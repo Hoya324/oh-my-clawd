@@ -83,6 +83,21 @@ Your pet grows based on concurrent agent count.
 
 ### Pet Collection (12 Pets)
 
+<p>
+  <img src="docs/assets/pets/cat.gif" width="48" alt="Cat" />
+  <img src="docs/assets/pets/hamster.gif" width="48" alt="Hamster" />
+  <img src="docs/assets/pets/chick.gif" width="48" alt="Chick" />
+  <img src="docs/assets/pets/penguin.gif" width="48" alt="Penguin" />
+  <img src="docs/assets/pets/fox.gif" width="48" alt="Fox" />
+  <img src="docs/assets/pets/rabbit.gif" width="48" alt="Rabbit" />
+  <img src="docs/assets/pets/goose.gif" width="48" alt="Goose" />
+  <img src="docs/assets/pets/capybara.gif" width="48" alt="Capybara" />
+  <img src="docs/assets/pets/sloth.gif" width="48" alt="Sloth" />
+  <img src="docs/assets/pets/owl.gif" width="48" alt="Owl" />
+  <img src="docs/assets/pets/dragon.gif" width="48" alt="Dragon" />
+  <img src="docs/assets/pets/unicorn.gif" width="48" alt="Unicorn" />
+</p>
+
 | Pet | Unlock Condition |
 |-----|-----------------|
 | Cat | Default pet |
