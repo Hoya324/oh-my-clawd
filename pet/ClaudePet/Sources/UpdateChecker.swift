@@ -10,9 +10,9 @@ enum UpdateStatus: Equatable {
 
 struct UpdateChecker {
     static let repoOwner = "Hoya324"
-    static let repoName = "claude-hud"
-    static let releasesURL = "https://api.github.com/repos/Hoya324/claude-hud/releases/latest"
-    static let releasePageURL = "https://github.com/Hoya324/claude-hud/releases/latest"
+    static let repoName = "oh-my-clawd"
+    static let releasesURL = "https://api.github.com/repos/Hoya324/oh-my-clawd/releases/latest"
+    static let releasePageURL = "https://github.com/Hoya324/oh-my-clawd/releases/latest"
 
     static var currentVersion: String? {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String

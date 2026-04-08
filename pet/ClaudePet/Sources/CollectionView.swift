@@ -1,18 +1,19 @@
 import SwiftUI
 
 extension Notification.Name {
-    static let petSelectionChanged = Notification.Name("petSelectionChanged")
+    static let accessoryChanged = Notification.Name("accessoryChanged")
 }
 
 // MARK: - Data bridge from AppKit to SwiftUI
-class PetViewModel: ObservableObject {
+class ClawdViewModel: ObservableObject {
     @Published var currentState: PetState = .idle
-    @Published var muscleStage: MuscleStage = .normal
+    @Published var activityLevel: ActivityLevel = .normal
     @Published var activeSessions: Int = 0
     @Published var activeAgents: Int = 0
-    @Published var unlockedPets: [PetType] = [.cat]
-    @Published var selectedPet: PetType = .cat
-    @Published var nextUnlockPet: PetType?
+    @Published var unlockedAccessories: [AccessoryType] = []
+    @Published var selectedHat: AccessoryType? = nil
+    @Published var selectedGlasses: AccessoryType? = nil
+    @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
     @Published var fiveHourPercent: Double?
@@ -24,12 +25,11 @@ class PetViewModel: ObservableObject {
 
     private let progressTracker = ProgressTracker()
     private static let hudSettingsPath = NSHomeDirectory() + "/.claude/settings.json"
-    private static let hudEnabledKey = "claudePet.hudEnabled"
 
     func refresh(stateData: PetStateData?) {
         if let data = stateData {
             currentState = PetState.resolve(from: data)
-            muscleStage = PetState.resolveMuscle(from: data)
+            activityLevel = PetState.resolveActivityLevel(from: data)
             activeSessions = data.activeSessions
             activeAgents = data.aggregate.totalRunningAgents
             fiveHourPercent = data.rateLimit.fiveHourPercent
@@ -38,7 +38,7 @@ class PetViewModel: ObservableObject {
             weeklyResetsAt = data.rateLimit.weeklyResetsAt
         } else {
             currentState = .idle
-            muscleStage = .normal
+            activityLevel = .normal
             activeSessions = 0
             activeAgents = 0
             fiveHourPercent = nil
@@ -48,17 +48,23 @@ class PetViewModel: ObservableObject {
         }
 
         if let progress = progressTracker.read() {
-            unlockedPets = PetType.allCases.filter { progress.unlocked.contains($0.rawValue) }
+            unlockedAccessories = AccessoryType.allCases.filter {
+                progress.unlockedAccessories.contains($0.rawValue)
+            }
+        } else {
+            unlockedAccessories = []
         }
-        selectedPet = progressTracker.selectedPet()
+
+        selectedHat = progressTracker.selectedHat()
+        selectedGlasses = progressTracker.selectedGlasses()
 
         if let next = progressTracker.nextUnlock(),
            let (current, target) = progressTracker.unlockProgress(for: next) {
-            nextUnlockPet = next
+            nextUnlockAccessory = next
             nextUnlockCurrent = current
             nextUnlockTarget = target
         } else {
-            nextUnlockPet = nil
+            nextUnlockAccessory = nil
         }
 
         isHudEnabled = Self.readHudEnabled()
@@ -120,24 +126,37 @@ class PetViewModel: ObservableObject {
         }
     }
 
-    func selectPet(_ pet: PetType) {
-        guard unlockedPets.contains(pet) else { return }
-        selectedPet = pet
-        progressTracker.selectPet(pet)
-        NotificationCenter.default.post(name: .petSelectionChanged, object: pet)
+    // MARK: - Accessory selection
+
+    func selectHat(_ hat: AccessoryType?) {
+        // Tapping the currently selected hat deselects it
+        let newHat: AccessoryType? = (hat == selectedHat) ? nil : hat
+        selectedHat = newHat
+        progressTracker.selectHat(newHat)
+        NotificationCenter.default.post(name: .accessoryChanged, object: nil)
+    }
+
+    func selectGlasses(_ glasses: AccessoryType?) {
+        // Tapping the currently selected glasses deselects them
+        let newGlasses: AccessoryType? = (glasses == selectedGlasses) ? nil : glasses
+        selectedGlasses = newGlasses
+        progressTracker.selectGlasses(newGlasses)
+        NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
 }
 
 // MARK: - Main Popover View
 struct CollectionPopoverView: View {
-    @ObservedObject var viewModel: PetViewModel
+    @ObservedObject var viewModel: ClawdViewModel
 
     var body: some View {
         VStack(spacing: 0) {
             headerSection
             Divider()
-            petGridSection
-            if viewModel.nextUnlockPet != nil {
+            hatGridSection
+            Divider()
+            glassesGridSection
+            if viewModel.nextUnlockAccessory != nil {
                 Divider()
                 progressSection
             }
@@ -153,12 +172,12 @@ struct CollectionPopoverView: View {
     private var headerSection: some View {
         VStack(spacing: 4) {
             HStack {
-                Text(viewModel.selectedPet.displayName)
+                Text("Clawd")
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                Text(viewModel.muscleStage.displayName)
+                Text(viewModel.activityLevel.displayName)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(viewModel.muscleStage == .macho ? .yellow : .secondary)
+                    .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
             }
             HStack {
                 Text("Sessions: \(viewModel.activeSessions)")
@@ -238,28 +257,62 @@ struct CollectionPopoverView: View {
         return "\(diffHours)h\(diffMinutes % 60)m"
     }
 
-    // MARK: - Pet Grid
-    private var petGridSection: some View {
-        let columns = Array(repeating: GridItem(.fixed(56), spacing: 8), count: 4)
-        return LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(PetType.allCases, id: \.self) { pet in
-                PetGridCell(
-                    pet: pet,
-                    isUnlocked: viewModel.unlockedPets.contains(pet),
-                    isSelected: viewModel.selectedPet == pet,
-                    onSelect: { viewModel.selectPet(pet) }
-                )
+    // MARK: - Hat Grid
+    private var hatGridSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Hats")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+
+            let columns = Array(repeating: GridItem(.fixed(44), spacing: 6), count: 5)
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(AccessoryType.hats, id: \.self) { hat in
+                    AccessoryGridCell(
+                        accessory: hat,
+                        isUnlocked: viewModel.unlockedAccessories.contains(hat),
+                        isSelected: viewModel.selectedHat == hat,
+                        onSelect: { viewModel.selectHat(hat) }
+                    )
+                }
             }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
         }
-        .padding(12)
+    }
+
+    // MARK: - Glasses Grid
+    private var glassesGridSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Glasses")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+
+            let columns = Array(repeating: GridItem(.fixed(44), spacing: 6), count: 5)
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(AccessoryType.glasses, id: \.self) { glasses in
+                    AccessoryGridCell(
+                        accessory: glasses,
+                        isUnlocked: viewModel.unlockedAccessories.contains(glasses),
+                        isSelected: viewModel.selectedGlasses == glasses,
+                        onSelect: { viewModel.selectGlasses(glasses) }
+                    )
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
+        }
     }
 
     // MARK: - Progress
     private var progressSection: some View {
         VStack(spacing: 4) {
-            if let pet = viewModel.nextUnlockPet {
+            if let accessory = viewModel.nextUnlockAccessory {
                 HStack {
-                    Text("\(pet.displayName)")
+                    Text(accessory.displayName)
                         .font(.system(size: 11, weight: .medium))
                     Spacer()
                     Text("\(viewModel.nextUnlockCurrent)/\(viewModel.nextUnlockTarget)")
@@ -271,7 +324,7 @@ struct CollectionPopoverView: View {
                     total: Double(max(1, viewModel.nextUnlockTarget))
                 )
                 .tint(.cyan)
-                Text(pet.unlockDescription)
+                Text(accessory.unlockDescription)
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }
@@ -300,7 +353,7 @@ struct CollectionPopoverView: View {
                 .buttonStyle(.plain)
             }
             updateButton
-            Button("Quit Claude Pet") {
+            Button("Quit oh-my-clawd") {
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.plain)
@@ -367,9 +420,9 @@ struct CollectionPopoverView: View {
     }
 }
 
-// MARK: - Pet Grid Cell
-struct PetGridCell: View {
-    let pet: PetType
+// MARK: - Accessory Grid Cell
+struct AccessoryGridCell: View {
+    let accessory: AccessoryType
     let isUnlocked: Bool
     let isSelected: Bool
     let onSelect: () -> Void
@@ -380,14 +433,15 @@ struct PetGridCell: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(isSelected ? Color.cyan.opacity(0.2) : Color.clear)
-                        .frame(width: 48, height: 48)
+                        .frame(width: 40, height: 40)
 
                     if isUnlocked {
-                        PetPixelView(pet: pet, muscle: .normal)
-                            .frame(width: 36, height: 36)
+                        ClawdPreviewView(hat: accessory.category == .hat ? accessory : nil,
+                                         glasses: accessory.category == .glasses ? accessory : nil)
+                            .frame(width: 32, height: 32)
                     } else {
                         Image(systemName: "lock.fill")
-                            .font(.system(size: 16))
+                            .font(.system(size: 14))
                             .foregroundColor(.gray.opacity(0.4))
                     }
                 }
@@ -396,31 +450,41 @@ struct PetGridCell: View {
                         .stroke(isSelected ? Color.cyan : Color.clear, lineWidth: 2)
                 )
 
-                Text(isUnlocked ? pet.displayName : "???")
-                    .font(.system(size: 9))
+                Text(isUnlocked ? accessory.displayName : "???")
+                    .font(.system(size: 8))
                     .foregroundColor(isUnlocked ? .primary : .secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
         }
         .buttonStyle(.plain)
-        .help(isUnlocked ? pet.displayName : pet.unlockDescription)
+        .help(isUnlocked ? accessory.displayName : accessory.unlockDescription)
     }
 }
 
-// MARK: - NSImage to SwiftUI bridge
-struct PetPixelView: NSViewRepresentable {
-    let pet: PetType
-    let muscle: MuscleStage
+// MARK: - Clawd Preview (NSImage bridge)
+struct ClawdPreviewView: NSViewRepresentable {
+    let hat: AccessoryType?
+    let glasses: AccessoryType?
 
     func makeNSView(context: Context) -> NSImageView {
         let imageView = NSImageView()
         imageView.imageScaling = .scaleProportionallyUpOrDown
-        let frames = PixelArtRenderer.renderedFrames(pet: pet, muscle: muscle, state: .normal)
-        imageView.image = frames.first
+        imageView.image = rendered()
         return imageView
     }
 
     func updateNSView(_ nsView: NSImageView, context: Context) {
-        let frames = PixelArtRenderer.renderedFrames(pet: pet, muscle: muscle, state: .normal)
-        nsView.image = frames.first
+        nsView.image = rendered()
+    }
+
+    private func rendered() -> NSImage {
+        PixelArtRenderer.renderFrame(
+            state: .normal,
+            activity: .normal,
+            hat: hat,
+            glasses: glasses,
+            frameIndex: 0
+        )
     }
 }

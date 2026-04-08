@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude HUD — Status Line + Menu Bar Pet</title>
+  <title>oh-my-clawd — Status Line + Menu Bar Clawd</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
        Navbar (fixed)
        ============================================================ -->
   <nav class="navbar">
-    <div class="nav-logo">Claude <span>HUD</span></div>
+    <div class="nav-logo">oh-my-<span>clawd</span></div>
 
     <button class="nav-toggle" aria-label="Toggle navigation">
       <span></span><span></span><span></span>
@@ -22,7 +22,7 @@
       <a href="docs.html" data-i18n="nav.docs">Docs</a>
       <a href="#features" data-i18n="nav.features">Features</a>
       <a href="#collection" data-i18n="nav.collection">Collection</a>
-      <a href="https://github.com/Hoya324/claude-hud" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/Hoya324/oh-my-clawd" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
 
     <div class="lang-switcher">
@@ -40,26 +40,27 @@
   <section class="hero">
     <canvas id="hero-icon" width="128" height="128" style="image-rendering: pixelated; margin-bottom: 1.5rem;"></canvas>
 
-    <h1 class="hero-title" data-i18n="hero.title">Claude HUD</h1>
-    <p class="hero-subtitle" data-i18n="hero.subtitle">A lightweight status line + menu bar pet for Claude Code</p>
-    <p class="hero-description" data-i18n="hero.description">Rate Limit, Session Time, Context Usage, Tool Calls, Agents, Model Info — all at a glance. Plus a Tamagotchi-style pixel art pet that reacts to your coding activity.</p>
+    <h1 class="hero-title" data-i18n="hero.title">oh-my-clawd</h1>
+    <p class="hero-tagline" data-i18n="hero.tagline">clawd has infiltrated my computer</p>
+    <p class="hero-subtitle" data-i18n="hero.subtitle">A lightweight status line + menu bar Clawd for Claude Code</p>
+    <p class="hero-description" data-i18n="hero.description">Rate Limit, Session Time, Context Usage, Tool Calls, Agents, Model Info — all at a glance. Plus a Tamagotchi-style pixel art Clawd that reacts to your coding activity.</p>
 
     <div class="hero-cta">
-      <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg" class="btn-primary" data-i18n="hero.cta.download">Download DMG</a>
+      <a href="https://github.com/Hoya324/oh-my-clawd/releases/latest/download/OhMyClawd.dmg" class="btn-primary" data-i18n="hero.cta.download">Download DMG</a>
       <a href="docs.html" class="btn-outline" data-i18n="hero.cta.docs">Read Docs</a>
     </div>
 
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="hero-stat-value" data-i18n="hero.stat.pets">12 Pets</div>
+        <div class="hero-stat-value" data-i18n="hero.stat.accessories">9+ Accessories</div>
         <div class="hero-stat-label">Collectible</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-value" data-i18n="hero.stat.states">7 States</div>
+        <div class="hero-stat-value" data-i18n="hero.stat.states">8 States</div>
         <div class="hero-stat-label">Emotional</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-value" data-i18n="hero.stat.muscles">3 Muscles</div>
+        <div class="hero-stat-value" data-i18n="hero.stat.effects">3 Effects</div>
         <div class="hero-stat-label">Growth</div>
       </div>
       <div class="hero-stat">
@@ -85,8 +86,8 @@
 
         <div class="feature-card">
           <div class="feature-card-icon" style="font-family: 'Space Mono', monospace; font-size: 1.1rem;">~(^.^)~</div>
-          <h3 data-i18n="features.pet.title">Pet System</h3>
-          <p data-i18n="features.pet.desc">12 collectible pets with 7 emotional states and 3 muscle stages. Each pet has unique unlock conditions based on your Claude Code usage.</p>
+          <h3 data-i18n="features.pet.title">Clawd System</h3>
+          <p data-i18n="features.pet.desc">One Clawd character with 8 states, 3 activity levels, and 9 collectible accessories. Each accessory has unique unlock conditions based on your Claude Code usage.</p>
         </div>
 
         <div class="feature-card">
@@ -99,71 +100,47 @@
   </div>
 
   <!-- ============================================================
-       Pet Collection Section
+       Accessory Collection Section
        ============================================================ -->
   <div id="collection" class="section">
-    <h2 class="section-title" data-i18n="collection.title">Pet Collection</h2>
+    <h2 class="section-title" data-i18n="collection.title">Accessory Collection</h2>
 
     <div class="pet-grid">
       <div class="pet-card">
-        <img src="assets/pets/cat.gif" width="48" height="48" alt="Cat" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.cat">Cat</div>
-        <p class="pet-unlock" data-i18n="unlock.cat">Default pet</p>
+        <div class="pet-name" data-i18n="accessory.cap">Cap</div>
+        <p class="pet-unlock" data-i18n="unlock.cap">10 sessions</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/hamster.gif" width="48" height="48" alt="Hamster" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.hamster">Hamster</div>
-        <p class="pet-unlock" data-i18n="unlock.hamster">Total 10 sessions</p>
+        <div class="pet-name" data-i18n="accessory.partyHat">Party Hat</div>
+        <p class="pet-unlock" data-i18n="unlock.partyHat">5 hours total usage</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/chick.gif" width="48" height="48" alt="Chick" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.chick">Chick</div>
-        <p class="pet-unlock" data-i18n="unlock.chick">5 hours total usage</p>
+        <div class="pet-name" data-i18n="accessory.santaHat">Santa Hat</div>
+        <p class="pet-unlock" data-i18n="unlock.santaHat">500K tokens used</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/penguin.gif" width="48" height="48" alt="Penguin" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.penguin">Penguin</div>
-        <p class="pet-unlock" data-i18n="unlock.penguin">500K tokens used</p>
+        <div class="pet-name" data-i18n="accessory.silkHat">Silk Hat</div>
+        <p class="pet-unlock" data-i18n="unlock.silkHat">50 agent runs</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/fox.gif" width="48" height="48" alt="Fox" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.fox">Fox</div>
-        <p class="pet-unlock" data-i18n="unlock.fox">50 agent runs</p>
+        <div class="pet-name" data-i18n="accessory.cowboyHat">Cowboy Hat</div>
+        <p class="pet-unlock" data-i18n="unlock.cowboyHat">30 hours total usage</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/rabbit.gif" width="48" height="48" alt="Rabbit" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.rabbit">Rabbit</div>
-        <p class="pet-unlock" data-i18n="unlock.rabbit">3+ concurrent sessions</p>
+        <div class="pet-name" data-i18n="accessory.hornRimmed">Horn-rimmed</div>
+        <p class="pet-unlock" data-i18n="unlock.hornRimmed">3+ concurrent sessions</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/goose.gif" width="48" height="48" alt="Goose" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.goose">Goose</div>
-        <p class="pet-unlock" data-i18n="unlock.goose">30 hours total usage</p>
+        <div class="pet-name" data-i18n="accessory.sunglasses">Sunglasses</div>
+        <p class="pet-unlock" data-i18n="unlock.sunglasses">10 rate limit hits</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/capybara.gif" width="48" height="48" alt="Capybara" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.capybara">Capybara</div>
-        <p class="pet-unlock" data-i18n="unlock.capybara">10 rate limit hits</p>
+        <div class="pet-name" data-i18n="accessory.roundGlasses">Round Glasses</div>
+        <p class="pet-unlock" data-i18n="unlock.roundGlasses">20 long sessions (45m+)</p>
       </div>
       <div class="pet-card">
-        <img src="assets/pets/sloth.gif" width="48" height="48" alt="Sloth" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.sloth">Sloth</div>
-        <p class="pet-unlock" data-i18n="unlock.sloth">20 long sessions (45m+)</p>
-      </div>
-      <div class="pet-card">
-        <img src="assets/pets/owl.gif" width="48" height="48" alt="Owl" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.owl">Owl</div>
-        <p class="pet-unlock" data-i18n="unlock.owl">10 hours on Opus</p>
-      </div>
-      <div class="pet-card">
-        <img src="assets/pets/dragon.gif" width="48" height="48" alt="Dragon" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.dragon">Dragon</div>
-        <p class="pet-unlock" data-i18n="unlock.dragon">5+ concurrent agents</p>
-      </div>
-      <div class="pet-card">
-        <img src="assets/pets/unicorn.gif" width="48" height="48" alt="Unicorn" style="image-rendering: pixelated;" />
-        <div class="pet-name" data-i18n="pet.unicorn">Unicorn</div>
-        <p class="pet-unlock" data-i18n="unlock.unicorn">Unlock all other pets</p>
+        <div class="pet-name" data-i18n="accessory.starGlasses">Star Glasses</div>
+        <p class="pet-unlock" data-i18n="unlock.starGlasses">10 hours on Opus</p>
       </div>
     </div>
   </div>
@@ -185,7 +162,7 @@
         <div class="install-step">
           <div class="install-step-number">2</div>
           <h3 data-i18n="install.step2.title">Install</h3>
-          <p data-i18n="install.step2.desc">Drag ClaudePet.app to Applications</p>
+          <p data-i18n="install.step2.desc">Drag OhMyClawd.app to Applications</p>
         </div>
 
         <div class="install-step">
@@ -201,8 +178,9 @@
        Footer
        ============================================================ -->
   <footer class="footer">
-    <p><strong>Claude HUD</strong></p>
-    <p><a href="https://github.com/Hoya324/claude-hud" target="_blank" rel="noopener noreferrer" data-i18n="footer.github">GitHub</a> &middot; <span data-i18n="footer.license">MIT License</span></p>
+    <p><strong>oh-my-clawd</strong></p>
+    <p><a href="https://github.com/Hoya324/oh-my-clawd" target="_blank" rel="noopener noreferrer" data-i18n="footer.github">GitHub</a> &middot; <span data-i18n="footer.license">MIT License</span></p>
+    <p class="footer-disclaimer" data-i18n="footer.disclaimer">The Clawd character design is copyrighted by <a href="https://anthropic.com" target="_blank" rel="noopener noreferrer">Anthropic</a>. This is a non-commercial fan project. We will remove it immediately if any copyright issues arise.</p>
   </footer>
 
   <!-- ============================================================
@@ -221,7 +199,7 @@
       }
     })();
 
-    // Capybara pixel art renderer for hero icon
+    // Clawd pixel art renderer for hero icon (color #D97757)
     (function () {
       var T = null;
       var K = '#1A1A1A';  // outline/eye

@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Docs — Claude HUD</title>
+  <title>Docs — oh-my-clawd</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <!-- Navbar -->
   <nav class="navbar">
-    <a href="index.html" class="nav-logo">Claude <span>HUD</span></a>
+    <a href="index.html" class="nav-logo">oh-my-<span>clawd</span></a>
     <div class="nav-links">
       <a href="index.html" data-i18n="nav.home">Home</a>
       <a href="docs.html" class="active" data-i18n="nav.docs">Docs</a>
-      <a href="https://github.com/Hoya324/claude-hud" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Hoya324/oh-my-clawd" target="_blank" rel="noopener">GitHub</a>
     </div>
     <div class="lang-switcher">
       <button>EN</button>
@@ -32,9 +32,9 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h2>Claude HUD</h2>
+        <h2>oh-my-clawd</h2>
         <div class="version">v1.0.0</div>
-        <a href="https://github.com/Hoya324/claude-hud" target="_blank" rel="noopener" class="sidebar-github">
+        <a href="https://github.com/Hoya324/oh-my-clawd" target="_blank" rel="noopener" class="sidebar-github">
           GitHub &rarr;
         </a>
       </div>
@@ -47,13 +47,13 @@
 
       <div class="sidebar-section">
         <div class="sidebar-section-title" data-i18n="docs.sidebar.features">Features</div>
-        <a href="#pet-system" class="sidebar-link" data-i18n="docs.sidebar.pet-system">Pet System</a>
-        <a href="#muscle-stages" class="sidebar-link" data-i18n="docs.sidebar.muscle-stages">Muscle Stages</a>
+        <a href="#clawd-system" class="sidebar-link" data-i18n="docs.sidebar.pet-system">Clawd System</a>
+        <a href="#activity-levels" class="sidebar-link" data-i18n="docs.sidebar.activity-levels">Activity Levels</a>
         <a href="#hud" class="sidebar-link" data-i18n="docs.sidebar.hud">HUD Status Line</a>
       </div>
 
       <div class="sidebar-section">
-        <a href="#pet-collection" class="sidebar-link" data-i18n="docs.sidebar.collection">Pet Collection</a>
+        <a href="#accessory-collection" class="sidebar-link" data-i18n="docs.sidebar.collection">Accessory Collection</a>
       </div>
 
       <div class="sidebar-section">
@@ -71,39 +71,41 @@
     <!-- Main Content -->
     <main class="doc-content">
 
+      <p class="hero-tagline" data-i18n="hero.tagline">clawd has infiltrated my computer</p>
+
       <!-- Installation -->
       <h1 id="installation" data-i18n="docs.install.title">Installation</h1>
 
       <h3 data-i18n="docs.install.dmg">Download DMG (Recommended)</h3>
-      <p data-i18n="docs.install.dmg.desc">Download the latest DMG from GitHub Releases, open it, and drag ClaudePet.app to your Applications folder.</p>
+      <p data-i18n="docs.install.dmg.desc">Download the latest DMG from GitHub Releases, open it, and drag OhMyClawd.app to your Applications folder.</p>
       <p>
-        <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg" target="_blank" rel="noopener" class="btn-primary">
+        <a href="https://github.com/Hoya324/oh-my-clawd/releases/latest/download/OhMyClawd.dmg" target="_blank" rel="noopener" class="btn-primary">
           <span data-i18n="hero.cta.download">Download DMG</span>
         </a>
       </p>
 
       <h3 data-i18n="docs.install.manual">Manual Install</h3>
-      <pre><code>git clone https://github.com/Hoya324/claude-hud.git
-cd claude-hud</code></pre>
+      <pre><code>git clone https://github.com/Hoya324/oh-my-clawd.git
+cd oh-my-clawd</code></pre>
       <pre><code># Install HUD status line
 ./install.sh
 
-# Install Claude Pet menu bar app
+# Install oh-my-clawd menu bar app
 ./pet/install.sh</code></pre>
 
       <!-- Quick Start -->
       <h2 id="quick-start" data-i18n="docs.quickstart.title">Quick Start</h2>
       <ol>
         <li><strong data-i18n="install.step1.title">Download</strong> — <span data-i18n="install.step1.desc">Get the latest DMG from GitHub Releases</span></li>
-        <li><strong data-i18n="install.step2.title">Install</strong> — <span data-i18n="install.step2.desc">Drag ClaudePet.app to Applications</span></li>
+        <li><strong data-i18n="install.step2.title">Install</strong> — <span data-i18n="install.step2.desc">Drag OhMyClawd.app to Applications</span></li>
         <li><strong data-i18n="install.step3.title">Launch</strong> — <span data-i18n="install.step3.desc">Open the app and check your menu bar</span></li>
       </ol>
 
-      <!-- Pet System -->
-      <h2 id="pet-system" data-i18n="docs.pet.title">Pet System</h2>
-      <p data-i18n="docs.pet.desc">Your pet lives in the macOS menu bar and reacts to Claude Code activity across all sessions.</p>
+      <!-- Clawd System -->
+      <h2 id="clawd-system" data-i18n="docs.pet.title">Clawd System</h2>
+      <p data-i18n="docs.pet.desc">Clawd lives in the macOS menu bar and reacts to Claude Code activity across all sessions.</p>
 
-      <h3 data-i18n="docs.pet.states.title">Pet States</h3>
+      <h3 data-i18n="docs.pet.states.title">Clawd States</h3>
       <table>
         <thead>
           <tr>
@@ -114,70 +116,75 @@ cd claude-hud</code></pre>
         </thead>
         <tbody>
           <tr>
-            <td data-i18n="state.sleeping">Sleeping</td>
-            <td data-i18n="state.sleeping.trigger">No active sessions</td>
+            <td data-i18n="state.idle">Sleeping...</td>
+            <td data-i18n="state.idle.trigger">No active sessions</td>
             <td>Zzz animation, eyes closed</td>
           </tr>
           <tr>
-            <td data-i18n="state.walking">Walking</td>
-            <td data-i18n="state.walking.trigger">Normal usage</td>
+            <td data-i18n="state.wakeUp">Waking up!</td>
+            <td data-i18n="state.wakeUp.trigger">Transition from idle</td>
+            <td>Jumping awake animation</td>
+          </tr>
+          <tr>
+            <td data-i18n="state.normal">Walking happily</td>
+            <td data-i18n="state.normal.trigger">Default active state</td>
             <td>Idle walk cycle</td>
           </tr>
           <tr>
-            <td data-i18n="state.running">Running</td>
-            <td data-i18n="state.running.trigger">50+ tool calls</td>
+            <td data-i18n="state.busy">Working hard!</td>
+            <td data-i18n="state.busy.trigger">50+ tool calls</td>
             <td>Fast movement, sweat drops</td>
           </tr>
           <tr>
-            <td data-i18n="state.bloated">Bloated</td>
+            <td data-i18n="state.bloated">Context is full...</td>
             <td data-i18n="state.bloated.trigger">Context >= 70%</td>
             <td>Puffed up, slow movement</td>
           </tr>
           <tr>
-            <td data-i18n="state.stressed">Stressed</td>
+            <td data-i18n="state.stressed">Rate limit warning!</td>
             <td data-i18n="state.stressed.trigger">Rate limit >= 80%</td>
             <td>Shaking, alert icon</td>
           </tr>
           <tr>
-            <td data-i18n="state.tired">Tired</td>
-            <td data-i18n="state.tired.trigger">Session > 45 min</td>
+            <td data-i18n="state.tired">Getting tired...</td>
+            <td data-i18n="state.tired.trigger">Session >= 45 min</td>
             <td>Droopy eyes, yawning</td>
           </tr>
           <tr>
-            <td data-i18n="state.collab">Collab</td>
+            <td data-i18n="state.collab">Working together!</td>
             <td data-i18n="state.collab.trigger">2+ agents</td>
-            <td>Friend pets appear</td>
+            <td>Multi-agent animation</td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Muscle Stages -->
-      <h2 id="muscle-stages" data-i18n="docs.muscle.title">Muscle Stages</h2>
-      <p data-i18n="docs.muscle.desc">Your pet grows based on concurrent agent count.</p>
+      <!-- Activity Levels -->
+      <h2 id="activity-levels" data-i18n="docs.effect.title">Activity Levels</h2>
+      <p data-i18n="docs.effect.desc">Clawd's activity level changes based on concurrent agent count.</p>
 
       <table>
         <thead>
           <tr>
-            <th>Stage</th>
+            <th>Level</th>
             <th>Condition</th>
             <th>Effect</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td data-i18n="muscle.normal">Normal</td>
-            <td data-i18n="muscle.normal.cond">0-1 agents</td>
+            <td data-i18n="effect.normal">Normal</td>
+            <td data-i18n="effect.normal.cond">0-1 agents</td>
             <td>Default appearance</td>
           </tr>
           <tr>
-            <td data-i18n="muscle.buff">Buff</td>
-            <td data-i18n="muscle.buff.cond">2-3 agents</td>
-            <td>Slightly larger, defined muscles</td>
+            <td data-i18n="effect.glowing">Glowing</td>
+            <td data-i18n="effect.glowing.cond">2-3 agents</td>
+            <td>Glowing light effect</td>
           </tr>
           <tr>
-            <td data-i18n="muscle.macho">Macho</td>
-            <td data-i18n="muscle.macho.cond">4+ agents</td>
-            <td>Maximum size, full muscle definition</td>
+            <td data-i18n="effect.supercharged">Supercharged!</td>
+            <td data-i18n="effect.supercharged.cond">4+ agents</td>
+            <td>Maximum energy, full glow</td>
           </tr>
         </tbody>
       </table>
@@ -187,7 +194,7 @@ cd claude-hud</code></pre>
       <p data-i18n="docs.hud.desc">A real-time status line showing Claude Code metrics.</p>
 
       <h3>HUD Format</h3>
-      <pre><code>RL:45% | S:12m | CTX:62% | T:23 | A:2 | opus-4 | Pet:Cat</code></pre>
+      <pre><code>[HUD] | 5h:14%(3h51m) | wk:62%(3d5h) | session:29m | ctx:39% | 53 | agents:2 | opus-4-6</code></pre>
 
       <table>
         <thead>
@@ -199,102 +206,95 @@ cd claude-hud</code></pre>
         </thead>
         <tbody>
           <tr>
-            <td><code>RL</code></td>
-            <td>Rate Limit usage percentage</td>
-            <td>Green &lt; 50%, Yellow &lt; 80%, Red &ge; 80%</td>
+            <td><code>5h:14%</code></td>
+            <td>5-hour rate limit usage</td>
+            <td>Green &lt; 70%, Yellow &lt; 90%, Red &ge; 90%</td>
           </tr>
           <tr>
-            <td><code>S</code></td>
-            <td>Session duration</td>
-            <td>Green &lt; 30m, Yellow &lt; 45m, Red &ge; 45m</td>
+            <td><code>(3h51m)</code></td>
+            <td>Time until 5h limit resets</td>
+            <td>Dim</td>
           </tr>
           <tr>
-            <td><code>CTX</code></td>
+            <td><code>wk:62%</code></td>
+            <td>Weekly rate limit usage</td>
+            <td>Same as above</td>
+          </tr>
+          <tr>
+            <td><code>session:29m</code></td>
+            <td>Current session duration</td>
+            <td>Green &lt; 30m, Yellow &lt; 60m, Red &ge; 60m</td>
+          </tr>
+          <tr>
+            <td><code>ctx:39%</code></td>
             <td>Context window usage</td>
-            <td>Green &lt; 50%, Yellow &lt; 70%, Red &ge; 70%</td>
+            <td>Green &lt; 70%, Yellow &lt; 85%, Red &ge; 85%</td>
           </tr>
           <tr>
-            <td><code>T</code></td>
-            <td>Tool call count</td>
-            <td>Green &lt; 30, Yellow &lt; 50, Red &ge; 50</td>
+            <td><code>53</code></td>
+            <td>Total tool calls in session</td>
+            <td>Static</td>
           </tr>
           <tr>
-            <td><code>A</code></td>
-            <td>Active agent count</td>
-            <td>Green &le; 1, Yellow 2-3, Red &ge; 4</td>
+            <td><code>agents:2</code></td>
+            <td>Currently running agents</td>
+            <td>Cyan</td>
           </tr>
           <tr>
             <td>Model</td>
             <td>Active model name</td>
-            <td>Static (no color change)</td>
-          </tr>
-          <tr>
-            <td>Pet</td>
-            <td>Current pet name</td>
-            <td>Static (no color change)</td>
+            <td>Dim</td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Pet Collection -->
-      <h2 id="pet-collection" data-i18n="docs.collection.title">Pet Collection</h2>
-      <p data-i18n="docs.collection.desc">12 collectible pets, each with unique unlock conditions.</p>
+      <!-- Accessory Collection -->
+      <h2 id="accessory-collection" data-i18n="docs.collection.title">Accessory Collection</h2>
+      <p data-i18n="docs.collection.desc">9 collectible accessories, each with unique unlock conditions.</p>
 
       <table>
         <thead>
           <tr>
-            <th>Pet</th>
+            <th>Accessory</th>
             <th>Unlock Condition</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><img src="assets/pets/cat.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.cat">Cat</span></td>
-            <td data-i18n="unlock.cat">Default pet</td>
+            <td><span data-i18n="accessory.cap">Cap</span></td>
+            <td data-i18n="unlock.cap">10 sessions</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/hamster.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.hamster">Hamster</span></td>
-            <td data-i18n="unlock.hamster">Total 10 sessions</td>
+            <td><span data-i18n="accessory.partyHat">Party Hat</span></td>
+            <td data-i18n="unlock.partyHat">5 hours total usage</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/chick.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.chick">Chick</span></td>
-            <td data-i18n="unlock.chick">5 hours total usage</td>
+            <td><span data-i18n="accessory.santaHat">Santa Hat</span></td>
+            <td data-i18n="unlock.santaHat">500K tokens used</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/penguin.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.penguin">Penguin</span></td>
-            <td data-i18n="unlock.penguin">500K tokens used</td>
+            <td><span data-i18n="accessory.silkHat">Silk Hat</span></td>
+            <td data-i18n="unlock.silkHat">50 agent runs</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/fox.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.fox">Fox</span></td>
-            <td data-i18n="unlock.fox">50 agent runs</td>
+            <td><span data-i18n="accessory.cowboyHat">Cowboy Hat</span></td>
+            <td data-i18n="unlock.cowboyHat">30 hours total usage</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/rabbit.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.rabbit">Rabbit</span></td>
-            <td data-i18n="unlock.rabbit">3+ concurrent sessions</td>
+            <td><span data-i18n="accessory.hornRimmed">Horn-rimmed</span></td>
+            <td data-i18n="unlock.hornRimmed">3+ concurrent sessions</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/goose.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.goose">Goose</span></td>
-            <td data-i18n="unlock.goose">30 hours total usage</td>
+            <td><span data-i18n="accessory.sunglasses">Sunglasses</span></td>
+            <td data-i18n="unlock.sunglasses">10 rate limit hits</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/capybara.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.capybara">Capybara</span></td>
-            <td data-i18n="unlock.capybara">10 rate limit hits</td>
+            <td><span data-i18n="accessory.roundGlasses">Round Glasses</span></td>
+            <td data-i18n="unlock.roundGlasses">20 long sessions (45m+)</td>
           </tr>
           <tr>
-            <td><img src="assets/pets/sloth.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.sloth">Sloth</span></td>
-            <td data-i18n="unlock.sloth">20 long sessions (45m+)</td>
-          </tr>
-          <tr>
-            <td><img src="assets/pets/owl.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.owl">Owl</span></td>
-            <td data-i18n="unlock.owl">10 hours on Opus</td>
-          </tr>
-          <tr>
-            <td><img src="assets/pets/dragon.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.dragon">Dragon</span></td>
-            <td data-i18n="unlock.dragon">5+ concurrent agents</td>
-          </tr>
-          <tr>
-            <td><img src="assets/pets/unicorn.gif" width="32" height="32" style="image-rendering:pixelated;vertical-align:middle;margin-right:6px;" /><span data-i18n="pet.unicorn">Unicorn</span></td>
-            <td data-i18n="unlock.unicorn">Unlock all other pets</td>
+            <td><span data-i18n="accessory.starGlasses">Star Glasses</span></td>
+            <td data-i18n="unlock.starGlasses">10 hours on Opus</td>
           </tr>
         </tbody>
       </table>
@@ -302,14 +302,14 @@ cd claude-hud</code></pre>
       <!-- Configuration -->
       <h2 id="configuration" data-i18n="docs.config.title">Configuration</h2>
       <p>The HUD status line can be toggled on or off via the <code>install.sh</code> script. Run <code>./install.sh</code> to enable or <code>./uninstall.sh</code> to disable the HUD.</p>
-      <p>Pet selection is available through the app popover. Click the pet icon in the menu bar to open the popover, then choose your active pet from the collection grid.</p>
+      <p>Accessory selection is available through the app popover. Click the Clawd icon in the menu bar to open the popover, then choose the active accessory from the collection grid.</p>
 
       <!-- Update -->
       <h2 id="update" data-i18n="docs.update.title">Update</h2>
       <p data-i18n="docs.update.desc">Check for updates directly from the app popover, or download the latest DMG from GitHub Releases.</p>
       <p>
         Use the <strong>Check for Updates</strong> button in the popover to see if a new version is available. If an update is found, you will be directed to the
-        <a href="https://github.com/Hoya324/claude-hud/releases/latest" target="_blank" rel="noopener">GitHub Releases</a>
+        <a href="https://github.com/Hoya324/oh-my-clawd/releases/latest" target="_blank" rel="noopener">GitHub Releases</a>
         page to download the latest DMG.
       </p>
 

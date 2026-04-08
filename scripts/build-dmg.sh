@@ -2,14 +2,14 @@
 # Build a distributable DMG for Claude Pet
 # Usage: ./scripts/build-dmg.sh
 #
-# Outputs: build/ClaudeHud.dmg
+# Outputs: build/OhMyClawd.dmg
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PET_DIR="$REPO_ROOT/pet/ClaudePet"
 BUILD_DIR="$REPO_ROOT/build"
-APP_NAME="ClaudePet"
+APP_NAME="OhMyClawd"
 INFO_PLIST="$PET_DIR/Info.plist"
 
 RED='\033[0;31m'
@@ -39,25 +39,16 @@ swiftc -o "$BUILD_DIR/$APP_NAME" \
   "$PET_DIR/Sources/AppDelegate.swift" \
   "$PET_DIR/Sources/PetStateReader.swift" \
   "$PET_DIR/Sources/PetStateMachine.swift" \
-  "$PET_DIR/Sources/PetType.swift" \
+  "$PET_DIR/Sources/AccessoryType.swift" \
   "$PET_DIR/Sources/ProgressTracker.swift" \
   "$PET_DIR/Sources/NotificationManager.swift" \
   "$PET_DIR/Sources/PixelArtRenderer.swift" \
   "$PET_DIR/Sources/CollectionView.swift" \
   "$PET_DIR/Sources/StatusMenuController.swift" \
   "$PET_DIR/Sources/UpdateChecker.swift" \
-  "$PET_DIR/Sources/Sprites/CatSprites.swift" \
-  "$PET_DIR/Sources/Sprites/HamsterSprites.swift" \
-  "$PET_DIR/Sources/Sprites/ChickSprites.swift" \
-  "$PET_DIR/Sources/Sprites/PenguinSprites.swift" \
-  "$PET_DIR/Sources/Sprites/FoxSprites.swift" \
-  "$PET_DIR/Sources/Sprites/RabbitSprites.swift" \
-  "$PET_DIR/Sources/Sprites/GooseSprites.swift" \
-  "$PET_DIR/Sources/Sprites/CapybaraSprites.swift" \
-  "$PET_DIR/Sources/Sprites/SlothSprites.swift" \
-  "$PET_DIR/Sources/Sprites/OwlSprites.swift" \
-  "$PET_DIR/Sources/Sprites/DragonSprites.swift" \
-  "$PET_DIR/Sources/Sprites/UnicornSprites.swift" \
+  "$PET_DIR/Sources/Sprites/ClaudeSprites.swift" \
+  "$PET_DIR/Sources/Sprites/ClaudeEffects.swift" \
+  "$PET_DIR/Sources/Sprites/AccessorySprites.swift" \
   -framework Cocoa \
   -framework ServiceManagement \
   -framework SwiftUI \
@@ -99,7 +90,7 @@ echo -e "  ${GREEN}Code signed${NC}"
 # ---------------------------------------------------------------------------
 # 6. Create the DMG
 # ---------------------------------------------------------------------------
-DMG_NAME="ClaudeHud.dmg"
+DMG_NAME="OhMyClawd.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
 DMG_STAGING="$BUILD_DIR/dmg-staging"
 

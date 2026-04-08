@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude HUD Installer
+# oh-my-clawd Installer
 # Usage: ./install.sh        (install)
 #        ./install.sh remove  (uninstall)
 

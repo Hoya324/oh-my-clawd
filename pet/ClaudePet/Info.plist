@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>ClaudePet</string>
+    <string>OhMyClawd</string>
     <key>CFBundleDisplayName</key>
-    <string>Claude Pet</string>
+    <string>oh-my-clawd</string>
     <key>CFBundleIdentifier</key>
-    <string>com.hoya324.claude-pet</string>
+    <string>com.hoya324.oh-my-clawd</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
@@ -17,7 +17,7 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
-    <string>ClaudePet</string>
+    <string>OhMyClawd</string>
     <key>LSUIElement</key>
     <true/>
     <key>LSMinimumSystemVersion</key>

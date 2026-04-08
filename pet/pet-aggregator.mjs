@@ -29,18 +29,22 @@ const PROGRESS_PATH = join(PET_DIR, 'progress.json');
 const PROGRESS_TMP = join(PET_DIR, 'progress.json.tmp');
 
 const UNLOCK_CONDITIONS = {
-  cat:      { type: 'default' },
-  hamster:  { type: 'totalSessions', threshold: 10 },
-  chick:    { type: 'totalTimeMinutes', threshold: 300 },
-  penguin:  { type: 'totalTokens', threshold: 500000 },
-  fox:      { type: 'totalAgentRuns', threshold: 50 },
-  rabbit:   { type: 'maxConcurrentSessions', threshold: 3 },
-  goose:    { type: 'totalTimeMinutes', threshold: 1800 },
-  capybara: { type: 'rateLimitHits', threshold: 10 },
-  sloth:    { type: 'longSessions', threshold: 20 },
-  owl:      { type: 'opusTimeMinutes', threshold: 600 },
-  dragon:   { type: 'maxConcurrentAgents', threshold: 5 },
-  unicorn:  { type: 'allUnlocked' },
+  cap:          { type: 'totalSessions', threshold: 10 },
+  partyHat:     { type: 'totalTimeMinutes', threshold: 300 },
+  santaHat:     { type: 'totalTokens', threshold: 500000 },
+  silkHat:      { type: 'totalAgentRuns', threshold: 50 },
+  cowboyHat:    { type: 'totalTimeMinutes', threshold: 1800 },
+  hornRimmed:   { type: 'maxConcurrentSessions', threshold: 3 },
+  sunglasses:   { type: 'rateLimitHits', threshold: 10 },
+  roundGlasses: { type: 'longSessions', threshold: 20 },
+  starGlasses:  { type: 'opusTimeMinutes', threshold: 600 },
+};
+
+// v1 pet → v2 accessory migration map
+const PET_TO_ACCESSORY = {
+  hamster: 'cap', chick: 'partyHat', penguin: 'santaHat',
+  fox: 'silkHat', rabbit: 'hornRimmed', goose: 'cowboyHat',
+  capybara: 'sunglasses', sloth: 'roundGlasses', owl: 'starGlasses',
 };
 
 function isPidAlive(pid) {
@@ -83,6 +87,7 @@ async function writeAtomicJson(data) {
 
 function defaultProgress() {
   return {
+    version: 2,
     stats: {
       totalSessions: 0,
       totalTimeMinutes: 0,
@@ -94,15 +99,46 @@ function defaultProgress() {
       longSessions: 0,
       opusTimeMinutes: 0,
     },
-    unlocked: ['cat'],
-    selectedPet: 'cat',
-    unlockedAt: { cat: new Date().toISOString() },
+    unlockedAccessories: [],
+    selectedHat: null,
+    selectedGlasses: null,
+    unlockedAt: {},
   };
 }
 
 async function loadProgress() {
   const data = await readJsonSafe(PROGRESS_PATH);
   if (!data || !data.stats) return defaultProgress();
+
+  // Migrate v1 → v2 if needed
+  if (!data.version || data.version < 2) {
+    const oldUnlocked = data.unlocked || [];
+    const accessories = [];
+    const newUnlockedAt = {};
+    for (const pet of oldUnlocked) {
+      const acc = PET_TO_ACCESSORY[pet];
+      if (acc) {
+        accessories.push(acc);
+        if (data.unlockedAt?.[pet]) newUnlockedAt[acc] = data.unlockedAt[pet];
+      }
+    }
+    let selectedHat = null;
+    let selectedGlasses = null;
+    const mapped = PET_TO_ACCESSORY[data.selectedPet];
+    if (mapped) {
+      const hatSet = new Set(['cap', 'partyHat', 'santaHat', 'silkHat', 'cowboyHat']);
+      if (hatSet.has(mapped)) selectedHat = mapped;
+      else selectedGlasses = mapped;
+    }
+    data.version = 2;
+    data.unlockedAccessories = accessories;
+    data.selectedHat = selectedHat;
+    data.selectedGlasses = selectedGlasses;
+    data.unlockedAt = newUnlockedAt;
+    delete data.unlocked;
+    delete data.selectedPet;
+  }
+
   return data;
 }
 
@@ -175,27 +211,19 @@ function updateStats(progress, sessionDetails) {
 }
 
 function checkUnlocks(progress) {
-  const { stats, unlocked } = progress;
+  const unlocked = progress.unlockedAccessories;
   let changed = false;
 
-  for (const [petId, condition] of Object.entries(UNLOCK_CONDITIONS)) {
-    if (unlocked.includes(petId)) continue;
+  for (const [accessoryId, condition] of Object.entries(UNLOCK_CONDITIONS)) {
+    if (unlocked.includes(accessoryId)) continue;
 
-    let met = false;
-    if (condition.type === 'default') {
-      met = true;
-    } else if (condition.type === 'allUnlocked') {
-      const otherPets = Object.keys(UNLOCK_CONDITIONS).filter(id => id !== 'unicorn');
-      met = otherPets.every(id => unlocked.includes(id));
-    } else {
-      met = (stats[condition.type] || 0) >= condition.threshold;
-    }
+    const met = (progress.stats[condition.type] || 0) >= condition.threshold;
 
     if (met) {
-      unlocked.push(petId);
-      progress.unlockedAt[petId] = new Date().toISOString();
+      unlocked.push(accessoryId);
+      progress.unlockedAt[accessoryId] = new Date().toISOString();
       changed = true;
-      process.stderr.write(`[pet-aggregator] unlocked: ${petId}\n`);
+      process.stderr.write(`[oh-my-clawd] unlocked: ${accessoryId}\n`);
     }
   }
 
