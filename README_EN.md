@@ -4,6 +4,14 @@
 
 <p align="center"><em>clawd has infiltrated my computer</em></p>
 
+<p align="center">
+  <img src="docs/assets/clawd/normal.gif" width="64" alt="Clawd Normal" />
+  <img src="docs/assets/clawd/busy.gif" width="64" alt="Clawd Busy" />
+  <img src="docs/assets/clawd/stressed.gif" width="64" alt="Clawd Stressed" />
+  <img src="docs/assets/clawd/collab.gif" width="64" alt="Clawd Collab" />
+  <img src="docs/assets/clawd/idle.gif" width="64" alt="Clawd Idle" />
+</p>
+
 <h1 align="center">oh-my-clawd</h1>
 
 <p align="center">
@@ -63,16 +71,16 @@ A Tamagotchi-style pixel art character that lives in your macOS menu bar. Clawd 
 
 ### Clawd States
 
-| State | EN | Trigger |
-|-------|----|---------|
-| idle | Sleeping... | No active sessions |
-| wakeUp | Waking up! | Transition from idle |
-| normal | Walking happily | Default active state |
-| busy | Working hard! | 50+ tool calls |
-| bloated | Context is full... | Context >= 70% |
-| stressed | Rate limit warning! | Rate limit >= 80% |
-| tired | Getting tired... | Session >= 45 min |
-| collab | Working together! | 2+ agents |
+| State | | Description | Trigger |
+|-------|-|-------------|---------|
+| Sleeping | <img src="docs/assets/clawd/idle.gif" width="32"> | Eyes closed, Zzz | No active sessions |
+| Waking up | <img src="docs/assets/clawd/wakeup.gif" width="32"> | Jumps awake | idle→active transition |
+| Walking | <img src="docs/assets/clawd/normal.gif" width="32"> | Walking happily | Default active state |
+| Working hard | <img src="docs/assets/clawd/busy.gif" width="32"> | Fast movement | 50+ tool calls |
+| Bloated | <img src="docs/assets/clawd/bloated.gif" width="32"> | Puffed up, slow | Context >= 70% |
+| Stressed | <img src="docs/assets/clawd/stressed.gif" width="32"> | Shaking, alert | Rate limit >= 80% |
+| Tired | <img src="docs/assets/clawd/tired.gif" width="32"> | Droopy eyes | Session >= 45 min |
+| Collab | <img src="docs/assets/clawd/collab.gif" width="32"> | Multi-agent anim | 2+ agents |
 
 ### Activity Levels
 

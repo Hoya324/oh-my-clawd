@@ -38,7 +38,7 @@
        Hero Section
        ============================================================ -->
   <section class="hero">
-    <canvas id="hero-icon" width="128" height="128" style="image-rendering: pixelated; margin-bottom: 1.5rem;"></canvas>
+    <img src="assets/clawd/normal.gif" width="128" height="128" alt="Clawd" style="image-rendering: pixelated; margin-bottom: 1.5rem;" />
 
     <h1 class="hero-title" data-i18n="hero.title">oh-my-clawd</h1>
     <p class="hero-tagline" data-i18n="hero.tagline">clawd has infiltrated my computer</p>
@@ -69,6 +69,47 @@
       </div>
     </div>
   </section>
+
+  <!-- ============================================================
+       Clawd States Preview Strip
+       ============================================================ -->
+  <div class="section" style="text-align: center; padding-top: 2rem; padding-bottom: 2rem;">
+    <p style="font-size: 0.8rem; color: var(--text-muted, #888); margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;">Clawd States</p>
+    <div style="display: inline-flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap; justify-content: center;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/idle.gif" width="64" height="64" alt="Sleeping" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Sleeping</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/wakeup.gif" width="64" height="64" alt="Waking Up" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Waking Up</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/normal.gif" width="64" height="64" alt="Normal" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Normal</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/busy.gif" width="64" height="64" alt="Busy" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Busy</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/bloated.gif" width="64" height="64" alt="Bloated" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Bloated</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/stressed.gif" width="64" height="64" alt="Stressed" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Stressed</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/tired.gif" width="64" height="64" alt="Tired" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Tired</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+        <img src="assets/clawd/collab.gif" width="64" height="64" alt="Collab" style="image-rendering: pixelated;" />
+        <span style="font-size: 0.7rem; color: var(--text-muted, #888);">Collab</span>
+      </div>
+    </div>
+  </div>
 
   <!-- ============================================================
        Features Section
@@ -199,71 +240,7 @@
       }
     })();
 
-    // Clawd pixel art renderer for hero icon (color #D97757)
-    (function () {
-      var T = null;
-      var K = '#1A1A1A';  // outline/eye
-      var B = '#A07040';  // main body
-      var D = '#7A5228';  // dark shading
-      var L = '#BA8C54';  // lighter body
-      var X = '#5C3820';  // darkest (legs)
-      var P = '#C4986C';  // pale muzzle
-      var E = '#6B4E30';  // ear inner
-      var N = '#5C3318';  // nose (dark warm brown)
-      var H = '#C8A468';  // forehead highlight
-
-      // Walking capybara v5
-      var pixels = [
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,K,K,T,T,T,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,K,E,E,K,T,K,E,E,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,K,B,B,B,B,K,B,B,B,K,K,K,K,K,K,K,K,K,K,T,T,T,T,T,T,T,T,T],
-        [T,T,T,K,L,L,H,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T],
-        [T,T,K,L,L,H,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T],
-        [T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
-        [T,T,K,B,B,K,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
-        [T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
-        [T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
-        [T,T,K,P,P,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
-        [T,T,K,N,P,P,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T],
-        [T,T,T,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T],
-        [T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T],
-        [T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
-        [T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
-        [T,T,T,T,K,B,B,D,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,D,B,K,T,T,T,T,T,T],
-        [T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,B,B,B,B,B,B,D,D,K,T,T,T,T,T,T,T],
-        [T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,B,B,B,B,B,D,D,D,K,T,T,T,T,T,T,T],
-        [T,T,T,T,T,K,K,D,K,K,B,B,B,B,B,B,B,B,B,K,K,D,K,K,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,K,K,K,K,K,K,T,T,T,T,T,T,T,K,K,K,K,K,K,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
-        [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T]
-      ];
-
-      var canvas = document.getElementById('hero-icon');
-      if (!canvas) return;
-      var ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      var size = 32;
-      var px = canvas.width / size;
-
-      for (var y = 0; y < size; y++) {
-        for (var x = 0; x < pixels[y].length; x++) {
-          if (pixels[y][x] !== null) {
-            ctx.fillStyle = pixels[y][x];
-            ctx.fillRect(x * px, y * px, px, px);
-          }
-        }
-      }
-    })();
+    // Hero GIF is now rendered via <img> tag — no canvas rendering needed.
   </script>
 
 </body>

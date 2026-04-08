@@ -4,6 +4,14 @@
 
 <p align="center"><em>내 컴퓨터에 침투한 clawd</em></p>
 
+<p align="center">
+  <img src="docs/assets/clawd/normal.gif" width="64" alt="Clawd Normal" />
+  <img src="docs/assets/clawd/busy.gif" width="64" alt="Clawd Busy" />
+  <img src="docs/assets/clawd/stressed.gif" width="64" alt="Clawd Stressed" />
+  <img src="docs/assets/clawd/collab.gif" width="64" alt="Clawd Collab" />
+  <img src="docs/assets/clawd/idle.gif" width="64" alt="Clawd Idle" />
+</p>
+
 <h1 align="center">oh-my-clawd</h1>
 
 <p align="center">
@@ -63,16 +71,16 @@ macOS 메뉴바에 상주하는 타마고치 스타일의 픽셀아트 캐릭터
 
 ### Clawd 상태
 
-| 상태 | 한국어 | 조건 |
-|------|--------|------|
-| idle | 자고 있어요... | 활성 세션 없음 |
-| wakeUp | 깨어나는 중! | 수면에서 전환 시 |
-| normal | 신나게 걷는 중 | 기본 활성 상태 |
-| busy | 열심히 일하는 중! | 도구 호출 50회 이상 |
-| bloated | 컨텍스트가 가득... | 컨텍스트 70% 이상 |
-| stressed | 레이트 리밋 경고! | 요청 한도 80% 이상 |
-| tired | 피곤해요... | 45분 이상 세션 |
-| collab | 함께 일하는 중! | 에이전트 2개 이상 |
+| 상태 | | 한국어 | 조건 |
+|------|--|--------|------|
+| Sleeping | <img src="docs/assets/clawd/idle.gif" width="32"> | 자고 있어요... | 활성 세션 없음 |
+| Waking up | <img src="docs/assets/clawd/wakeup.gif" width="32"> | 깨어나는 중! | idle→active 전환 |
+| Walking | <img src="docs/assets/clawd/normal.gif" width="32"> | 신나게 걷는 중 | 기본 활성 상태 |
+| Working hard | <img src="docs/assets/clawd/busy.gif" width="32"> | 열심히 일하는 중! | 도구 호출 50회 이상 |
+| Bloated | <img src="docs/assets/clawd/bloated.gif" width="32"> | 컨텍스트가 가득... | 컨텍스트 70% 이상 |
+| Stressed | <img src="docs/assets/clawd/stressed.gif" width="32"> | 레이트 리밋 경고! | 요청 한도 80% 이상 |
+| Tired | <img src="docs/assets/clawd/tired.gif" width="32"> | 피곤해요... | 45분 이상 세션 |
+| Collab | <img src="docs/assets/clawd/collab.gif" width="32"> | 함께 일하는 중! | 에이전트 2개 이상 |
 
 ### 활동 레벨
 
