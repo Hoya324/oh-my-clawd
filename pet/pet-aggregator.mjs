@@ -152,8 +152,9 @@ async function loadProgress() {
   // Ensure new fields exist (forward-compatible)
   if (data.selectedPants === undefined) data.selectedPants = null;
   if (data.pantsColor === undefined) data.pantsColor = 'blue';
-  if (data.colorChangeTickets === undefined) data.colorChangeTickets = 0;
-  if (data.lastColorTicketMinutes === undefined) data.lastColorTicketMinutes = 0;
+  if (data.bodyColor === undefined) data.bodyColor = 'terracotta';
+  if (data.colorChangeTickets === undefined) data.colorChangeTickets = 3; // initial 3 free tickets
+  if (data.lastColorTicketMinutes === undefined) data.lastColorTicketMinutes = data.stats.totalTimeMinutes || 0; // start counting from now, not retroactively
 
   return data;
 }

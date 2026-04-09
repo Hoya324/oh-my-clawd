@@ -1,0 +1,9 @@
+{"type":"server-started","port":55197,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:55197","screen_dir":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content","state_dir":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/state"}
+{"type":"screen-added","file":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content/grid-size-compare.html"}
+{"type":"screen-updated","file":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content/grid-size-compare.html"}
+{"type":"screen-updated","file":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content/grid-size-compare.html"}
+{"source":"user-event","type":"click","text":"C. 32×32\n      디테일 4배 증가. 매우 정교한 표현 가능.메뉴바 표시: 32×32px (1x 스케일)\n      픽셀 수: 1024 / 스프라이트당 ~250줄","choice":"32x32","id":null,"timestamp":1775064849256}
+{"type":"screen-added","file":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content/waiting.html"}
+{"type":"screen-updated","file":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content/waiting.html"}
+{"type":"screen-updated","file":"/Users/hoyana/Desktop/01_sideproject/claude-hud/.superpowers/brainstorm/10352-1775064206/content/waiting.html"}
+{"type":"server-stopped","reason":"owner process exited"}

@@ -14,9 +14,11 @@ class ClawdViewModel: ObservableObject {
     @Published var selectedHat: AccessoryType? = nil
     @Published var selectedGlasses: AccessoryType? = nil
     @Published var selectedPants: AccessoryType? = nil
-    @Published var pantsColorName: String = "blue"
-    @Published var pantsColorDisplayKO: String = "파란색"
+    @Published var bodyColorName: String = "terracotta"
+    @Published var bodyColorDisplayKO: String = "테라코타"
     @Published var colorChangeTickets: Int = 0
+    @Published var pendingColorName: String? = nil
+    @Published var pendingColorDisplayKO: String? = nil
     @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
@@ -62,9 +64,9 @@ class ClawdViewModel: ObservableObject {
         selectedHat = progressTracker.selectedHat()
         selectedGlasses = progressTracker.selectedGlasses()
         selectedPants = progressTracker.selectedPants()
-        let currentPantsColor = progressTracker.pantsColor()
-        pantsColorName = currentPantsColor.name
-        pantsColorDisplayKO = currentPantsColor.displayNameKO
+        let currentBodyColor = progressTracker.bodyColor()
+        bodyColorName = currentBodyColor.name
+        bodyColorDisplayKO = currentBodyColor.displayNameKO
         colorChangeTickets = progressTracker.colorChangeTickets()
 
         if let next = progressTracker.nextUnlock(),
@@ -160,13 +162,32 @@ class ClawdViewModel: ObservableObject {
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
 
-    func useColorTicket() {
-        if let newColor = progressTracker.consumeColorTicket() {
-            pantsColorName = newColor.name
-            pantsColorDisplayKO = newColor.displayNameKO
-            colorChangeTickets = progressTracker.colorChangeTickets()
-            NotificationCenter.default.post(name: .accessoryChanged, object: nil)
-        }
+    func rollColor() {
+        guard colorChangeTickets > 0 else { return }
+        let newColor = BodyColorPalette.randomColor()
+        pendingColorName = newColor.name
+        pendingColorDisplayKO = newColor.displayNameKO
+    }
+
+    func applyPendingColor() {
+        guard let name = pendingColorName else { return }
+        guard var progress = progressTracker.read() else { return }
+        let tickets = progress.colorChangeTickets ?? 0
+        guard tickets > 0 else { return }
+        progress.colorChangeTickets = tickets - 1
+        progress.bodyColor = name
+        progressTracker.writeBackPublic(progress)
+        bodyColorName = name
+        bodyColorDisplayKO = pendingColorDisplayKO ?? name
+        colorChangeTickets = progress.colorChangeTickets ?? 0
+        pendingColorName = nil
+        pendingColorDisplayKO = nil
+        NotificationCenter.default.post(name: .accessoryChanged, object: nil)
+    }
+
+    func cancelPendingColor() {
+        pendingColorName = nil
+        pendingColorDisplayKO = nil
     }
 }
 
@@ -205,9 +226,44 @@ struct CollectionPopoverView: View {
                 Text("Clawd")
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                Text(viewModel.activityLevel.displayName)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
+                if viewModel.pendingColorName != nil {
+                    // Pending color: show apply/cancel
+                    HStack(spacing: 4) {
+                        Text(viewModel.pendingColorDisplayKO ?? "")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.cyan)
+                        Button(action: { viewModel.applyPendingColor() }) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.green)
+                        }
+                        .buttonStyle(.plain)
+                        Button(action: { viewModel.cancelPendingColor() }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.red)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else if viewModel.colorChangeTickets > 0 {
+                    Button(action: { viewModel.rollColor() }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "dice.fill")
+                                .font(.system(size: 9))
+                            Text("Color (\(viewModel.colorChangeTickets))")
+                                .font(.system(size: 9, weight: .medium))
+                        }
+                        .foregroundColor(.cyan)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.cyan.opacity(0.15)))
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(viewModel.activityLevel.displayName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
+                }
             }
             HStack {
                 Text("Sessions: \(viewModel.activeSessions)")
@@ -340,33 +396,11 @@ struct CollectionPopoverView: View {
     // MARK: - Pants Grid
     private var pantsGridSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Pants")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.secondary)
-                Spacer()
-                if viewModel.colorChangeTickets > 0 {
-                    Button(action: { viewModel.useColorTicket() }) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "dice.fill")
-                                .font(.system(size: 9))
-                            Text("Color (\(viewModel.colorChangeTickets))")
-                                .font(.system(size: 9, weight: .medium))
-                        }
-                        .foregroundColor(.cyan)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.cyan.opacity(0.15)))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text(viewModel.pantsColorDisplayKO)
-                        .font(.system(size: 9))
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
+            Text("Pants")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
 
             let columns = Array(repeating: GridItem(.fixed(44), spacing: 6), count: 5)
             LazyVGrid(columns: columns, spacing: 6) {
@@ -545,7 +579,7 @@ struct ClawdPreviewView: NSViewRepresentable {
     let hat: AccessoryType?
     let glasses: AccessoryType?
     var pants: AccessoryType? = nil
-    var pantsColor: PantsColor? = nil
+    var bodyColor: BodyColor? = nil
 
     func makeNSView(context: Context) -> NSImageView {
         let imageView = NSImageView()
@@ -562,7 +596,7 @@ struct ClawdPreviewView: NSViewRepresentable {
         PixelArtRenderer.renderFrame(
             state: .normal, activity: .normal,
             hat: hat, glasses: glasses,
-            pants: pants, pantsColor: pantsColor,
+            pants: pants, bodyColor: bodyColor,
             frameIndex: 0
         )
     }

@@ -13,7 +13,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var currentHat: AccessoryType? = nil
     private var currentGlasses: AccessoryType? = nil
     private var currentPants: AccessoryType? = nil
-    private var currentPantsColor: PantsColor = PantsColorPalette.defaultColor
+    private var currentBodyColor: BodyColor = BodyColorPalette.defaultColor
     private var isWakingUp: Bool = false
     private var frameIndex = 0
     private var currentFrames: [NSImage] = []
@@ -44,7 +44,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         currentHat = progressTracker.selectedHat()
         currentGlasses = progressTracker.selectedGlasses()
         currentPants = progressTracker.selectedPants()
-        currentPantsColor = progressTracker.pantsColor()
+        currentBodyColor = progressTracker.bodyColor()
 
         menuController = StatusMenuController()
         let _ = menuController.setupPopover()
@@ -105,7 +105,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let newHat = progressTracker.selectedHat()
         let newGlasses = progressTracker.selectedGlasses()
         let newPants = progressTracker.selectedPants()
-        let newPantsColor = progressTracker.pantsColor()
+        let newBodyColor = progressTracker.bodyColor()
 
         // Capture old values for change detection before updating
         let oldState = currentState
@@ -113,13 +113,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let oldHat = currentHat
         let oldGlasses = currentGlasses
         let oldPants = currentPants
-        let oldPantsColor = currentPantsColor
+        let oldBodyColor = currentBodyColor
 
         currentActivity = newActivity
         currentHat = newHat
         currentGlasses = newGlasses
         currentPants = newPants
-        currentPantsColor = newPantsColor
+        currentBodyColor = newBodyColor
         activeSessions = newSessions
 
         if !isWakingUp && oldState == .idle && newState != .idle {
@@ -147,7 +147,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                            || newHat?.rawValue != oldHat?.rawValue
                            || newGlasses?.rawValue != oldGlasses?.rawValue
                            || newPants?.rawValue != oldPants?.rawValue
-                           || newPantsColor.name != oldPantsColor.name
+                           || newBodyColor.name != oldBodyColor.name
             currentState = newState
             if needsReload {
                 frameIndex = 0
@@ -168,7 +168,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 hat: currentHat,
                 glasses: currentGlasses,
                 pants: currentPants,
-                pantsColor: currentPantsColor,
+                bodyColor: currentBodyColor,
                 frameIndex: i
             )
         }
@@ -211,7 +211,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let pants = currentPants {
                 overlays.append(AccessorySprites.overlay(
                     accessory: pants, state: .normal, frameIndex: 0,
-                    pantsColor: currentPantsColor))
+                    pantsColor: currentBodyColor))
             }
             if let hat = currentHat {
                 overlays.append(AccessorySprites.overlay(
@@ -285,7 +285,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let pants = currentPants {
                 overlays.append(AccessorySprites.overlay(
                     accessory: pants, state: currentState, frameIndex: 0,
-                    pantsColor: currentPantsColor))
+                    pantsColor: currentBodyColor))
             }
             if let hat = currentHat {
                 overlays.append(AccessorySprites.overlay(

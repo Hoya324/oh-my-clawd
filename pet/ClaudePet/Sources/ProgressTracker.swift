@@ -19,7 +19,8 @@ struct ProgressData: Codable {
     var selectedHat: String?
     var selectedGlasses: String?
     var selectedPants: String?
-    var pantsColor: String?
+    var pantsColor: String?  // legacy, kept for JSON compat
+    var bodyColor: String?
     var colorChangeTickets: Int?
     var lastColorTicketMinutes: Int?
     var unlockedAt: [String: String]
@@ -122,6 +123,8 @@ class ProgressTracker {
 
     // MARK: - Write helpers
 
+    func writeBackPublic(_ data: ProgressData) { writeBack(data) }
+
     private func writeBack(_ data: ProgressData) {
         guard let encoded = try? JSONEncoder().encode(data) else { return }
         let tmpPath = filePath + ".tmp"
@@ -181,27 +184,27 @@ class ProgressTracker {
         writeBack(progress)
     }
 
-    // MARK: - Pants color
+    // MARK: - Body color
 
-    func pantsColor() -> PantsColor {
+    func bodyColor() -> BodyColor {
         guard let progress = read(),
-              let name = progress.pantsColor else {
-            return PantsColorPalette.defaultColor
+              let name = progress.bodyColor else {
+            return BodyColorPalette.defaultColor
         }
-        return PantsColorPalette.color(named: name)
+        return BodyColorPalette.color(named: name)
     }
 
     func colorChangeTickets() -> Int {
         return read()?.colorChangeTickets ?? 0
     }
 
-    func consumeColorTicket() -> PantsColor? {
+    func consumeColorTicket() -> BodyColor? {
         guard var progress = read() else { return nil }
         let tickets = progress.colorChangeTickets ?? 0
         guard tickets > 0 else { return nil }
-        let newColor = PantsColorPalette.randomColor()
+        let newColor = BodyColorPalette.randomColor()
         progress.colorChangeTickets = tickets - 1
-        progress.pantsColor = newColor.name
+        progress.bodyColor = newColor.name
         writeBack(progress)
         return newColor
     }

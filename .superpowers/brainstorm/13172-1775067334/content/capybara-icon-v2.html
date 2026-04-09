@@ -1,0 +1,198 @@
+<h2>Capybara App Icon v2</h2>
+<p class="subtitle">레퍼런스 4번 스타일 기반 — 옆모습 걸어다니는 카피바라</p>
+
+<div class="section">
+  <h3>Option A: 걷는 카피바라 (32x32)</h3>
+  <div style="display: flex; gap: 40px; justify-content: center; align-items: flex-end; flex-wrap: wrap; margin: 24px 0;">
+    <div style="text-align: center;">
+      <div class="label">원본 크기 (32x32)</div>
+      <canvas id="walkSmall" width="32" height="32" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 4px; image-rendering: pixelated; width: 64px; height: 64px;"></canvas>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">x8 확대</div>
+      <canvas id="walkLarge" width="256" height="256" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">x16 확대</div>
+      <canvas id="walkXL" width="512" height="512" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Option B: 앉아있는 카피바라 (32x32)</h3>
+  <div style="display: flex; gap: 40px; justify-content: center; align-items: flex-end; flex-wrap: wrap; margin: 24px 0;">
+    <div style="text-align: center;">
+      <div class="label">원본 크기 (32x32)</div>
+      <canvas id="sitSmall" width="32" height="32" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 4px; image-rendering: pixelated; width: 64px; height: 64px;"></canvas>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">x8 확대</div>
+      <canvas id="sitLarge" width="256" height="256" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">x16 확대</div>
+      <canvas id="sitXL" width="512" height="512" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>아이콘 적용 미리보기</h3>
+  <div style="display: flex; gap: 48px; justify-content: center; align-items: center; margin: 24px 0;">
+    <div style="text-align: center;">
+      <div class="label">macOS Dock</div>
+      <div style="background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); border-radius: 22%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); margin: 8px auto;">
+        <canvas id="dockA" width="64" height="64" style="image-rendering: pixelated; border-radius: 12px;"></canvas>
+      </div>
+      <div style="font-size: 11px; opacity: 0.5; margin-top: 4px;">Option A</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">macOS Dock</div>
+      <div style="background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); border-radius: 22%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); margin: 8px auto;">
+        <canvas id="dockB" width="64" height="64" style="image-rendering: pixelated; border-radius: 12px;"></canvas>
+      </div>
+      <div style="font-size: 11px; opacity: 0.5; margin-top: 4px;">Option B</div>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">메뉴바</div>
+      <div style="background: rgba(255,255,255,0.06); border-radius: 6px; padding: 4px 12px; display: inline-flex; align-items: center; gap: 8px; margin: 8px auto;">
+        <canvas id="menuA" width="16" height="16" style="image-rendering: pixelated; width: 16px; height: 16px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>걷는 포즈</h3>
+      <p>옆모습, 네 발로 걷는 자연스러운 포즈. 레퍼런스 4번과 가장 유사</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>앉은 포즈</h3>
+      <p>살짝 앉아있는 포즈. 레퍼런스 2-3번 느낌. 아이콘으로 더 컴팩트</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Warm earthy brown palette (matching reference images)
+const T = null;
+const K = '#1A1A1A';  // outline
+const B = '#A07040';  // main body
+const D = '#7A5228';  // dark shading
+const L = '#BA8C54';  // lighter body
+const H = '#C8A068';  // highlight
+const X = '#5C3820';  // darkest (legs/feet)
+const M = '#8A6030';  // medium brown (muzzle dark)
+const P = '#C4986C';  // pale (muzzle/chin)
+const E = '#6B4E30';  // ear inner
+const W = '#D4B080';  // warm highlight
+const G = '#8B8B8B';  // gray muzzle accent
+
+// ===== OPTION A: Walking capybara facing right =====
+const walkingCapybara = [
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,E,E,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,K,B,B,B,K,K,K,K,K,K,K,K,K,K,K,K,K,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,K,L,L,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,K,L,L,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T],
+[T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T],
+[T,T,T,K,B,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T],
+[T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+[T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+[T,T,T,K,G,G,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,K,G,P,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+[T,T,T,T,T,K,B,B,D,B,B,B,B,B,B,B,B,B,B,B,B,B,B,D,B,K,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,B,B,B,B,B,D,D,K,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,B,B,B,B,D,D,D,K,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,K,D,K,K,B,B,B,B,B,B,B,B,K,K,D,K,K,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,K,X,X,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,K,K,K,K,K,T,T,T,T,T,T,K,K,K,K,K,K,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+// ===== OPTION B: Sitting capybara facing right =====
+const sittingCapybara = [
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,E,E,K,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,B,B,B,E,E,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,L,L,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,K,L,L,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,K,B,K,K,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,K,G,G,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,K,G,P,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,D,B,B,B,B,B,B,B,B,B,D,K,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,D,D,K,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,D,D,D,B,B,B,B,B,D,D,D,K,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,K,X,K,K,B,B,B,B,D,D,K,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,X,X,K,K,K,K,K,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,K,K,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+function drawPixels(canvasId, pixels) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const size = pixels.length;
+  const px = canvas.width / size;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < pixels[y].length; x++) {
+      if (pixels[y][x] !== null) {
+        ctx.fillStyle = pixels[y][x];
+        ctx.fillRect(x * px, y * px, px, px);
+      }
+    }
+  }
+}
+
+// Render all canvases
+drawPixels('walkSmall', walkingCapybara);
+drawPixels('walkLarge', walkingCapybara);
+drawPixels('walkXL', walkingCapybara);
+drawPixels('sitSmall', sittingCapybara);
+drawPixels('sitLarge', sittingCapybara);
+drawPixels('sitXL', sittingCapybara);
+drawPixels('dockA', walkingCapybara);
+drawPixels('dockB', sittingCapybara);
+drawPixels('menuA', walkingCapybara);
+</script>

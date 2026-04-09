@@ -125,11 +125,16 @@ struct PixelArtRenderer {
         hat: AccessoryType?,
         glasses: AccessoryType?,
         pants: AccessoryType? = nil,
-        pantsColor: PantsColor? = nil,
+        bodyColor: BodyColor? = nil,
         frameIndex: Int
     ) -> NSImage {
         let baseFrames = ClaudeSprites.frames(state: state)
-        let base = baseFrames[frameIndex % max(1, baseFrames.count)]
+        var base = baseFrames[frameIndex % max(1, baseFrames.count)]
+
+        // Apply body color recoloring to the base character
+        if let color = bodyColor {
+            base = BodyColorPalette.applyColor(color, to: base)
+        }
 
         var overlays: [[[UInt32?]]?] = []
         // Glasses first (under pants and hat)
@@ -141,7 +146,7 @@ struct PixelArtRenderer {
         if let pants = pants {
             overlays.append(AccessorySprites.overlay(
                 accessory: pants, state: state, frameIndex: frameIndex,
-                pantsColor: pantsColor ?? PantsColorPalette.defaultColor))
+                pantsColor: bodyColor ?? BodyColorPalette.defaultColor))
         }
         // Hat on top
         if let hat = hat {

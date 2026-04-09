@@ -1,0 +1,181 @@
+<h2>Section 1: Capybara App Icon Design</h2>
+<p class="subtitle">기존 카피바라 스프라이트를 기반으로 한 앱 아이콘 디자인</p>
+
+<div class="section">
+  <h3>현재 카피바라 스프라이트 (16x16)</h3>
+  <p>기존 CapybaraSprites.swift의 normal/idle 프레임을 렌더링한 모습입니다.</p>
+
+  <div style="display: flex; gap: 48px; justify-content: center; align-items: flex-start; flex-wrap: wrap; margin: 32px 0;">
+
+    <!-- Current 16x16 sprite -->
+    <div style="text-align: center;">
+      <div class="label">현재 16x16 스프라이트</div>
+      <canvas id="sprite16" width="256" height="256" style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+
+    <!-- Proposed app icon -->
+    <div style="text-align: center;">
+      <div class="label">앱 아이콘 제안 (32x32 확대)</div>
+      <canvas id="iconLarge" width="256" height="256" style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>아이콘 적용 미리보기</h3>
+  <div style="display: flex; gap: 40px; justify-content: center; align-items: center; margin: 24px 0;">
+
+    <!-- Dock icon mockup -->
+    <div style="text-align: center;">
+      <div class="label">macOS Dock</div>
+      <div style="background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); border-radius: 22%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); margin: 8px auto;">
+        <canvas id="dockIcon" width="64" height="64" style="image-rendering: pixelated; border-radius: 12px;"></canvas>
+      </div>
+    </div>
+
+    <!-- DMG icon mockup -->
+    <div style="text-align: center;">
+      <div class="label">DMG 파일</div>
+      <div style="background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%); border-radius: 8px; width: 100px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed rgba(128,128,128,0.2); margin: 8px auto;">
+        <canvas id="dmgIcon" width="64" height="64" style="image-rendering: pixelated;"></canvas>
+        <span style="font-size: 11px; margin-top: 6px; opacity: 0.6;">ClaudePet.dmg</span>
+      </div>
+    </div>
+
+    <!-- Menu bar mockup -->
+    <div style="text-align: center;">
+      <div class="label">메뉴바 (기존)</div>
+      <div style="background: rgba(255,255,255,0.06); border-radius: 6px; padding: 4px 12px; display: flex; align-items: center; gap: 8px; margin: 8px auto;">
+        <canvas id="menubarIcon" width="32" height="32" style="image-rendering: pixelated;"></canvas>
+        <span style="font-size: 12px; opacity: 0.5;">▼</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>디자인 사양</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 600px; margin: 0 auto;">
+    <div style="padding: 12px; border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px;">
+      <div class="label">컬러 팔레트</div>
+      <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+        <div style="width: 28px; height: 28px; background: #8B5E3C; border-radius: 4px;" title="Body"></div>
+        <div style="width: 28px; height: 28px; background: #6B4226; border-radius: 4px;" title="Shading"></div>
+        <div style="width: 28px; height: 28px; background: #FFE0B2; border-radius: 4px;" title="Belly"></div>
+        <div style="width: 28px; height: 28px; background: #F5A0B8; border-radius: 4px;" title="Ears"></div>
+        <div style="width: 28px; height: 28px; background: #2D2D2D; border-radius: 4px;" title="Eyes/Nose"></div>
+      </div>
+    </div>
+    <div style="padding: 12px; border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px;">
+      <div class="label">아이콘 사이즈</div>
+      <div style="font-size: 13px; margin-top: 8px; line-height: 1.8;">
+        16x16, 32x32, 128x128<br>
+        256x256, 512x512<br>
+        → .icns 패키징
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Color palette matching CapybaraSprites.swift
+const CLR = {
+  BROWN:  '#8B5E3C',
+  DBROWN: '#6B4226',
+  BEIGE:  '#FFE0B2',
+  DBEIGE: '#DDB892',
+  BLACK:  '#2D2D2D',
+  PINK:   '#F5A0B8',
+  GRAY:   '#AAAAAA',
+  GOLD:   '#F59E0B',
+};
+
+const T = null;
+const M = CLR.BROWN;
+const N = CLR.DBROWN;
+const E = CLR.BEIGE;
+const F = CLR.DBEIGE;
+const B = CLR.BLACK;
+const P = CLR.PINK;
+const O = CLR.DBROWN;
+
+// Normal walk frame 1 from CapybaraSprites.swift
+const sprite16 = [
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,O,O,O,O,O,T,T,T,T,T,T],
+  [T,T,T,O,M,M,M,M,M,M,O,T,T,T,T,T],
+  [T,T,T,O,M,M,M,M,M,M,O,T,T,T,T,T],
+  [T,T,P,O,M,B,M,M,B,M,O,P,T,T,T,T],
+  [T,T,T,O,M,M,M,M,M,M,O,T,T,T,T,T],
+  [T,T,T,O,M,M,B,B,M,M,O,T,T,T,T,T],
+  [T,T,O,M,M,M,M,M,M,M,M,O,T,T,T,T],
+  [T,T,O,M,E,E,E,E,E,M,M,O,T,T,T,T],
+  [T,T,O,M,E,E,E,E,E,M,M,O,T,T,T,T],
+  [T,T,O,N,N,N,N,N,N,N,N,O,T,T,T,T],
+  [T,T,T,O,O,T,T,T,O,O,T,T,T,T,T,T],
+  [T,T,T,O,O,T,T,T,O,O,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+// Enhanced 32x32 icon version - more detailed capybara face for app icon
+const icon32 = [
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,O,O,O,O,O,O,O,O,O,O,O,O,O,O,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,O,O,M,M,M,M,M,M,M,M,M,M,M,M,O,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,P,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,P,T,T,T,T,T,T,T],
+  [T,T,T,P,P,O,M,M,M,B,B,M,M,M,M,M,M,M,B,B,M,M,M,O,P,P,T,T,T,T,T,T],
+  [T,T,T,T,T,O,M,M,M,B,B,M,M,M,M,M,M,M,B,B,M,M,M,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,O,M,M,M,M,M,B,B,B,B,B,B,M,M,M,M,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,T,T,T,T,T,T,T],
+  [T,T,T,T,O,M,M,E,E,E,E,E,E,E,E,E,E,E,E,E,E,M,M,M,O,T,T,T,T,T,T,T],
+  [T,T,T,T,O,M,M,E,E,E,E,E,E,E,E,E,E,E,E,E,E,M,M,M,O,T,T,T,T,T,T,T],
+  [T,T,T,T,O,M,M,E,E,E,E,E,E,E,E,E,E,E,E,E,E,M,M,M,O,T,T,T,T,T,T,T],
+  [T,T,T,T,O,M,M,E,E,E,E,E,E,E,E,E,E,E,E,E,E,M,M,M,O,T,T,T,T,T,T,T],
+  [T,T,T,T,T,O,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,O,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,O,O,O,O,T,T,T,T,T,T,O,O,O,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,O,O,O,O,T,T,T,T,T,T,O,O,O,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,O,O,T,T,T,T,T,T,T,T,O,O,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+function drawPixels(canvasId, pixels, size) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const pixelW = canvas.width / size;
+  const pixelH = canvas.height / size;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < pixels.length; y++) {
+    for (let x = 0; x < pixels[y].length; x++) {
+      if (pixels[y][x] !== null) {
+        ctx.fillStyle = pixels[y][x];
+        ctx.fillRect(x * pixelW, y * pixelH, pixelW, pixelH);
+      }
+    }
+  }
+}
+
+drawPixels('sprite16', sprite16, 16);
+drawPixels('iconLarge', icon32, 32);
+drawPixels('dockIcon', icon32, 32);
+drawPixels('dmgIcon', icon32, 32);
+drawPixels('menubarIcon', sprite16, 16);
+</script>

@@ -1,0 +1,115 @@
+<h2>Capybara App Icon v3 — Final</h2>
+<p class="subtitle">앉은 카피바라, 캔버스 중앙 배치</p>
+
+<div class="section">
+  <div style="display: flex; gap: 40px; justify-content: center; align-items: flex-end; flex-wrap: wrap; margin: 24px 0;">
+    <div style="text-align: center;">
+      <div class="label">32x32</div>
+      <canvas id="sm" width="32" height="32" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 4px; image-rendering: pixelated; width: 64px; height: 64px;"></canvas>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">x8 확대</div>
+      <canvas id="md" width="256" height="256" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">x16 확대</div>
+      <canvas id="xl" width="512" height="512" style="border: 1px dashed rgba(128,128,128,0.2); border-radius: 8px; image-rendering: pixelated;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>아이콘 적용 미리보기</h3>
+  <div style="display: flex; gap: 48px; justify-content: center; align-items: center; margin: 24px 0;">
+    <div style="text-align: center;">
+      <div class="label">macOS Dock</div>
+      <div style="background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); border-radius: 22%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); margin: 8px auto;">
+        <canvas id="dock" width="64" height="64" style="image-rendering: pixelated; border-radius: 12px;"></canvas>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">DMG</div>
+      <div style="background: rgba(255,255,255,0.03); border-radius: 8px; width: 100px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed rgba(128,128,128,0.15); margin: 8px auto;">
+        <canvas id="dmg" width="64" height="64" style="image-rendering: pixelated;"></canvas>
+        <span style="font-size: 11px; margin-top: 6px; opacity: 0.5;">ClaudePet.dmg</span>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <div class="label">메뉴바</div>
+      <div style="background: rgba(255,255,255,0.06); border-radius: 6px; padding: 4px 12px; display: inline-flex; align-items: center; gap: 8px; margin: 8px auto;">
+        <canvas id="menu" width="16" height="16" style="image-rendering: pixelated; width: 16px; height: 16px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const T = null;
+const K = '#1A1A1A';
+const B = '#A07040';
+const D = '#7A5228';
+const L = '#BA8C54';
+const X = '#5C3820';
+const P = '#C4986C';
+const E = '#6B4E30';
+const G = '#8B8B8B';
+
+// Sitting capybara — centered in 32x32 canvas
+const capybara = [
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,K,E,E,K,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,B,B,B,E,E,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,K,L,L,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,L,L,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,B,K,K,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,G,G,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,K,G,P,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,K,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,B,B,B,B,B,B,B,B,B,B,B,B,K,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,B,D,B,B,B,B,B,B,B,B,B,D,K,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,D,D,D,B,B,B,B,B,B,B,D,D,K,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,D,D,D,B,B,B,B,B,D,D,D,K,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,K,X,K,K,B,B,B,B,D,D,K,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,K,X,X,K,K,K,K,K,K,K,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,K,K,K,K,K,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+[T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+function drawPixels(canvasId, pixels) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const size = pixels.length;
+  const px = canvas.width / size;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < pixels[y].length; x++) {
+      if (pixels[y][x] !== null) {
+        ctx.fillStyle = pixels[y][x];
+        ctx.fillRect(x * px, y * px, px, px);
+      }
+    }
+  }
+}
+
+drawPixels('sm', capybara);
+drawPixels('md', capybara);
+drawPixels('xl', capybara);
+drawPixels('dock', capybara);
+drawPixels('dmg', capybara);
+drawPixels('menu', capybara);
+</script>

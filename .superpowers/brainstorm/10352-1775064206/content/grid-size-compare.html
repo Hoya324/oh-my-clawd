@@ -1,0 +1,195 @@
+<h2>펫 그리드 사이즈 비교</h2>
+<p class="subtitle">현재 16x16 vs 더 큰 사이즈 옵션 — 같은 고양이 캐릭터를 각 해상도로 표현</p>
+
+<div class="cards" style="grid-template-columns: repeat(3, 1fr); gap: 24px;">
+
+  <!-- 16x16 current -->
+  <div class="card" data-choice="16x16" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:flex;justify-content:center;align-items:center;padding:24px;background:#1a1a2e;">
+      <canvas id="cat16" width="256" height="256" style="image-rendering:pixelated;width:256px;height:256px;"></canvas>
+    </div>
+    <div class="card-body">
+      <h3>A. 16×16 (현재)</h3>
+      <p>현재 사용 중. 디테일 제한적.<br>메뉴바 표시: 32×32px (2x 스케일)</p>
+      <p style="color:#888;font-size:12px;">픽셀 수: 256 / 스프라이트당 ~100줄</p>
+    </div>
+  </div>
+
+  <!-- 24x24 -->
+  <div class="card" data-choice="24x24" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:flex;justify-content:center;align-items:center;padding:24px;background:#1a1a2e;">
+      <canvas id="cat24" width="256" height="256" style="image-rendering:pixelated;width:256px;height:256px;"></canvas>
+    </div>
+    <div class="card-body">
+      <h3>B. 24×24 (추천)</h3>
+      <p>디테일 2.25배 증가. 눈, 귀, 표정 표현력 대폭 향상.<br>메뉴바 표시: 36×36px (1.5x 스케일)</p>
+      <p style="color:#888;font-size:12px;">픽셀 수: 576 / 스프라이트당 ~150줄</p>
+    </div>
+  </div>
+
+  <!-- 32x32 -->
+  <div class="card" data-choice="32x32" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:flex;justify-content:center;align-items:center;padding:24px;background:#1a1a2e;">
+      <canvas id="cat32" width="256" height="256" style="image-rendering:pixelated;width:256px;height:256px;"></canvas>
+    </div>
+    <div class="card-body">
+      <h3>C. 32×32</h3>
+      <p>디테일 4배 증가. 매우 정교한 표현 가능.<br>메뉴바 표시: 32×32px (1x 스케일)</p>
+      <p style="color:#888;font-size:12px;">픽셀 수: 1024 / 스프라이트당 ~250줄</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:24px;padding:16px;background:rgba(255,255,255,0.05);border-radius:8px;">
+  <h3>참고: 메뉴바 제약</h3>
+  <p style="color:#ccc;font-size:14px;">
+    macOS 메뉴바 높이는 약 22pt (Retina 44px). 현재 32×32px 표시가 잘 맞습니다.<br>
+    • <strong>24×24 그리드</strong>: 1.5x 스케일 → 36×36px 표시 — 메뉴바에 적합<br>
+    • <strong>32×32 그리드</strong>: 1x 스케일 → 32×32px 표시 — 메뉴바에 적합하나 Retina에서 작게 보일 수 있음<br>
+    • 스케일은 메뉴바/컬렉션뷰에서 다르게 적용 가능
+  </p>
+</div>
+
+<script>
+// Color definitions matching the Swift code
+const CLR = {
+  CYAN:    '#06B6D4',
+  DCYAN:   '#059BB0',
+  WHITE:   '#FFFFFF',
+  BLACK:   '#2D2D2D',
+  PINK:    '#F5A0B8',
+  OUTLINE: '#4A6670',
+  GRAY:    '#AAAAAA',
+};
+
+// Current 16x16 cat (idle frame 0 from CatSprites.swift)
+const T = null;
+const C = 'CYAN', D = 'DCYAN', W = 'WHITE', B = 'BLACK', P = 'PINK', O = 'OUTLINE', Z = 'GRAY';
+
+const cat16 = [
+  [T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T],
+  [T,T,T,O,T,T,T,T,O,T,T,T,T,T,T,T],
+  [T,T,O,C,O,T,T,O,C,O,T,T,T,T,T,T],
+  [T,O,C,C,C,O,O,C,C,C,O,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,C,C,O,T,T,T,T,T],
+  [T,O,C,O,O,C,C,O,O,C,O,T,T,T,T,T],
+  [T,O,C,C,C,P,P,C,C,C,O,T,T,T,T,T],
+  [T,T,O,C,C,C,C,C,C,O,T,T,T,T,T,T],
+  [T,T,T,O,C,C,C,C,C,C,O,T,T,T,T,T],
+  [T,T,O,D,D,D,D,D,D,D,D,O,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,O,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,O,T,T,T],
+  [T,T,O,O,O,O,O,O,O,O,O,O,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+// Enhanced 24x24 cat (same character, more detail)
+const cat24 = [
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,T,T,T,T,T,T,T,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,C,O,T,T,T,T,T,O,C,O,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,C,C,C,O,T,T,T,O,C,C,C,O,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,O,T,O,C,C,C,C,C,O,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,O,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T],
+  [T,O,C,C,O,O,C,C,C,C,C,O,O,C,C,O,T,T,T,T,T,T,T,T],
+  [T,O,C,C,B,O,C,C,C,C,C,B,O,C,C,O,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,P,P,P,C,C,C,C,C,O,T,T,T,T,T,T,T,T],
+  [T,T,O,C,C,C,C,C,P,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,C,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,C,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T],
+  [T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T],
+  [T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T],
+  [T,T,T,O,O,O,O,O,O,O,O,O,O,O,O,O,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+// Enhanced 32x32 cat (even more detail)
+const cat32 = [
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,Z,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,O,T,T,T,T,T,T,T,T,T,T,O,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,C,O,T,T,T,T,T,T,T,T,O,C,O,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,C,C,C,O,T,T,T,T,T,T,O,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,C,C,C,C,C,O,T,T,T,T,O,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,C,C,C,C,C,C,O,T,T,O,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,C,C,O,O,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,O,O,O,C,C,C,C,C,C,O,O,O,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,B,B,O,C,C,C,C,C,C,B,B,O,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,B,W,O,C,C,C,C,C,C,B,W,O,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,C,C,C,C,C,C,C,P,P,P,P,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,C,C,C,C,C,C,C,P,P,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,C,C,C,C,C,C,C,C,C,C,C,C,C,C,O,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,O,C,C,C,C,C,C,C,C,C,C,O,O,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T],
+  [T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T],
+  [T,T,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+  [T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T,T],
+];
+
+function renderGrid(canvasId, grid, gridSize) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const pixelSize = Math.floor(256 / gridSize);
+
+  // Draw checkerboard background for transparency
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const isLight = (x + y) % 2 === 0;
+      ctx.fillStyle = isLight ? '#2a2a3e' : '#252538';
+      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+    }
+  }
+
+  // Draw pixels
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      const color = grid[y][x];
+      if (color !== null) {
+        ctx.fillStyle = CLR[color];
+        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+      }
+    }
+  }
+
+  // Draw grid lines (subtle)
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= gridSize; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * pixelSize, 0);
+    ctx.lineTo(i * pixelSize, gridSize * pixelSize);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * pixelSize);
+    ctx.lineTo(gridSize * pixelSize, i * pixelSize);
+    ctx.stroke();
+  }
+}
+
+renderGrid('cat16', cat16, 16);
+renderGrid('cat24', cat24, 24);
+renderGrid('cat32', cat32, 32);
+</script>
