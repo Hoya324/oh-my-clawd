@@ -18,6 +18,10 @@ struct ProgressData: Codable {
     var unlockedAccessories: [String]
     var selectedHat: String?
     var selectedGlasses: String?
+    var selectedPants: String?
+    var pantsColor: String?
+    var colorChangeTickets: Int?
+    var lastColorTicketMinutes: Int?
     var unlockedAt: [String: String]
 }
 
@@ -161,6 +165,45 @@ class ProgressTracker {
         guard var progress = read() else { return }
         progress.selectedGlasses = glasses?.rawValue
         writeBack(progress)
+    }
+
+    // MARK: - Pants selection
+
+    func selectedPants() -> AccessoryType? {
+        guard let progress = read(),
+              let raw = progress.selectedPants else { return nil }
+        return AccessoryType(rawValue: raw)
+    }
+
+    func selectPants(_ pants: AccessoryType?) {
+        guard var progress = read() else { return }
+        progress.selectedPants = pants?.rawValue
+        writeBack(progress)
+    }
+
+    // MARK: - Pants color
+
+    func pantsColor() -> PantsColor {
+        guard let progress = read(),
+              let name = progress.pantsColor else {
+            return PantsColorPalette.defaultColor
+        }
+        return PantsColorPalette.color(named: name)
+    }
+
+    func colorChangeTickets() -> Int {
+        return read()?.colorChangeTickets ?? 0
+    }
+
+    func consumeColorTicket() -> PantsColor? {
+        guard var progress = read() else { return nil }
+        let tickets = progress.colorChangeTickets ?? 0
+        guard tickets > 0 else { return nil }
+        let newColor = PantsColorPalette.randomColor()
+        progress.colorChangeTickets = tickets - 1
+        progress.pantsColor = newColor.name
+        writeBack(progress)
+        return newColor
     }
 
     // MARK: - Unlock progress
