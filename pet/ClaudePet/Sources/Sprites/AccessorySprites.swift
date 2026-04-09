@@ -87,6 +87,8 @@ struct AccessorySprites {
         case .sunglasses:   return sunglassesOverlay
         case .roundGlasses: return roundGlassesOverlay
         case .starGlasses:  return starGlassesOverlay
+        case .jeans, .shorts, .slacks, .joggers, .cargo:
+            return nil  // pants handled by PantsSprites
         }
     }
 }

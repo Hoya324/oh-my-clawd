@@ -41,6 +41,7 @@ echo "  Building Swift app..."
 cd "$SCRIPT_DIR/ClaudePet"
 mkdir -p build
 swiftc -o "build/$APP_NAME" \
+  -target arm64-apple-macos13.0 \
   Sources/main.swift \
   Sources/AppDelegate.swift \
   Sources/PetStateReader.swift \
@@ -55,6 +56,8 @@ swiftc -o "build/$APP_NAME" \
   Sources/Sprites/ClaudeSprites.swift \
   Sources/Sprites/ClaudeEffects.swift \
   Sources/Sprites/AccessorySprites.swift \
+  Sources/PantsColorPalette.swift \
+  Sources/Sprites/PantsSprites.swift \
   -framework Cocoa \
   -framework ServiceManagement \
   -framework SwiftUI \

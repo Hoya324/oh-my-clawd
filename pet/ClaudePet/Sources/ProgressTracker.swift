@@ -179,6 +179,11 @@ class ProgressTracker {
         case .sunglasses:   return (stats.rateLimitHits, 10)
         case .roundGlasses: return (stats.longSessions, 20)
         case .starGlasses:  return (stats.opusTimeMinutes, 600)
+        case .jeans:        return (stats.totalTimeMinutes, 900)
+        case .shorts:       return (stats.totalSessions, 100)
+        case .slacks:       return (stats.totalTokens, 1_000_000)
+        case .joggers:      return (stats.totalAgentRuns, 100)
+        case .cargo:        return (stats.totalTimeMinutes, 3000)
         }
     }
 
