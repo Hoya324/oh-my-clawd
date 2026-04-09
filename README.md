@@ -36,6 +36,7 @@
 ```
 [HUD] | 5h:14%(3h51m) | wk:62%(3d5h) | session:29m | ctx:39% | 53 | agents:2 | opus-4-6
 ```
+<img width="2058" height="670" alt="image" src="https://github.com/user-attachments/assets/3e5326dd-19ec-4985-b7d7-5a11c3fa8e04" />
 
 ## 설치
 
