@@ -1,11 +1,13 @@
 <p align="center">
-  <img src="docs/assets/icon-preview.png" width="128" alt="Claude HUD Icon" />
+  <img src="docs/assets/icon-preview.png" width="128" alt="oh-my-clawd Icon" />
 </p>
 
-<h1 align="center">Claude HUD</h1>
+<p align="center"><em>내 컴퓨터에 침투한 clawd</em></p>
+
+<h1 align="center">oh-my-clawd</h1>
 
 <p align="center">
-  <strong>Claude Code를 위한 상태 표시줄 + 메뉴바 펫</strong>
+  <strong>Claude Code를 위한 상태 표시줄 + 메뉴바 Clawd</strong>
 </p>
 
 <p align="center">
@@ -13,10 +15,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg"><img src="https://img.shields.io/badge/DMG-다운로드-blue?style=flat-square" alt="DMG 다운로드" /></a>
+  <a href="https://github.com/Hoya324/oh-my-clawd/releases/latest/download/OhMyClawd.dmg"><img src="https://img.shields.io/badge/DMG-다운로드-blue?style=flat-square" alt="DMG 다운로드" /></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square" alt="macOS" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green?style=flat-square" alt="Node >= 18" />
-  <img src="https://img.shields.io/github/license/Hoya324/claude-hud?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/github/license/Hoya324/oh-my-clawd?style=flat-square" alt="License" />
 </p>
 
 ---
@@ -31,13 +33,13 @@
 
 ### DMG 다운로드 (권장)
 
-[최신 릴리스 페이지](https://github.com/Hoya324/claude-hud/releases/latest/download/ClaudeHud.dmg)에서 `.dmg` 파일을 다운로드하여 설치합니다.
+[최신 릴리스 페이지](https://github.com/Hoya324/oh-my-clawd/releases/latest/download/OhMyClawd.dmg)에서 `.dmg` 파일을 다운로드하여 설치합니다.
 
 ### 수동 설치
 
 ```bash
-git clone https://github.com/Hoya324/claude-hud.git ~/.claude-hud
-~/.claude-hud/install.sh
+git clone https://github.com/Hoya324/oh-my-clawd.git ~/.oh-my-clawd
+~/.oh-my-clawd/install.sh
 ```
 
 설치 후 **Claude Code를 재시작**하세요.
@@ -55,63 +57,55 @@ git clone https://github.com/Hoya324/claude-hud.git ~/.claude-hud
 | `agents:2` | 현재 실행 중인 에이전트 수 | 청록색 |
 | `opus-4-6` | 활성 모델 | 흐린색 |
 
-## Claude Pet -- 메뉴바 동반자
+## Clawd — 메뉴바 동반자
 
-macOS 메뉴바에 상주하는 타마고치 스타일의 픽셀아트 펫입니다. Claude Code 활동에 반응하며, 12종의 펫을 수집하고 근육 단계를 키울 수 있습니다.
+macOS 메뉴바에 상주하는 타마고치 스타일의 픽셀아트 캐릭터입니다. Claude Code의 공식 마스코트인 Clawd(#D97757)가 Claude Code 활동에 반응하며, 9종의 액세서리를 수집하고 3단계의 활동 레벨을 확인할 수 있습니다.
 
-### 펫 상태
+### Clawd 상태
 
-| 상태 | 조건 | 동작 |
+| 상태 | 한국어 | 조건 |
+|------|--------|------|
+| idle | 자고 있어요... | 활성 세션 없음 |
+| wakeUp | 깨어나는 중! | 수면에서 전환 시 |
+| normal | 신나게 걷는 중 | 기본 활성 상태 |
+| busy | 열심히 일하는 중! | 도구 호출 50회 이상 |
+| bloated | 컨텍스트가 가득... | 컨텍스트 70% 이상 |
+| stressed | 레이트 리밋 경고! | 요청 한도 80% 이상 |
+| tired | 피곤해요... | 45분 이상 세션 |
+| collab | 함께 일하는 중! | 에이전트 2개 이상 |
+
+### 활동 레벨
+
+동시 실행 에이전트 수에 따라 Clawd의 활동 레벨이 달라집니다.
+
+| 레벨 | 조건 | 설명 |
 |------|------|------|
-| 수면 | 활성 세션 없음 | 웅크린 자세, Zzz |
-| 걷기 | 일반 사용 중 | 걷기 애니메이션 |
-| 달리기 | 도구 호출 50회 이상 | 빠른 달리기, 땀방울 |
-| 뚱뚱 | 컨텍스트 >= 70% | 부풀어 오른 몸 |
-| 스트레스 | 요청 한도 >= 80% | 떨림, "!" 표시 |
-| 피곤 | 세션 > 45분 | 축 처진 자세, 졸린 눈 |
-| 협업 | 에이전트 2개 이상 | 함께 걷기 |
+| Normal (보통) | 에이전트 0-1개 | 기본 상태 |
+| Glowing (빛나는 중) | 에이전트 2-3개 | 발광 효과 |
+| Supercharged! (슈퍼차지!) | 에이전트 4개 이상 | 최대 에너지 |
 
-### 근육 단계
+### 액세서리 컬렉션 (9종)
 
-동시 실행 에이전트 수에 따라 펫이 성장합니다.
+Claude Code 사용 실적에 따라 Clawd에게 착용시킬 액세서리를 해금할 수 있습니다.
 
-| 단계 | 조건 | 효과 |
-|------|------|------|
-| 일반 | 에이전트 0-1개 | 기본 크기 |
-| 버프 | 에이전트 2-3개 | 넓은 어깨, 뚜렷한 근육 |
-| 마초 | 에이전트 4개 이상 | 거대한 몸, 작은 머리, 금색 반짝임 |
+**모자 (5종)**
 
-### 펫 컬렉션 (12종)
+| 액세서리 | 해금 조건 |
+|----------|-----------|
+| 캡모자 (Cap) | 세션 10회 |
+| 꼬깔모자 (Party Hat) | 총 사용 시간 5시간 |
+| 산타모자 (Santa Hat) | 토큰 50만 사용 |
+| 실크햇 (Silk Hat) | 에이전트 실행 50회 |
+| 카우보이모자 (Cowboy Hat) | 총 사용 시간 30시간 |
 
-<p>
-  <img src="docs/assets/pets/cat.gif" width="48" alt="Cat" />
-  <img src="docs/assets/pets/hamster.gif" width="48" alt="Hamster" />
-  <img src="docs/assets/pets/chick.gif" width="48" alt="Chick" />
-  <img src="docs/assets/pets/penguin.gif" width="48" alt="Penguin" />
-  <img src="docs/assets/pets/fox.gif" width="48" alt="Fox" />
-  <img src="docs/assets/pets/rabbit.gif" width="48" alt="Rabbit" />
-  <img src="docs/assets/pets/goose.gif" width="48" alt="Goose" />
-  <img src="docs/assets/pets/capybara.gif" width="48" alt="Capybara" />
-  <img src="docs/assets/pets/sloth.gif" width="48" alt="Sloth" />
-  <img src="docs/assets/pets/owl.gif" width="48" alt="Owl" />
-  <img src="docs/assets/pets/dragon.gif" width="48" alt="Dragon" />
-  <img src="docs/assets/pets/unicorn.gif" width="48" alt="Unicorn" />
-</p>
+**안경 (4종)**
 
-| 펫 | 해금 조건 |
-|----|-----------|
-| 고양이 | 기본 펫 |
-| 햄스터 | 총 세션 10회 |
-| 병아리 | 총 사용 시간 5시간 |
-| 펭귄 | 토큰 50만 사용 |
-| 여우 | 에이전트 실행 50회 |
-| 토끼 | 동시 세션 3개 이상 |
-| 거위 | 총 사용 시간 30시간 |
-| 카피바라 | 요청 한도 도달 10회 |
-| 나무늘보 | 긴 세션(45분 이상) 20회 |
-| 부엉이 | Opus 모델 사용 10시간 |
-| 드래곤 | 동시 에이전트 5개 이상 |
-| 유니콘 | 다른 모든 펫 해금 |
+| 액세서리 | 해금 조건 |
+|----------|-----------|
+| 뿔테안경 (Horn-rimmed) | 동시 세션 3개 이상 |
+| 선글라스 (Sunglasses) | 요청 한도 도달 10회 |
+| 둥근안경 (Round Glasses) | 긴 세션(45분+) 20회 |
+| 별안경 (Star Glasses) | Opus 모델 사용 10시간 |
 
 ## 업데이트
 
@@ -126,16 +120,22 @@ macOS 메뉴바에 상주하는 타마고치 스타일의 픽셀아트 펫입니
 ## 제거
 
 ```bash
-~/.claude-hud/install.sh remove
-rm -rf ~/.claude-hud
+~/.oh-my-clawd/install.sh remove
+rm -rf ~/.oh-my-clawd
 ```
 
-펫 앱을 별도로 설치한 경우:
+oh-my-clawd 앱을 별도로 설치한 경우:
 
 ```bash
-~/.claude-hud/pet/install.sh remove
+~/.oh-my-clawd/pet/install.sh remove
 ```
 
 ## 라이선스
 
 MIT
+
+---
+
+## 라이센스
+
+이 프로젝트는 MIT 라이센스를 따릅니다. 단, Clawd 캐릭터 디자인의 저작권은 [Anthropic](https://anthropic.com)에 있습니다. 본 프로젝트는 비상업적 팬 프로젝트이며, 상업적 용도로 사용할 수 없고, 사용할 생각도 없습니다. 저작권 관련 문제가 발생할 경우 즉시 삭제하겠습니다. 살려주세요.

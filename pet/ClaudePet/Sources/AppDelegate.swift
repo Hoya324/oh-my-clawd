@@ -7,10 +7,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var frameTimer: Timer?
     private var stateTimer: Timer?
+    private var wakeUpTimer: Timer?
     private var currentState: PetState = .idle
-    private var currentMuscle: MuscleStage = .normal
-    private var currentPet: PetType = .cat
-    private var friendPets: [PetType] = []
+    private var currentActivity: ActivityLevel = .normal
+    private var currentHat: AccessoryType? = nil
+    private var currentGlasses: AccessoryType? = nil
+    private var isWakingUp: Bool = false
     private var frameIndex = 0
     private var currentFrames: [NSImage] = []
     private var activeSessions: Int = 0
@@ -22,8 +24,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         notificationManager.requestPermission()
 
-        // Load selected pet from progress
-        currentPet = progressTracker.selectedPet()
+        // Load selected hat and glasses from progress
+        currentHat = progressTracker.selectedHat()
+        currentGlasses = progressTracker.selectedGlasses()
 
         menuController = StatusMenuController()
         let _ = menuController.setupPopover()
@@ -66,74 +69,80 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let data = stateReader.read()
 
         let newState: PetState
-        let newMuscle: MuscleStage
+        let newActivity: ActivityLevel
         if let data = data {
             newState = PetState.resolve(from: data)
-            newMuscle = PetState.resolveMuscle(from: data)
+            newActivity = PetState.resolveActivityLevel(from: data)
             notificationManager.checkAndNotify(rateLimit: data.rateLimit)
         } else {
             newState = .idle
-            newMuscle = .normal
+            newActivity = .normal
         }
 
-        // Check if selected pet changed
-        let newPet = progressTracker.selectedPet()
         let newSessions = data?.activeSessions ?? 0
 
-        // Determine friend pets based on session count
-        var newFriends: [PetType] = []
-        if newSessions >= 2, let progress = progressTracker.read() {
-            let unlocked = PetType.allCases.filter {
-                $0 != newPet && progress.unlocked.contains($0.rawValue)
-            }
-            // Pick most recently unlocked friends
-            let sorted = unlocked.sorted { a, b in
-                let aDate = progress.unlockedAt[a.rawValue] ?? ""
-                let bDate = progress.unlockedAt[b.rawValue] ?? ""
-                return aDate > bDate
-            }
-            let friendCount = min(newSessions - 1, 2)
-            newFriends = Array(sorted.prefix(friendCount))
-        }
+        // Load current hat and glasses selections
+        let newHat = progressTracker.selectedHat()
+        let newGlasses = progressTracker.selectedGlasses()
 
-        let needsReload = (newState != currentState)
-                       || (newMuscle != currentMuscle)
-                       || (newPet != currentPet)
-                       || (newFriends != friendPets)
+        // Capture old values for change detection before updating
+        let oldState = currentState
+        let oldActivity = currentActivity
+        let oldHat = currentHat
+        let oldGlasses = currentGlasses
 
-        currentState = newState
-        currentMuscle = newMuscle
-        currentPet = newPet
-        friendPets = newFriends
+        currentActivity = newActivity
+        currentHat = newHat
+        currentGlasses = newGlasses
         activeSessions = newSessions
 
-        if needsReload {
+        if !isWakingUp && oldState == .idle && newState != .idle {
+            // Transition from idle to active: play wakeUp animation first
+            isWakingUp = true
+            currentState = .wakeUp
             frameIndex = 0
             reloadFramesAndAnimate()
+
+            wakeUpTimer?.invalidate()
+            wakeUpTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+                guard let self = self else { return }
+                self.isWakingUp = false
+                // Re-resolve the actual state now (not the stale captured value)
+                let freshData = self.stateReader.read()
+                let freshState = freshData.map { PetState.resolve(from: $0) } ?? .idle
+                self.currentState = freshState
+                self.frameIndex = 0
+                self.reloadFramesAndAnimate()
+            }
+        } else if !isWakingUp {
+            // Normal state update — reload only if something changed
+            let needsReload = newState != oldState
+                           || newActivity != oldActivity
+                           || newHat?.rawValue != oldHat?.rawValue
+                           || newGlasses?.rawValue != oldGlasses?.rawValue
+            currentState = newState
+            if needsReload {
+                frameIndex = 0
+                reloadFramesAndAnimate()
+            }
         }
+        // While isWakingUp, ignore state changes — the wakeUpTimer will apply them
 
         menuController.updateState(data)
     }
 
     private func reloadFramesAndAnimate() {
-        if friendPets.isEmpty {
-            currentFrames = PixelArtRenderer.renderedFrames(
-                pet: currentPet,
-                muscle: currentMuscle,
-                state: currentState
+        let count = PixelArtRenderer.frameCount(state: currentState)
+        currentFrames = (0..<count).map { i in
+            PixelArtRenderer.renderFrame(
+                state: currentState,
+                activity: currentActivity,
+                hat: currentHat,
+                glasses: currentGlasses,
+                frameIndex: i
             )
-        } else {
-            // Pre-render combined frames (main + friends)
-            let provider = PixelArtRenderer.spriteProvider(for: currentPet)
-            let mainFrames = provider.frames(state: currentState, muscle: currentMuscle)
-            currentFrames = (0..<mainFrames.count).map { i in
-                PixelArtRenderer.renderMenuBarImage(
-                    mainPet: currentPet, muscle: currentMuscle,
-                    state: currentState, frameIndex: i,
-                    friendPets: friendPets
-                )
-            }
         }
+
         if let first = currentFrames.first {
             statusItem.button?.image = first
         }
@@ -158,6 +167,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func onSleep() {
         frameTimer?.invalidate()
         stateTimer?.invalidate()
+        wakeUpTimer?.invalidate()
     }
 
     @objc private func onWake() {

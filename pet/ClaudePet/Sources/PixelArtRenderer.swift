@@ -35,18 +35,14 @@ let CLR_RAINBOW3 = UInt32(0xFF6BCB77)
 let CLR_RAINBOW4 = UInt32(0xFF4D96FF)
 let CLR_RAINBOW5 = UInt32(0xFFCC6BFF)
 
-/// Protocol for pet sprite providers.
-protocol SpriteProvider {
-    static func frames(state: PetState, muscle: MuscleStage) -> [[[UInt32?]]]
-}
-
 // MARK: - Pixel Art Renderer
 
 struct PixelArtRenderer {
-    static let pixelSize = 16
-    static let displayW: CGFloat = 18
-    static let displayH: CGFloat = 18
+    static let pixelSize = 32
+    static let displayW: CGFloat = 20
+    static let displayH: CGFloat = 20
 
+    /// Render a single 2D pixel grid to an NSImage.
     static func render(pixels: [[UInt32?]]) -> NSImage {
         let scale = 2
         let imgW = pixelSize * scale
@@ -89,104 +85,70 @@ struct PixelArtRenderer {
         return image
     }
 
-    static func spriteProvider(for pet: PetType) -> SpriteProvider.Type {
-        switch pet {
-        case .cat:      return CatSprites.self
-        case .hamster:  return HamsterSprites.self
-        case .chick:    return ChickSprites.self
-        case .penguin:  return PenguinSprites.self
-        case .fox:      return FoxSprites.self
-        case .rabbit:   return RabbitSprites.self
-        case .goose:    return GooseSprites.self
-        case .capybara: return CapybaraSprites.self
-        case .sloth:    return SlothSprites.self
-        case .owl:      return OwlSprites.self
-        case .dragon:   return DragonSprites.self
-        case .unicorn:  return UnicornSprites.self
-        }
-    }
-
-    static func renderedFrames(pet: PetType, muscle: MuscleStage, state: PetState) -> [NSImage] {
-        let provider = spriteProvider(for: pet)
-        let pixelFrames = provider.frames(state: state, muscle: muscle)
-        return pixelFrames.map { render(pixels: $0) }
-    }
-
-    static func allFrames(pet: PetType, muscle: MuscleStage) -> [PetState: [NSImage]] {
-        var result: [PetState: [NSImage]] = [:]
-        for state in PetState.allCases {
-            result[state] = renderedFrames(pet: pet, muscle: muscle, state: state)
-        }
-        return result
-    }
-
-    /// Render combined menu bar image: main pet + friend pets side by side.
-    static func renderMenuBarImage(
-        mainPet: PetType, muscle: MuscleStage, state: PetState, frameIndex: Int,
-        friendPets: [PetType]
+    /// Render a single frame with character + accessories + effects composited.
+    static func renderComposited(
+        base: [[UInt32?]],
+        overlays: [[[UInt32?]]?],
+        effect: [[UInt32?]]?
     ) -> NSImage {
-        let mainProvider = spriteProvider(for: mainPet)
-        let mainFrames = mainProvider.frames(state: state, muscle: muscle)
-        let mainIdx = frameIndex % max(1, mainFrames.count)
-
-        if friendPets.isEmpty {
-            return render(pixels: mainFrames[mainIdx])
-        }
-
-        let petCount = 1 + min(friendPets.count, 2)
-        let gap = 2
-        let totalW = petCount * pixelSize + (petCount - 1) * gap
-        let scale = 2
-        let imgW = totalW * scale
-        let imgH = pixelSize * scale
-
-        let rep = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: imgW, pixelsHigh: imgH,
-            bitsPerSample: 8, samplesPerPixel: 4,
-            hasAlpha: true, isPlanar: false,
-            colorSpaceName: .deviceRGB,
-            bytesPerRow: imgW * 4, bitsPerPixel: 32
-        )!
-
-        let ctx = NSGraphicsContext(bitmapImageRep: rep)!
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = ctx
-        ctx.imageInterpolation = .none
-
-        NSColor.clear.setFill()
-        NSRect(x: 0, y: 0, width: imgW, height: imgH).fill()
-
-        func drawPet(pixels: [[UInt32?]], xOffset: Int) {
-            for (y, row) in pixels.enumerated() {
+        // Start with base pixels, then layer overlays on top
+        var composited = base
+        for overlay in overlays {
+            guard let overlay = overlay else { continue }
+            for (y, row) in overlay.enumerated() {
                 for (x, pixel) in row.enumerated() {
                     guard let px = pixel else { continue }
-                    let r = CGFloat((px >> 16) & 0xFF) / 255.0
-                    let g = CGFloat((px >> 8) & 0xFF) / 255.0
-                    let b = CGFloat(px & 0xFF) / 255.0
-                    let a = CGFloat((px >> 24) & 0xFF) / 255.0
-                    NSColor(red: r, green: g, blue: b, alpha: a).setFill()
-                    let ry = (pixelSize - 1 - y) * scale
-                    NSRect(x: (xOffset + x) * scale, y: ry, width: scale, height: scale).fill()
+                    if y < composited.count && x < composited[y].count {
+                        composited[y][x] = px
+                    }
                 }
             }
         }
+        // Apply effect overlay
+        if let effect = effect {
+            for (y, row) in effect.enumerated() {
+                for (x, pixel) in row.enumerated() {
+                    guard let px = pixel else { continue }
+                    if y < composited.count && x < composited[y].count {
+                        composited[y][x] = px
+                    }
+                }
+            }
+        }
+        return render(pixels: composited)
+    }
 
-        drawPet(pixels: mainFrames[mainIdx], xOffset: 0)
+    /// Convenience: render a complete frame with all layers.
+    static func renderFrame(
+        state: PetState,
+        activity: ActivityLevel,
+        hat: AccessoryType?,
+        glasses: AccessoryType?,
+        frameIndex: Int
+    ) -> NSImage {
+        let baseFrames = ClaudeSprites.frames(state: state)
+        let base = baseFrames[frameIndex % max(1, baseFrames.count)]
 
-        for (i, friend) in friendPets.prefix(2).enumerated() {
-            let friendProvider = spriteProvider(for: friend)
-            let friendFrames = friendProvider.frames(state: .normal, muscle: .normal)
-            let fi = frameIndex % max(1, friendFrames.count)
-            let xOff = (i + 1) * (pixelSize + gap)
-            drawPet(pixels: friendFrames[fi], xOffset: xOff)
+        var overlays: [[[UInt32?]]?] = []
+        // Glasses first (under hat)
+        if let glasses = glasses {
+            overlays.append(AccessorySprites.overlay(
+                accessory: glasses, state: state, frameIndex: frameIndex))
+        }
+        // Hat on top
+        if let hat = hat {
+            overlays.append(AccessorySprites.overlay(
+                accessory: hat, state: state, frameIndex: frameIndex))
         }
 
-        NSGraphicsContext.restoreGraphicsState()
+        let effect = ClaudeEffects.effectOverlay(
+            activity: activity, frameIndex: frameIndex)
 
-        let combinedDisplayW = CGFloat(totalW) * (displayW / CGFloat(pixelSize))
-        let image = NSImage(size: NSSize(width: combinedDisplayW, height: displayH))
-        image.addRepresentation(rep)
-        return image
+        return renderComposited(base: base, overlays: overlays, effect: effect)
+    }
+
+    /// Get total frame count for a state.
+    static func frameCount(state: PetState) -> Int {
+        return ClaudeSprites.frames(state: state).count
     }
 }

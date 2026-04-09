@@ -8,6 +8,7 @@ enum PetState: Int, CaseIterable {
     case stressed = 4
     case tired = 5
     case collab = 6
+    case wakeUp = 7
 
     var spriteRow: Int { rawValue }
 
@@ -20,6 +21,7 @@ enum PetState: Int, CaseIterable {
         case .stressed: return 0.15
         case .tired:    return 0.6
         case .collab:   return 0.2
+        case .wakeUp:   return 0.3
         }
     }
 
@@ -32,6 +34,7 @@ enum PetState: Int, CaseIterable {
         case .stressed: return "Rate limit warning!"
         case .tired:    return "Getting tired..."
         case .collab:   return "Working together!"
+        case .wakeUp:   return "Waking up!"
         }
     }
 
@@ -46,8 +49,8 @@ enum PetState: Int, CaseIterable {
         return .normal
     }
 
-    static func resolveMuscle(from data: PetStateData) -> MuscleStage {
+    static func resolveActivityLevel(from data: PetStateData) -> ActivityLevel {
         let agents = data.aggregate.totalRunningAgents
-        return MuscleStage.resolve(agentCount: agents)
+        return ActivityLevel.resolve(agentCount: agents)
     }
 }

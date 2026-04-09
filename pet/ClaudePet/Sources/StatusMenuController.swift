@@ -2,7 +2,7 @@ import Cocoa
 import SwiftUI
 
 class StatusMenuController {
-    let viewModel = PetViewModel()
+    let viewModel = ClawdViewModel()
     private var popover: NSPopover?
 
     func setupPopover() -> NSPopover {

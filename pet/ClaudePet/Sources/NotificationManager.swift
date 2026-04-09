@@ -24,7 +24,7 @@ class NotificationManager {
 
     private func sendNotification(percent: Double) {
         let content = UNMutableNotificationContent()
-        content.title = "Claude Pet - Rate Limit Warning"
+        content.title = "oh-my-clawd - Rate Limit Warning"
         content.body = "5-hour rate limit at \(Int(percent))%. Consider taking a break!"
         content.sound = .default
 

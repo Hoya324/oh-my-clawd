@@ -3,12 +3,12 @@ import ImageIO
 import CoreGraphics
 import UniformTypeIdentifiers
 
-// MARK: - GIF Generation for all 12 Claude Pets
+// MARK: - GIF Generation for Clawd character states
 
 @main
-struct GeneratePetGIFs {
+struct GenerateClawdGIFs {
     static let gifSize = 64
-    static let spriteSize = 16
+    static let spriteSize = 32
     static let frameDelay = 0.2
 
     static func createCGImage(pixels: [[UInt32?]]) -> CGImage? {
@@ -100,17 +100,28 @@ struct GeneratePetGIFs {
             projectRoot = FileManager.default.currentDirectoryPath
         }
 
-        let outputDir = projectRoot + "/docs/assets/pets"
+        let outputDir = projectRoot + "/docs/assets/clawd"
         try FileManager.default.createDirectory(
             atPath: outputDir,
             withIntermediateDirectories: true
         )
 
-        print("Generating pet GIFs in \(outputDir)...")
+        print("Generating Clawd GIFs in \(outputDir)...")
 
-        for pet in PetType.allCases {
-            let provider = PixelArtRenderer.spriteProvider(for: pet)
-            let pixelFrames = provider.frames(state: .normal, muscle: .normal)
+        // Generate a GIF for each PetState
+        let states: [(PetState, String)] = [
+            (.idle, "idle"),
+            (.wakeUp, "wakeup"),
+            (.normal, "normal"),
+            (.busy, "busy"),
+            (.bloated, "bloated"),
+            (.stressed, "stressed"),
+            (.tired, "tired"),
+            (.collab, "collab"),
+        ]
+
+        for (state, name) in states {
+            let pixelFrames = ClaudeSprites.frames(state: state)
 
             var cgImages: [CGImage] = []
             for frame in pixelFrames {
@@ -120,14 +131,14 @@ struct GeneratePetGIFs {
             }
 
             guard !cgImages.isEmpty else {
-                print("  SKIP: \(pet.rawValue) -- no frames")
+                print("  SKIP: \(name) -- no frames")
                 continue
             }
 
-            let path = "\(outputDir)/\(pet.rawValue).gif"
+            let path = "\(outputDir)/\(name).gif"
             createAnimatedGIF(frames: cgImages, path: path)
         }
 
-        print("Done. Generated \(PetType.allCases.count) GIFs.")
+        print("Done. Generated \(states.count) GIFs.")
     }
 }

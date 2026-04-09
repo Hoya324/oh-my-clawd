@@ -1,14 +1,14 @@
 #!/bin/bash
-# Claude Pet Installer (part of claude-hud)
+# oh-my-clawd Installer
 # Usage: ./pet/install.sh        (install)
 #        ./pet/install.sh remove  (uninstall)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_NAME="ClaudePet"
+APP_NAME="OhMyClawd"
 APP_BUNDLE="$HOME/Applications/$APP_NAME.app"
-AGGREGATOR_PLIST_NAME="com.claude.pet-aggregator"
+AGGREGATOR_PLIST_NAME="com.claude.clawd-aggregator"
 AGGREGATOR_PLIST="$HOME/Library/LaunchAgents/$AGGREGATOR_PLIST_NAME.plist"
 NODE_PATH="$(which node 2>/dev/null || echo '/usr/local/bin/node')"
 
@@ -18,7 +18,7 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 if [[ "${1:-}" == "remove" ]]; then
-  echo "Uninstalling Claude Pet..."
+  echo "Uninstalling oh-my-clawd..."
   killall "$APP_NAME" 2>/dev/null && echo "  Stopped $APP_NAME" || true
   if [[ -f "$AGGREGATOR_PLIST" ]]; then
     launchctl bootout "gui/$(id -u)/$AGGREGATOR_PLIST_NAME" 2>/dev/null || true
@@ -27,11 +27,11 @@ if [[ "${1:-}" == "remove" ]]; then
   fi
   [[ -d "$APP_BUNDLE" ]] && rm -rf "$APP_BUNDLE" && echo "  Removed $APP_BUNDLE"
   rm -rf "$HOME/.claude/pet"
-  echo -e "${GREEN}Claude Pet uninstalled.${NC}"
+  echo -e "${GREEN}oh-my-clawd uninstalled.${NC}"
   exit 0
 fi
 
-echo "Installing Claude Pet..."
+echo "Installing oh-my-clawd..."
 
 command -v node &>/dev/null || { echo -e "${RED}Error: Node.js required (brew install node)${NC}"; exit 1; }
 command -v swiftc &>/dev/null || { echo -e "${RED}Error: Swift compiler required${NC}"; exit 1; }
@@ -45,25 +45,16 @@ swiftc -o "build/$APP_NAME" \
   Sources/AppDelegate.swift \
   Sources/PetStateReader.swift \
   Sources/PetStateMachine.swift \
-  Sources/PetType.swift \
+  Sources/AccessoryType.swift \
   Sources/ProgressTracker.swift \
   Sources/NotificationManager.swift \
   Sources/PixelArtRenderer.swift \
   Sources/CollectionView.swift \
   Sources/StatusMenuController.swift \
   Sources/UpdateChecker.swift \
-  Sources/Sprites/CatSprites.swift \
-  Sources/Sprites/HamsterSprites.swift \
-  Sources/Sprites/ChickSprites.swift \
-  Sources/Sprites/PenguinSprites.swift \
-  Sources/Sprites/FoxSprites.swift \
-  Sources/Sprites/RabbitSprites.swift \
-  Sources/Sprites/GooseSprites.swift \
-  Sources/Sprites/CapybaraSprites.swift \
-  Sources/Sprites/SlothSprites.swift \
-  Sources/Sprites/OwlSprites.swift \
-  Sources/Sprites/DragonSprites.swift \
-  Sources/Sprites/UnicornSprites.swift \
+  Sources/Sprites/ClaudeSprites.swift \
+  Sources/Sprites/ClaudeEffects.swift \
+  Sources/Sprites/AccessorySprites.swift \
   -framework Cocoa \
   -framework ServiceManagement \
   -framework SwiftUI \
@@ -114,5 +105,5 @@ echo "  Aggregator daemon started"
 
 open "$APP_BUNDLE"
 echo ""
-echo -e "${GREEN}Claude Pet installed!${NC}"
-echo -e "${YELLOW}  The cat is now in your menu bar. Click it for details.${NC}"
+echo -e "${GREEN}oh-my-clawd installed!${NC}"
+echo -e "${YELLOW}  Clawd is now in your menu bar. Click it for details.${NC}"
