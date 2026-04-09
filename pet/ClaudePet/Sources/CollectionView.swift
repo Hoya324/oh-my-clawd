@@ -13,6 +13,10 @@ class ClawdViewModel: ObservableObject {
     @Published var unlockedAccessories: [AccessoryType] = []
     @Published var selectedHat: AccessoryType? = nil
     @Published var selectedGlasses: AccessoryType? = nil
+    @Published var selectedPants: AccessoryType? = nil
+    @Published var pantsColorName: String = "blue"
+    @Published var pantsColorDisplayKO: String = "파란색"
+    @Published var colorChangeTickets: Int = 0
     @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
@@ -57,6 +61,11 @@ class ClawdViewModel: ObservableObject {
 
         selectedHat = progressTracker.selectedHat()
         selectedGlasses = progressTracker.selectedGlasses()
+        selectedPants = progressTracker.selectedPants()
+        let currentPantsColor = progressTracker.pantsColor()
+        pantsColorName = currentPantsColor.name
+        pantsColorDisplayKO = currentPantsColor.displayNameKO
+        colorChangeTickets = progressTracker.colorChangeTickets()
 
         if let next = progressTracker.nextUnlock(),
            let (current, target) = progressTracker.unlockProgress(for: next) {
@@ -143,6 +152,22 @@ class ClawdViewModel: ObservableObject {
         progressTracker.selectGlasses(newGlasses)
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
+
+    func selectPants(_ pants: AccessoryType?) {
+        let newPants: AccessoryType? = (pants == selectedPants) ? nil : pants
+        selectedPants = newPants
+        progressTracker.selectPants(newPants)
+        NotificationCenter.default.post(name: .accessoryChanged, object: nil)
+    }
+
+    func useColorTicket() {
+        if let newColor = progressTracker.consumeColorTicket() {
+            pantsColorName = newColor.name
+            pantsColorDisplayKO = newColor.displayNameKO
+            colorChangeTickets = progressTracker.colorChangeTickets()
+            NotificationCenter.default.post(name: .accessoryChanged, object: nil)
+        }
+    }
 }
 
 // MARK: - Main Popover View
@@ -156,6 +181,8 @@ struct CollectionPopoverView: View {
             hatGridSection
             Divider()
             glassesGridSection
+            Divider()
+            pantsGridSection
             if viewModel.nextUnlockAccessory != nil {
                 Divider()
                 progressSection
@@ -307,6 +334,53 @@ struct CollectionPopoverView: View {
         }
     }
 
+    // MARK: - Pants Grid
+    private var pantsGridSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Pants")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.secondary)
+                Spacer()
+                if viewModel.colorChangeTickets > 0 {
+                    Button(action: { viewModel.useColorTicket() }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "dice.fill")
+                                .font(.system(size: 9))
+                            Text("Color (\(viewModel.colorChangeTickets))")
+                                .font(.system(size: 9, weight: .medium))
+                        }
+                        .foregroundColor(.cyan)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.cyan.opacity(0.15)))
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(viewModel.pantsColorDisplayKO)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+
+            let columns = Array(repeating: GridItem(.fixed(44), spacing: 6), count: 5)
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(AccessoryType.pants, id: \.self) { pants in
+                    AccessoryGridCell(
+                        accessory: pants,
+                        isUnlocked: viewModel.unlockedAccessories.contains(pants),
+                        isSelected: viewModel.selectedPants == pants,
+                        onSelect: { viewModel.selectPants(pants) }
+                    )
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
+        }
+    }
+
     // MARK: - Progress
     private var progressSection: some View {
         VStack(spacing: 4) {
@@ -437,7 +511,8 @@ struct AccessoryGridCell: View {
 
                     if isUnlocked {
                         ClawdPreviewView(hat: accessory.category == .hat ? accessory : nil,
-                                         glasses: accessory.category == .glasses ? accessory : nil)
+                                         glasses: accessory.category == .glasses ? accessory : nil,
+                                         pants: accessory.category == .pants ? accessory : nil)
                             .frame(width: 32, height: 32)
                     } else {
                         Image(systemName: "lock.fill")
@@ -466,6 +541,8 @@ struct AccessoryGridCell: View {
 struct ClawdPreviewView: NSViewRepresentable {
     let hat: AccessoryType?
     let glasses: AccessoryType?
+    var pants: AccessoryType? = nil
+    var pantsColor: PantsColor? = nil
 
     func makeNSView(context: Context) -> NSImageView {
         let imageView = NSImageView()
@@ -480,10 +557,9 @@ struct ClawdPreviewView: NSViewRepresentable {
 
     private func rendered() -> NSImage {
         PixelArtRenderer.renderFrame(
-            state: .normal,
-            activity: .normal,
-            hat: hat,
-            glasses: glasses,
+            state: .normal, activity: .normal,
+            hat: hat, glasses: glasses,
+            pants: pants, pantsColor: pantsColor,
             frameIndex: 0
         )
     }
