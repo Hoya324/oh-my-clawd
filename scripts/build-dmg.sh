@@ -49,6 +49,10 @@ swiftc -o "$BUILD_DIR/$APP_NAME" \
   "$PET_DIR/Sources/Sprites/ClaudeSprites.swift" \
   "$PET_DIR/Sources/Sprites/ClaudeEffects.swift" \
   "$PET_DIR/Sources/Sprites/AccessorySprites.swift" \
+  "$PET_DIR/Sources/PantsColorPalette.swift" \
+  "$PET_DIR/Sources/Sprites/PantsSprites.swift" \
+  "$PET_DIR/Sources/Sprites/InteractionSprites.swift" \
+  "$PET_DIR/Sources/Sprites/IdleMotionSprites.swift" \
   -framework Cocoa \
   -framework ServiceManagement \
   -framework SwiftUI \
