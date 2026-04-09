@@ -210,8 +210,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             if let pants = currentPants {
                 overlays.append(AccessorySprites.overlay(
-                    accessory: pants, state: .normal, frameIndex: 0,
-                    pantsColor: currentBodyColor))
+                    accessory: pants, state: .normal, frameIndex: 0))
             }
             if let hat = currentHat {
                 overlays.append(AccessorySprites.overlay(
@@ -284,8 +283,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             if let pants = currentPants {
                 overlays.append(AccessorySprites.overlay(
-                    accessory: pants, state: currentState, frameIndex: 0,
-                    pantsColor: currentBodyColor))
+                    accessory: pants, state: currentState, frameIndex: 0))
             }
             if let hat = currentHat {
                 overlays.append(AccessorySprites.overlay(

@@ -145,8 +145,7 @@ struct PixelArtRenderer {
         // Pants second
         if let pants = pants {
             overlays.append(AccessorySprites.overlay(
-                accessory: pants, state: state, frameIndex: frameIndex,
-                pantsColor: bodyColor ?? BodyColorPalette.defaultColor))
+                accessory: pants, state: state, frameIndex: frameIndex))
         }
         // Hat on top
         if let hat = hat {

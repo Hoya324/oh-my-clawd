@@ -7,9 +7,24 @@ let PANTS_MAIN_SENTINEL   = UInt32(0xFFFE0001)
 let PANTS_DARK_SENTINEL   = UInt32(0xFFFE0002)
 let PANTS_DETAIL_SENTINEL = UInt32(0xFFFE0003)
 
+// ============================================================================
+// MARK: - Pants Color (separate from body color)
+// ============================================================================
+
+struct PantsColor {
+    let main: UInt32
+    let dark: UInt32
+    let detail: UInt32
+}
+
 struct PantsColorPalette {
-    /// Replace sentinel pixels in a sprite grid with the actual color values.
-    static func applyColor(_ color: BodyColor, to grid: [[UInt32?]]) -> [[UInt32?]] {
+    // Fixed pants color: blue denim
+    static let defaultColor = PantsColor(
+        main: 0xFF2196F3, dark: 0xFF1565C0, detail: 0xFFE0E0E0
+    )
+
+    /// Replace sentinel pixels in a sprite grid with pants color values.
+    static func applyColor(_ color: PantsColor, to grid: [[UInt32?]]) -> [[UInt32?]] {
         grid.map { row in
             row.map { pixel in
                 guard let px = pixel else { return nil }
@@ -25,21 +40,20 @@ struct PantsColorPalette {
 }
 
 // ============================================================================
-// MARK: - Body Color (character main/shadow/highlight recoloring)
+// MARK: - Body Color (character main/shadow/highlight recoloring via gacha)
 // ============================================================================
 
-/// Default Clawd body colors
-let BODY_DEFAULT_MAIN      = UInt32(0xFFD97757)  // Main body (terracotta)
-let BODY_DEFAULT_SHADOW    = UInt32(0xFFBF6347)  // Shadow (darker terracotta)
-let BODY_DEFAULT_HIGHLIGHT = UInt32(0xFFE89070)  // Highlight (lighter terracotta)
+let BODY_DEFAULT_MAIN      = UInt32(0xFFD97757)
+let BODY_DEFAULT_SHADOW    = UInt32(0xFFBF6347)
+let BODY_DEFAULT_HIGHLIGHT = UInt32(0xFFE89070)
 
 struct BodyColor: Codable, Equatable {
     let name: String
     let displayName: String
     let displayNameKO: String
-    let main: UInt32       // replaces M (0xFFD97757)
-    let dark: UInt32       // replaces S (0xFFBF6347)
-    let detail: UInt32     // replaces H (0xFFE89070)
+    let main: UInt32
+    let dark: UInt32
+    let detail: UInt32
 
     enum CodingKeys: String, CodingKey {
         case name, displayName, displayNameKO, main, dark, detail
@@ -47,12 +61,8 @@ struct BodyColor: Codable, Equatable {
 
     init(name: String, displayName: String, displayNameKO: String,
          main: UInt32, dark: UInt32, detail: UInt32) {
-        self.name = name
-        self.displayName = displayName
-        self.displayNameKO = displayNameKO
-        self.main = main
-        self.dark = dark
-        self.detail = detail
+        self.name = name; self.displayName = displayName; self.displayNameKO = displayNameKO
+        self.main = main; self.dark = dark; self.detail = detail
     }
 
     init(from decoder: Decoder) throws {
@@ -67,12 +77,20 @@ struct BodyColor: Codable, Equatable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(name,          forKey: .name)
-        try c.encode(displayName,   forKey: .displayName)
+        try c.encode(name, forKey: .name)
+        try c.encode(displayName, forKey: .displayName)
         try c.encode(displayNameKO, forKey: .displayNameKO)
-        try c.encode(Int32(bitPattern: main),   forKey: .main)
-        try c.encode(Int32(bitPattern: dark),   forKey: .dark)
+        try c.encode(Int32(bitPattern: main), forKey: .main)
+        try c.encode(Int32(bitPattern: dark), forKey: .dark)
         try c.encode(Int32(bitPattern: detail), forKey: .detail)
+    }
+
+    /// NSColor from the main body color (for UI preview)
+    var nsColor: (r: CGFloat, g: CGFloat, b: CGFloat) {
+        let r = CGFloat((main >> 16) & 0xFF) / 255.0
+        let g = CGFloat((main >> 8) & 0xFF) / 255.0
+        let b = CGFloat(main & 0xFF) / 255.0
+        return (r, g, b)
     }
 }
 
@@ -114,7 +132,6 @@ struct BodyColorPalette {
 
     /// Replace default body colors in a sprite grid with the chosen body color.
     static func applyColor(_ color: BodyColor, to grid: [[UInt32?]]) -> [[UInt32?]] {
-        // Skip if it's the default color
         if color.name == "terracotta" { return grid }
         return grid.map { row in
             row.map { pixel in

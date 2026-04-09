@@ -19,6 +19,7 @@ class ClawdViewModel: ObservableObject {
     @Published var colorChangeTickets: Int = 0
     @Published var pendingColorName: String? = nil
     @Published var pendingColorDisplayKO: String? = nil
+    @Published var pendingColorMain: UInt32 = 0  // for color circle preview
     @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
@@ -164,22 +165,27 @@ class ClawdViewModel: ObservableObject {
 
     func rollColor() {
         guard colorChangeTickets > 0 else { return }
+        // Consume ticket immediately on roll
+        guard var progress = progressTracker.read() else { return }
+        let tickets = progress.colorChangeTickets ?? 0
+        guard tickets > 0 else { return }
+        progress.colorChangeTickets = tickets - 1
+        progressTracker.writeBackPublic(progress)
+        colorChangeTickets = progress.colorChangeTickets ?? 0
+
         let newColor = BodyColorPalette.randomColor()
         pendingColorName = newColor.name
         pendingColorDisplayKO = newColor.displayNameKO
+        pendingColorMain = newColor.main
     }
 
     func applyPendingColor() {
         guard let name = pendingColorName else { return }
         guard var progress = progressTracker.read() else { return }
-        let tickets = progress.colorChangeTickets ?? 0
-        guard tickets > 0 else { return }
-        progress.colorChangeTickets = tickets - 1
         progress.bodyColor = name
         progressTracker.writeBackPublic(progress)
         bodyColorName = name
         bodyColorDisplayKO = pendingColorDisplayKO ?? name
-        colorChangeTickets = progress.colorChangeTickets ?? 0
         pendingColorName = nil
         pendingColorDisplayKO = nil
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
@@ -228,19 +234,25 @@ struct CollectionPopoverView: View {
                 Spacer()
                 if viewModel.pendingColorName != nil {
                     // Pending color: show apply/cancel
-                    HStack(spacing: 4) {
-                        Text(viewModel.pendingColorDisplayKO ?? "")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.cyan)
+                    HStack(spacing: 6) {
+                        // Color circle preview
+                        Circle()
+                            .fill(Color(
+                                red: Double((viewModel.pendingColorMain >> 16) & 0xFF) / 255.0,
+                                green: Double((viewModel.pendingColorMain >> 8) & 0xFF) / 255.0,
+                                blue: Double(viewModel.pendingColorMain & 0xFF) / 255.0
+                            ))
+                            .frame(width: 14, height: 14)
+                            .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
                         Button(action: { viewModel.applyPendingColor() }) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 16))
                                 .foregroundColor(.green)
                         }
                         .buttonStyle(.plain)
                         Button(action: { viewModel.cancelPendingColor() }) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 16))
                                 .foregroundColor(.red)
                         }
                         .buttonStyle(.plain)
