@@ -21,7 +21,7 @@ const PET_STATE_PATH = join(PET_DIR, 'pet-state.json');
 const PET_STATE_TMP = join(PET_DIR, 'pet-state.json.tmp');
 
 const POLL_INTERVAL_MS = 3000;
-const IDLE_THRESHOLD_MS = 5 * 60_000;
+const IDLE_THRESHOLD_MS = 15 * 60_000;
 
 const MODEL_PRIORITY = { opus: 3, sonnet: 2, haiku: 1 };
 
@@ -178,50 +178,96 @@ async function discoverSessions() {
 }
 
 const seenPids = new Set();
+const sessionTracking = new Map(); // pid -> { lastMinutes, lastAgents, lastTokens, wasLong, lastOpusMinutes }
 let lastRateLimitHigh = false;
 
 function updateStats(progress, sessionDetails) {
   const stats = progress.stats;
+  const activePids = new Set();
 
   for (const s of sessionDetails) {
-    if (!seenPids.has(s.pid)) {
+    activePids.add(s.pid);
+    const prev = sessionTracking.get(s.pid);
+    const isOpus = s.model?.toLowerCase().includes('opus') || false;
+    const estimatedTokens = Math.round(s.contextPercent / 100 * 200000);
+
+    if (!prev) {
+      // First time seeing this PID in this aggregator run
+      const isNew = s.sessionMinutes <= 1;
+
+      if (isNew && !seenPids.has(s.pid)) {
+        stats.totalSessions++;
+      }
       seenPids.add(s.pid);
-      stats.totalSessions++;
+
+      sessionTracking.set(s.pid, {
+        lastMinutes: s.sessionMinutes,
+        lastAgents: s.runningAgents,
+        lastTokens: estimatedTokens,
+        wasLong: s.sessionMinutes >= 45,
+        lastOpusMinutes: isOpus ? s.sessionMinutes : 0,
+      });
+
+      // For genuinely new sessions, add initial values
+      if (isNew) {
+        stats.totalTimeMinutes += s.sessionMinutes;
+        stats.totalTokens += estimatedTokens;
+        if (s.runningAgents > 0) stats.totalAgentRuns += s.runningAgents;
+        if (s.sessionMinutes >= 45) stats.longSessions++;
+        if (isOpus) stats.opusTimeMinutes += s.sessionMinutes;
+      }
+      // For pre-existing sessions (aggregator restart), skip to avoid double-counting
+    } else {
+      // Known session — accumulate positive deltas
+
+      const deltaMinutes = s.sessionMinutes - prev.lastMinutes;
+      if (deltaMinutes > 0) {
+        stats.totalTimeMinutes += deltaMinutes;
+        prev.lastMinutes = s.sessionMinutes;
+      }
+
+      const deltaAgents = s.runningAgents - prev.lastAgents;
+      if (deltaAgents > 0) {
+        stats.totalAgentRuns += deltaAgents;
+      }
+      prev.lastAgents = s.runningAgents;
+
+      const deltaTokens = estimatedTokens - prev.lastTokens;
+      if (deltaTokens > 0) {
+        stats.totalTokens += deltaTokens;
+        prev.lastTokens = estimatedTokens;
+      }
+
+      if (s.sessionMinutes >= 45 && !prev.wasLong) {
+        stats.longSessions++;
+        prev.wasLong = true;
+      }
+
+      if (isOpus) {
+        const deltaOpus = s.sessionMinutes - prev.lastOpusMinutes;
+        if (deltaOpus > 0) {
+          stats.opusTimeMinutes += deltaOpus;
+          prev.lastOpusMinutes = s.sessionMinutes;
+        }
+      }
     }
   }
 
-  const totalActiveMinutes = sessionDetails.reduce((sum, s) => sum + s.sessionMinutes, 0);
-  if (totalActiveMinutes > stats.totalTimeMinutes) {
-    stats.totalTimeMinutes = totalActiveMinutes;
-  }
-
-  const totalTokensNow = sessionDetails.reduce((sum, s) => sum + Math.round(s.contextPercent / 100 * 200000), 0);
-  if (totalTokensNow > stats.totalTokens) {
-    stats.totalTokens = totalTokensNow;
-  }
-
-  const currentAgents = sessionDetails.reduce((sum, s) => sum + s.runningAgents, 0);
-  stats.totalAgentRuns = Math.max(stats.totalAgentRuns, currentAgents);
-
+  // Max concurrent tracking (high water mark by nature)
   const currentSessions = sessionDetails.length;
   if (currentSessions > stats.maxConcurrentSessions) {
     stats.maxConcurrentSessions = currentSessions;
   }
-
-  if (currentAgents > stats.maxConcurrentAgents) {
-    stats.maxConcurrentAgents = currentAgents;
+  const totalAgentsNow = sessionDetails.reduce((sum, s) => sum + s.runningAgents, 0);
+  if (totalAgentsNow > stats.maxConcurrentAgents) {
+    stats.maxConcurrentAgents = totalAgentsNow;
   }
 
-  const longNow = sessionDetails.filter(s => s.sessionMinutes >= 45).length;
-  if (longNow > stats.longSessions) {
-    stats.longSessions = longNow;
-  }
-
-  const opusMinutes = sessionDetails
-    .filter(s => s.model && s.model.toLowerCase().includes('opus'))
-    .reduce((sum, s) => sum + s.sessionMinutes, 0);
-  if (opusMinutes > stats.opusTimeMinutes) {
-    stats.opusTimeMinutes = opusMinutes;
+  // Clean up tracking for dead sessions
+  for (const pid of sessionTracking.keys()) {
+    if (!activePids.has(pid)) {
+      sessionTracking.delete(pid);
+    }
   }
 
   return stats;
