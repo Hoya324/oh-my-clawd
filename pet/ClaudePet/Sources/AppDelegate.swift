@@ -250,7 +250,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func scheduleRandomIdleMotion() {
         randomIdleTimer?.invalidate()
-        let delay = TimeInterval.random(in: 15...30)
+        let delay = TimeInterval.random(in: 60...180)
         randomIdleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             self?.triggerRandomIdleMotion()
         }
@@ -262,7 +262,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let allowed = IdleMotionType.allCases.filter { $0.allowedStates.contains(currentState) }
-        guard let motion = allowed.randomElement() else {
+        // Weighted selection: wave 3x, blink 1x, others 2x
+        let weighted: [IdleMotionType] = allowed.flatMap { motion -> [IdleMotionType] in
+            switch motion {
+            case .wave:    return [motion, motion, motion]
+            case .blink:   return [motion]
+            default:       return [motion, motion]
+            }
+        }
+        guard let motion = weighted.randomElement() else {
             scheduleRandomIdleMotion()
             return
         }
