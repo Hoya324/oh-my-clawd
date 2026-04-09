@@ -3,6 +3,7 @@ import Foundation
 enum AccessoryCategory: String, CaseIterable, Codable {
     case hat
     case glasses
+    case pants
 }
 
 enum AccessoryType: String, CaseIterable, Codable {
@@ -17,6 +18,12 @@ enum AccessoryType: String, CaseIterable, Codable {
     case sunglasses
     case roundGlasses
     case starGlasses
+    // Pants (5)
+    case jeans
+    case shorts
+    case slacks
+    case joggers
+    case cargo
 
     var category: AccessoryCategory {
         switch self {
@@ -24,6 +31,8 @@ enum AccessoryType: String, CaseIterable, Codable {
             return .hat
         case .hornRimmed, .sunglasses, .roundGlasses, .starGlasses:
             return .glasses
+        case .jeans, .shorts, .slacks, .joggers, .cargo:
+            return .pants
         }
     }
 
@@ -38,6 +47,11 @@ enum AccessoryType: String, CaseIterable, Codable {
         case .sunglasses:   return "Sunglasses"
         case .roundGlasses: return "Round Glasses"
         case .starGlasses:  return "Star Glasses"
+        case .jeans:        return "Jeans"
+        case .shorts:       return "Shorts"
+        case .slacks:       return "Slacks"
+        case .joggers:      return "Joggers"
+        case .cargo:        return "Cargo Pants"
         }
     }
 
@@ -52,6 +66,11 @@ enum AccessoryType: String, CaseIterable, Codable {
         case .sunglasses:   return "선글라스"
         case .roundGlasses: return "둥근안경"
         case .starGlasses:  return "별안경"
+        case .jeans:        return "청바지"
+        case .shorts:       return "반바지"
+        case .slacks:       return "정장바지"
+        case .joggers:      return "운동바지"
+        case .cargo:        return "카고바지"
         }
     }
 
@@ -66,6 +85,11 @@ enum AccessoryType: String, CaseIterable, Codable {
         case .sunglasses:   return "10 rate limit hits"
         case .roundGlasses: return "20 long sessions (45m+)"
         case .starGlasses:  return "10 hours on Opus"
+        case .jeans:        return "15 hours total usage"
+        case .shorts:       return "Total 100 sessions"
+        case .slacks:       return "1M tokens used"
+        case .joggers:      return "100 agent runs"
+        case .cargo:        return "50 hours total usage"
         }
     }
 
@@ -80,6 +104,11 @@ enum AccessoryType: String, CaseIterable, Codable {
         case .sunglasses:   return "레이트 리밋 10회"
         case .roundGlasses: return "45분 이상 세션 20회"
         case .starGlasses:  return "Opus 모델 10시간"
+        case .jeans:        return "총 15시간 사용"
+        case .shorts:       return "총 100회 세션"
+        case .slacks:       return "100만 토큰 사용"
+        case .joggers:      return "에이전트 100회 실행"
+        case .cargo:        return "총 50시간 사용"
         }
     }
 
@@ -89,6 +118,10 @@ enum AccessoryType: String, CaseIterable, Codable {
 
     static var glasses: [AccessoryType] {
         allCases.filter { $0.category == .glasses }
+    }
+
+    static var pants: [AccessoryType] {
+        allCases.filter { $0.category == .pants }
     }
 }
 
