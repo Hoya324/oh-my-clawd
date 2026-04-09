@@ -176,22 +176,25 @@ struct CollectionPopoverView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            headerSection
-            Divider()
-            hatGridSection
-            Divider()
-            glassesGridSection
-            Divider()
-            pantsGridSection
-            if viewModel.nextUnlockAccessory != nil {
-                Divider()
-                progressSection
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    headerSection
+                    Divider()
+                    hatGridSection
+                    Divider()
+                    glassesGridSection
+                    Divider()
+                    pantsGridSection
+                    if viewModel.nextUnlockAccessory != nil {
+                        Divider()
+                        progressSection
+                    }
+                }
             }
             Divider()
             footerSection
-            Spacer(minLength: 0)
         }
-        .frame(width: 280)
+        .frame(width: 280, height: 520)
         .background(Color(NSColor.windowBackgroundColor))
     }
 
