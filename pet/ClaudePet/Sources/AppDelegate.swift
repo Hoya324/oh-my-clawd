@@ -23,6 +23,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuController: StatusMenuController!
     private var notificationManager = NotificationManager()
 
+    // Interaction animation state
+    private var isPlayingInteraction: Bool = false
+    private var interactionTimer: Timer?
+    private var interactionFrameIndex: Int = 0
+    private var interactionFrames: [NSImage] = []
+
+    // Idle motion state
+    private var isPlayingIdleMotion: Bool = false
+    private var idleMotionTimer: Timer?
+    private var idleMotionFrameIndex: Int = 0
+    private var idleMotionFrames: [NSImage] = []
+    private var idleMotionFrameInterval: TimeInterval = 0.2
+    private var randomIdleTimer: Timer?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         notificationManager.requestPermission()
 
@@ -38,6 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         startStatePolling()
         reloadFramesAndAnimate()
+        scheduleRandomIdleMotion()
 
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(onSleep),
@@ -60,6 +75,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
+        playInteraction()
         menuController.togglePopover(relativeTo: button)
     }
 
@@ -178,14 +194,151 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.image = currentFrames[frameIndex]
     }
 
+    // MARK: - Click Interaction Animation
+
+    private func playInteraction() {
+        stopIdleMotion()
+        isPlayingInteraction = true
+        interactionFrameIndex = 0
+
+        let sprites = InteractionSprites.frames()
+        interactionFrames = sprites.map { baseFrame in
+            var overlays: [[[UInt32?]]?] = []
+            if let glasses = currentGlasses {
+                overlays.append(AccessorySprites.overlay(
+                    accessory: glasses, state: .normal, frameIndex: 0))
+            }
+            if let pants = currentPants {
+                overlays.append(AccessorySprites.overlay(
+                    accessory: pants, state: .normal, frameIndex: 0,
+                    pantsColor: currentPantsColor))
+            }
+            if let hat = currentHat {
+                overlays.append(AccessorySprites.overlay(
+                    accessory: hat, state: .normal, frameIndex: 0))
+            }
+            let effect = ClaudeEffects.effectOverlay(activity: currentActivity, frameIndex: 0)
+            return PixelArtRenderer.renderComposited(base: baseFrame, overlays: overlays, effect: effect)
+        }
+
+        frameTimer?.invalidate()
+        if let first = interactionFrames.first {
+            statusItem.button?.image = first
+        }
+
+        interactionTimer?.invalidate()
+        interactionTimer = Timer.scheduledTimer(
+            timeInterval: InteractionSprites.frameInterval,
+            target: self, selector: #selector(nextInteractionFrame),
+            userInfo: nil, repeats: true)
+        RunLoop.current.add(interactionTimer!, forMode: .common)
+    }
+
+    @objc private func nextInteractionFrame() {
+        interactionFrameIndex += 1
+        if interactionFrameIndex >= interactionFrames.count {
+            interactionTimer?.invalidate()
+            interactionTimer = nil
+            isPlayingInteraction = false
+            reloadFramesAndAnimate()
+            scheduleRandomIdleMotion()
+            return
+        }
+        statusItem.button?.image = interactionFrames[interactionFrameIndex]
+    }
+
+    // MARK: - Random Idle Motions
+
+    private func scheduleRandomIdleMotion() {
+        randomIdleTimer?.invalidate()
+        let delay = TimeInterval.random(in: 15...30)
+        randomIdleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            self?.triggerRandomIdleMotion()
+        }
+    }
+
+    private func triggerRandomIdleMotion() {
+        guard !isPlayingInteraction && !isPlayingIdleMotion && !isWakingUp else {
+            scheduleRandomIdleMotion()
+            return
+        }
+        let allowed = IdleMotionType.allCases.filter { $0.allowedStates.contains(currentState) }
+        guard let motion = allowed.randomElement() else {
+            scheduleRandomIdleMotion()
+            return
+        }
+        playIdleMotion(motion)
+    }
+
+    private func playIdleMotion(_ motion: IdleMotionType) {
+        isPlayingIdleMotion = true
+        idleMotionFrameIndex = 0
+        idleMotionFrameInterval = motion.frameInterval
+
+        let sprites = IdleMotionSprites.frames(motion: motion)
+        idleMotionFrames = sprites.map { baseFrame in
+            var overlays: [[[UInt32?]]?] = []
+            if let glasses = currentGlasses {
+                overlays.append(AccessorySprites.overlay(
+                    accessory: glasses, state: currentState, frameIndex: 0))
+            }
+            if let pants = currentPants {
+                overlays.append(AccessorySprites.overlay(
+                    accessory: pants, state: currentState, frameIndex: 0,
+                    pantsColor: currentPantsColor))
+            }
+            if let hat = currentHat {
+                overlays.append(AccessorySprites.overlay(
+                    accessory: hat, state: currentState, frameIndex: 0))
+            }
+            let effect = ClaudeEffects.effectOverlay(activity: currentActivity, frameIndex: 0)
+            return PixelArtRenderer.renderComposited(base: baseFrame, overlays: overlays, effect: effect)
+        }
+
+        frameTimer?.invalidate()
+        if let first = idleMotionFrames.first {
+            statusItem.button?.image = first
+        }
+
+        idleMotionTimer?.invalidate()
+        idleMotionTimer = Timer.scheduledTimer(
+            timeInterval: idleMotionFrameInterval,
+            target: self, selector: #selector(nextIdleMotionFrame),
+            userInfo: nil, repeats: true)
+        RunLoop.current.add(idleMotionTimer!, forMode: .common)
+    }
+
+    @objc private func nextIdleMotionFrame() {
+        idleMotionFrameIndex += 1
+        if idleMotionFrameIndex >= idleMotionFrames.count {
+            stopIdleMotion()
+            reloadFramesAndAnimate()
+            scheduleRandomIdleMotion()
+            return
+        }
+        statusItem.button?.image = idleMotionFrames[idleMotionFrameIndex]
+    }
+
+    private func stopIdleMotion() {
+        idleMotionTimer?.invalidate()
+        idleMotionTimer = nil
+        isPlayingIdleMotion = false
+    }
+
+    // MARK: - Sleep/Wake
+
     @objc private func onSleep() {
         frameTimer?.invalidate()
         stateTimer?.invalidate()
         wakeUpTimer?.invalidate()
+        interactionTimer?.invalidate()
+        idleMotionTimer?.invalidate()
+        randomIdleTimer?.invalidate()
     }
 
     @objc private func onWake() {
         startStatePolling()
         reloadFramesAndAnimate()
+        scheduleRandomIdleMotion()
     }
 }

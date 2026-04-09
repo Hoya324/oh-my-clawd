@@ -58,6 +58,8 @@ swiftc -o "build/$APP_NAME" \
   Sources/Sprites/AccessorySprites.swift \
   Sources/PantsColorPalette.swift \
   Sources/Sprites/PantsSprites.swift \
+  Sources/Sprites/InteractionSprites.swift \
+  Sources/Sprites/IdleMotionSprites.swift \
   -framework Cocoa \
   -framework ServiceManagement \
   -framework SwiftUI \
