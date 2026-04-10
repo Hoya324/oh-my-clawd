@@ -92,6 +92,20 @@ struct GenerateClawdGIFs {
         }
     }
 
+    /// Composite accessory overlay on top of a character frame.
+    /// Non-nil pixels in the overlay replace character pixels.
+    static func composite(base: [[UInt32?]], overlay: [[UInt32?]]) -> [[UInt32?]] {
+        var result = base
+        for y in 0..<min(base.count, overlay.count) {
+            for x in 0..<min(base[y].count, overlay[y].count) {
+                if let px = overlay[y][x] {
+                    result[y][x] = px
+                }
+            }
+        }
+        return result
+    }
+
     static func main() throws {
         let projectRoot: String
         if CommandLine.arguments.count > 1 {
@@ -101,14 +115,19 @@ struct GenerateClawdGIFs {
         }
 
         let outputDir = projectRoot + "/docs/assets/clawd"
+        let fashionDir = outputDir + "/fashion"
         try FileManager.default.createDirectory(
             atPath: outputDir,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            atPath: fashionDir,
             withIntermediateDirectories: true
         )
 
         print("Generating Clawd GIFs in \(outputDir)...")
 
-        // Generate a GIF for each PetState
+        // ── 1. Base state GIFs ──
         let states: [(PetState, String)] = [
             (.idle, "idle"),
             (.wakeUp, "wakeup"),
@@ -139,6 +158,92 @@ struct GenerateClawdGIFs {
             createAnimatedGIF(frames: cgImages, path: path)
         }
 
-        print("Done. Generated \(states.count) GIFs.")
+        print("Generated \(states.count) state GIFs.")
+
+        // ── 2. Individual accessory GIFs (normal walking state) ──
+        let accessories: [(AccessoryType, String)] = [
+            (.cap, "acc-cap"),
+            (.partyHat, "acc-partyhat"),
+            (.santaHat, "acc-santahat"),
+            (.silkHat, "acc-silkhat"),
+            (.cowboyHat, "acc-cowboyhat"),
+            (.hornRimmed, "acc-hornrimmed"),
+            (.sunglasses, "acc-sunglasses"),
+            (.roundGlasses, "acc-roundglasses"),
+            (.starGlasses, "acc-starglasses"),
+            (.jeans, "acc-jeans"),
+            (.shorts, "acc-shorts"),
+            (.slacks, "acc-slacks"),
+            (.joggers, "acc-joggers"),
+            (.cargo, "acc-cargo"),
+        ]
+
+        for (accessory, filename) in accessories {
+            let baseFrames = ClaudeSprites.frames(state: .normal)
+            var cgImages: [CGImage] = []
+            for (i, frame) in baseFrames.enumerated() {
+                if let overlay = AccessorySprites.overlay(accessory: accessory, state: .normal, frameIndex: i) {
+                    let composited = composite(base: frame, overlay: overlay)
+                    if let img = createCGImage(pixels: composited) {
+                        cgImages.append(img)
+                    }
+                } else {
+                    if let img = createCGImage(pixels: frame) {
+                        cgImages.append(img)
+                    }
+                }
+            }
+            guard !cgImages.isEmpty else { continue }
+            createAnimatedGIF(frames: cgImages, path: "\(outputDir)/\(filename).gif")
+        }
+
+        print("Generated \(accessories.count) accessory GIFs.")
+
+        // ── 3. Fashion combination GIFs ──
+        struct FashionCombo {
+            let name: String
+            let hat: AccessoryType?
+            let glasses: AccessoryType?
+            let pants: AccessoryType?
+        }
+
+        let fashionCombos: [FashionCombo] = [
+            FashionCombo(name: "casual",      hat: .cap,       glasses: .sunglasses,   pants: .jeans),
+            FashionCombo(name: "gentleman",    hat: .silkHat,   glasses: .roundGlasses, pants: .slacks),
+            FashionCombo(name: "cowboy",       hat: .cowboyHat, glasses: .starGlasses,  pants: .cargo),
+            FashionCombo(name: "party",        hat: .partyHat,  glasses: .hornRimmed,   pants: .shorts),
+            FashionCombo(name: "santa",        hat: .santaHat,  glasses: nil,           pants: .joggers),
+            FashionCombo(name: "nerd",         hat: nil,        glasses: .roundGlasses, pants: .slacks),
+            FashionCombo(name: "sporty",       hat: .cap,       glasses: nil,           pants: .joggers),
+        ]
+
+        for combo in fashionCombos {
+            let baseFrames = ClaudeSprites.frames(state: .normal)
+            var cgImages: [CGImage] = []
+            for (i, frame) in baseFrames.enumerated() {
+                var result = frame
+                // Layer order: pants first, then glasses, then hat (top)
+                if let pants = combo.pants,
+                   let overlay = AccessorySprites.overlay(accessory: pants, state: .normal, frameIndex: i) {
+                    result = composite(base: result, overlay: overlay)
+                }
+                if let glasses = combo.glasses,
+                   let overlay = AccessorySprites.overlay(accessory: glasses, state: .normal, frameIndex: i) {
+                    result = composite(base: result, overlay: overlay)
+                }
+                if let hat = combo.hat,
+                   let overlay = AccessorySprites.overlay(accessory: hat, state: .normal, frameIndex: i) {
+                    result = composite(base: result, overlay: overlay)
+                }
+                if let img = createCGImage(pixels: result) {
+                    cgImages.append(img)
+                }
+            }
+            guard !cgImages.isEmpty else { continue }
+            createAnimatedGIF(frames: cgImages, path: "\(fashionDir)/\(combo.name).gif")
+        }
+
+        print("Generated \(fashionCombos.count) fashion combo GIFs.")
+        print("Done!")
     }
 }

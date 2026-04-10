@@ -18,7 +18,7 @@ const translations = {
     'hero.description': 'Rate Limit, Session Time, Context Usage, Tool Calls, Agents, Model Info \u2014 all at a glance. Plus a Tamagotchi-style pixel art Clawd that reacts to your coding activity.',
     'hero.cta.download': 'Download DMG',
     'hero.cta.docs': 'Read Docs',
-    'hero.stat.accessories': '9+ Accessories',
+    'hero.stat.accessories': '14 Accessories',
     'hero.stat.states': '8 States',
     'hero.stat.effects': '3 Effects',
     'hero.stat.hud': 'HUD',
@@ -28,7 +28,7 @@ const translations = {
     'features.hud.title': 'HUD Status Line',
     'features.hud.desc': 'Real-time rate limits, session duration, context usage, tool calls, and active model info displayed in your terminal.',
     'features.pet.title': 'Clawd System',
-    'features.pet.desc': 'One Clawd character with 8 states, 3 activity levels, and 9 collectible accessories. Each accessory has unique unlock conditions based on your Claude Code usage.',
+    'features.pet.desc': 'One Clawd character with 8 states, 3 activity levels, and 14 collectible accessories (hats, glasses, pants). Mix and match to create 100+ unique combinations!',
     'features.update.title': 'Auto Updates',
     'features.update.desc': 'Check for updates directly from the app. Download the latest DMG from GitHub Releases with one click.',
 
@@ -75,7 +75,7 @@ const translations = {
     'docs.hud.title': 'HUD Status Line',
     'docs.hud.desc': 'A real-time status line showing Claude Code metrics.',
     'docs.collection.title': 'Accessory Collection',
-    'docs.collection.desc': '9 collectible accessories, each with unique unlock conditions.',
+    'docs.collection.desc': '14 collectible accessories (5 hats, 4 glasses, 5 pants), each with unique unlock conditions.',
     'docs.config.title': 'Configuration',
     'docs.update.title': 'Update',
     'docs.update.desc': 'Check for updates directly from the app popover, or download the latest DMG from GitHub Releases.',
@@ -93,6 +93,24 @@ const translations = {
     'accessory.roundGlasses': 'Round Glasses',
     'accessory.starGlasses': 'Star Glasses',
 
+    // Accessory names — pants
+    'accessory.jeans': 'Jeans',
+    'accessory.shorts': 'Shorts',
+    'accessory.slacks': 'Slacks',
+    'accessory.joggers': 'Joggers',
+    'accessory.cargo': 'Cargo Pants',
+
+    // Fashion showcase
+    'fashion.title': 'Fashion Show',
+    'fashion.desc': 'Mix and match hats, glasses, and pants for 100+ unique combos!',
+    'fashion.casual': 'Casual',
+    'fashion.gentleman': 'Gentleman',
+    'fashion.cowboy': 'Cowboy',
+    'fashion.party': 'Party',
+    'fashion.santa': 'Santa',
+    'fashion.nerd': 'Nerd',
+    'fashion.sporty': 'Sporty',
+
     // Unlock conditions
     'unlock.cap': '10 sessions',
     'unlock.partyHat': '5 hours total usage',
@@ -103,6 +121,11 @@ const translations = {
     'unlock.sunglasses': '10 rate limit hits',
     'unlock.roundGlasses': '20 long sessions (45m+)',
     'unlock.starGlasses': '10 hours on Opus',
+    'unlock.jeans': '15 hours total usage',
+    'unlock.shorts': '100 sessions',
+    'unlock.slacks': '1M tokens used',
+    'unlock.joggers': '100 agent runs',
+    'unlock.cargo': '50 hours total usage',
 
     // States
     'state.idle': 'Sleeping...',
@@ -145,7 +168,7 @@ const translations = {
     'hero.description': 'Rate Limit, \uC138\uC158 \uC2DC\uAC04, \uCEE8\uD14D\uC2A4\uD2B8 \uC0AC\uC6A9\uB7C9, \uB3C4\uAD6C \uD638\uCD9C, \uC5D0\uC774\uC804\uD2B8, \uBAA8\uB378 \uC815\uBCF4\uB97C \uD55C\uB208\uC5D0. \uCF54\uB529 \uD65C\uB3D9\uC5D0 \uBC18\uC751\uD558\uB294 \uD0C0\uB9C8\uACE0\uCE58 \uC2A4\uD0C0\uC77C \uD53D\uC140\uC544\uD2B8 Clawd\uB3C4 \uD568\uAED8.',
     'hero.cta.download': 'DMG \uB2E4\uC6B4\uB85C\uB4DC',
     'hero.cta.docs': '\uBB38\uC11C \uBCF4\uAE30',
-    'hero.stat.accessories': '9\uC885+ \uC561\uC138\uC11C\uB9AC',
+    'hero.stat.accessories': '14\uC885 \uC561\uC138\uC11C\uB9AC',
     'hero.stat.states': '8\uAC00\uC9C0 \uC0C1\uD0DC',
     'hero.stat.effects': '3\uB2E8\uACC4 \uD6A8\uACFC',
     'hero.stat.hud': 'HUD',
@@ -155,7 +178,7 @@ const translations = {
     'features.hud.title': 'HUD \uC0C1\uD0DC \uD45C\uC2DC\uC904',
     'features.hud.desc': 'Rate Limit, \uC138\uC158 \uC9C0\uC18D\uC2DC\uAC04, \uCEE8\uD14D\uC2A4\uD2B8 \uC0AC\uC6A9\uB7C9, \uB3C4\uAD6C \uD638\uCD9C, \uD65C\uC131 \uBAA8\uB378 \uC815\uBCF4\uB97C \uD130\uBBF8\uB110\uC5D0 \uC2E4\uC2DC\uAC04 \uD45C\uC2DC\uD569\uB2C8\uB2E4.',
     'features.pet.title': 'Clawd \uC2DC\uC2A4\uD15C',
-    'features.pet.desc': '8\uAC00\uC9C0 \uC0C1\uD0DC\uC640 3\uB2E8\uACC4 \uD65C\uB3D9 \uB808\uBCA8\uC744 \uAC00\uC9C4 Clawd \uCE90\uB9AD\uD130\uC5D0 9\uC885\uC758 \uC561\uC138\uC11C\uB9AC\uB97C \uC218\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uAC01 \uC561\uC138\uC11C\uB9AC\uB294 Claude Code \uC0AC\uC6A9\uB7C9\uC5D0 \uB530\uB978 \uACE0\uC720\uD55C \uC5B8\uB77D \uC870\uAC74\uC774 \uC788\uC2B5\uB2C8\uB2E4.',
+    'features.pet.desc': '8\uAC00\uC9C0 \uC0C1\uD0DC\uC640 3\uB2E8\uACC4 \uD65C\uB3D9 \uB808\uBCA8\uC744 \uAC00\uC9C4 Clawd \uCE90\uB9AD\uD130\uC5D0 14\uC885\uC758 \uC561\uC138\uC11C\uB9AC(\uBAA8\uC790, \uC548\uACBD, \uBC14\uC9C0)\uB97C \uC218\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC870\uD569\uD558\uBA74 100\uAC00\uC9C0 \uC774\uC0C1\uC758 \uC2A4\uD0C0\uC77C!',
     'features.update.title': '\uC790\uB3D9 \uC5C5\uB370\uC774\uD2B8',
     'features.update.desc': '\uC571\uC5D0\uC11C \uC9C1\uC811 \uC5C5\uB370\uC774\uD2B8\uB97C \uD655\uC778\uD558\uC138\uC694. \uD074\uB9AD \uD55C \uBC88\uC73C\uB85C GitHub Releases\uC5D0\uC11C \uCD5C\uC2E0 DMG\uB97C \uB2E4\uC6B4\uB85C\uB4DC\uD569\uB2C8\uB2E4.',
 
@@ -202,7 +225,7 @@ const translations = {
     'docs.hud.title': 'HUD \uC0C1\uD0DC \uD45C\uC2DC\uC904',
     'docs.hud.desc': 'Claude Code \uBA54\uD2B8\uB9AD\uC744 \uC2E4\uC2DC\uAC04\uC73C\uB85C \uBCF4\uC5EC\uC8FC\uB294 \uC0C1\uD0DC \uD45C\uC2DC\uC904\uC785\uB2C8\uB2E4.',
     'docs.collection.title': '\uC561\uC138\uC11C\uB9AC \uCEEC\uB809\uC158',
-    'docs.collection.desc': '\uAC01\uAC01 \uACE0\uC720\uD55C \uC5B8\uB77D \uC870\uAC74\uC744 \uAC00\uC9C4 9\uC885\uC758 \uC561\uC138\uC11C\uB9AC.',
+    'docs.collection.desc': '\uAC01\uAC01 \uACE0\uC720\uD55C \uC5B8\uB77D \uC870\uAC74\uC744 \uAC00\uC9C4 14\uC885\uC758 \uC561\uC138\uC11C\uB9AC (5\uBAA8\uC790, 4\uC548\uACBD, 5\uBC14\uC9C0).',
     'docs.config.title': '\uC124\uC815',
     'docs.update.title': '\uC5C5\uB370\uC774\uD2B8',
     'docs.update.desc': '\uC571 \uD31D\uC624\uBC84\uC5D0\uC11C \uC9C1\uC811 \uC5C5\uB370\uC774\uD2B8\uB97C \uD655\uC778\uD558\uAC70\uB098, GitHub Releases\uC5D0\uC11C \uCD5C\uC2E0 DMG\uB97C \uB2E4\uC6B4\uB85C\uB4DC\uD558\uC138\uC694.',
@@ -220,6 +243,24 @@ const translations = {
     'accessory.roundGlasses': '\uB465\uADFC\uC548\uACBD',
     'accessory.starGlasses': '\uBCC4\uC548\uACBD',
 
+    // Accessory names — pants
+    'accessory.jeans': '\uCCAD\uBC14\uC9C0',
+    'accessory.shorts': '\uBC18\uBC14\uC9C0',
+    'accessory.slacks': '\uC815\uC7A5\uBC14\uC9C0',
+    'accessory.joggers': '\uC6B4\uB3D9\uBC14\uC9C0',
+    'accessory.cargo': '\uCE74\uACE0\uBC14\uC9C0',
+
+    // Fashion showcase
+    'fashion.title': '\uD328\uC158\uC1FC',
+    'fashion.desc': '\uBAA8\uC790 + \uC548\uACBD + \uBC14\uC9C0\uB97C \uC870\uD569\uD558\uBA74 100\uAC00\uC9C0 \uC774\uC0C1\uC758 \uC2A4\uD0C0\uC77C!',
+    'fashion.casual': '\uCE90\uC8FC\uC5BC',
+    'fashion.gentleman': '\uC820\uD2C0\uB9E8',
+    'fashion.cowboy': '\uCE74\uC6B0\uBCF4\uC774',
+    'fashion.party': '\uD30C\uD2F0',
+    'fashion.santa': '\uC0B0\uD0C0',
+    'fashion.nerd': '\uB108\uB4DC',
+    'fashion.sporty': '\uC2A4\uD3EC\uD2F0',
+
     // Unlock conditions
     'unlock.cap': '\uC138\uC158 10\uD68C',
     'unlock.partyHat': '\uCD1D 5\uC2DC\uAC04 \uC0AC\uC6A9',
@@ -230,6 +271,11 @@ const translations = {
     'unlock.sunglasses': 'Rate Limit 10\uD68C \uB3C4\uB2EC',
     'unlock.roundGlasses': '\uAE34 \uC138\uC158(45\uBD84+) 20\uD68C',
     'unlock.starGlasses': 'Opus \uBAA8\uB378 10\uC2DC\uAC04',
+    'unlock.jeans': '\uCD1D 15\uC2DC\uAC04 \uC0AC\uC6A9',
+    'unlock.shorts': '\uCD1D 100\uD68C \uC138\uC158',
+    'unlock.slacks': '100\uB9CC \uD1A0\uD070 \uC0AC\uC6A9',
+    'unlock.joggers': '\uC5D0\uC774\uC804\uD2B8 100\uD68C \uC2E4\uD589',
+    'unlock.cargo': '\uCD1D 50\uC2DC\uAC04 \uC0AC\uC6A9',
 
     // States
     'state.idle': '\uC790\uACE0 \uC788\uC5B4\uC694...',

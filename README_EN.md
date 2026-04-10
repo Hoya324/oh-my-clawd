@@ -15,7 +15,7 @@
 <h1 align="center">oh-my-clawd</h1>
 
 <p align="center">
-  <strong>A status line + menu bar Clawd for Claude Code</strong>
+  <strong>A status line + menu bar Tamagotchi for Claude Code</strong>
 </p>
 
 <p align="center">
@@ -67,7 +67,10 @@ Then **restart Claude Code**.
 
 ## Clawd — Menu Bar Companion
 
-A Tamagotchi-style pixel art character that lives in your macOS menu bar. Clawd (#D97757), the official Claude Code mascot, reacts to your Claude Code activity. Collect 9 accessories and watch Clawd's activity level change.
+A Tamagotchi-style 32x32 pixel art character that lives in your macOS menu bar.
+**Clawd** (#D97757), the official Claude Code mascot, reacts to your Claude Code activity in real time.
+
+> 8 States | 3 Activity Levels | 14 Accessories | 10 Body Colors
 
 ### Clawd States
 
@@ -92,28 +95,76 @@ Clawd's activity level changes based on concurrent agent count.
 | Glowing | 2-3 agents | Glowing effect |
 | Supercharged! | 4+ agents | Maximum energy |
 
-### Accessory Collection (9 Accessories)
+### Accessory Collection (14 Accessories)
 
 Unlock accessories for Clawd based on your Claude Code usage milestones.
+Mix and match hats, glasses, and pants to create your own unique Clawd style!
 
-**Hats (5)**
+#### Hats (5)
 
-| Accessory | Unlock Condition |
-|-----------|-----------------|
-| Cap | 10 sessions |
-| Party Hat | 5 hours total usage |
-| Santa Hat | 500K tokens used |
-| Silk Hat | 50 agent runs |
-| Cowboy Hat | 30 hours total usage |
+| Accessory | | Unlock Condition |
+|-----------|--|-----------------|
+| Cap | <img src="docs/assets/clawd/acc-cap.gif" width="32"> | 10 sessions |
+| Party Hat | <img src="docs/assets/clawd/acc-partyhat.gif" width="32"> | 5 hours total usage |
+| Santa Hat | <img src="docs/assets/clawd/acc-santahat.gif" width="32"> | 500K tokens used |
+| Silk Hat | <img src="docs/assets/clawd/acc-silkhat.gif" width="32"> | 50 agent runs |
+| Cowboy Hat | <img src="docs/assets/clawd/acc-cowboyhat.gif" width="32"> | 30 hours total usage |
 
-**Glasses (4)**
+#### Glasses (4)
 
-| Accessory | Unlock Condition |
-|-----------|-----------------|
-| Horn-rimmed | 3+ concurrent sessions |
-| Sunglasses | 10 rate limit hits |
-| Round Glasses | 20 long sessions (45m+) |
-| Star Glasses | 10 hours on Opus |
+| Accessory | | Unlock Condition |
+|-----------|--|-----------------|
+| Horn-rimmed | <img src="docs/assets/clawd/acc-hornrimmed.gif" width="32"> | 3+ concurrent sessions |
+| Sunglasses | <img src="docs/assets/clawd/acc-sunglasses.gif" width="32"> | 10 rate limit hits |
+| Round Glasses | <img src="docs/assets/clawd/acc-roundglasses.gif" width="32"> | 20 long sessions (45m+) |
+| Star Glasses | <img src="docs/assets/clawd/acc-starglasses.gif" width="32"> | 10 hours on Opus |
+
+#### Pants (5)
+
+| Accessory | | Unlock Condition |
+|-----------|--|-----------------|
+| Jeans | <img src="docs/assets/clawd/acc-jeans.gif" width="32"> | 15 hours total usage |
+| Shorts | <img src="docs/assets/clawd/acc-shorts.gif" width="32"> | 100 sessions |
+| Slacks | <img src="docs/assets/clawd/acc-slacks.gif" width="32"> | 1M tokens used |
+| Joggers | <img src="docs/assets/clawd/acc-joggers.gif" width="32"> | 100 agent runs |
+| Cargo Pants | <img src="docs/assets/clawd/acc-cargo.gif" width="32"> | 50 hours total usage |
+
+### Clawd Fashion Show
+
+Mix and match hats + glasses + pants to create your own unique style.
+
+<p align="center">
+  <img src="docs/assets/clawd/fashion/casual.gif" width="64" alt="Casual" />
+  <img src="docs/assets/clawd/fashion/gentleman.gif" width="64" alt="Gentleman" />
+  <img src="docs/assets/clawd/fashion/cowboy.gif" width="64" alt="Cowboy" />
+  <img src="docs/assets/clawd/fashion/party.gif" width="64" alt="Party" />
+  <img src="docs/assets/clawd/fashion/santa.gif" width="64" alt="Santa" />
+  <img src="docs/assets/clawd/fashion/nerd.gif" width="64" alt="Nerd" />
+  <img src="docs/assets/clawd/fashion/sporty.gif" width="64" alt="Sporty" />
+</p>
+
+<p align="center">
+  <sub>Casual · Gentleman · Cowboy · Party · Santa · Nerd · Sporty</sub>
+</p>
+
+> With **5 hats x 4 glasses x 5 pants = 100+** possible combinations (even more if you include no-accessory slots!)
+
+### Body Color Change
+
+Use color gacha tickets to change Clawd's body color. 10 colors available, picked at random!
+
+| Color | Name |
+|-------|------|
+| 🟤 Terracotta | Default |
+| 🔵 Blue | Blue |
+| 🔴 Red | Red |
+| 🟢 Green | Green |
+| 🟣 Purple | Purple |
+| 🟡 Gold | Gold |
+| 🩷 Pink | Pink |
+| 🔷 Navy | Navy |
+| 🟩 Mint | Mint |
+| 🟠 Coral | Coral |
 
 ## Updates
 
@@ -143,7 +194,5 @@ If you installed the oh-my-clawd app separately:
 MIT
 
 ---
-
-## License
 
 This project is licensed under the MIT License. However, the Clawd character design is copyrighted by [Anthropic](https://anthropic.com). This is a non-commercial fan project and cannot be used for commercial purposes — nor do we have any intention to. If any copyright issues arise, we will remove it immediately. Please have mercy.

@@ -22,7 +22,7 @@
     </nav>
 
     <h1>Accessory Collection</h1>
-    <p>9 unique accessories for Clawd. Unlock them through your Claude Code usage!</p>
+    <p>14 unique accessories for Clawd. Unlock them through your Claude Code usage!</p>
 
     <div class="pet-grid" id="accessory-grid"></div>
 
@@ -44,6 +44,12 @@
       { id: 'sunglasses', name: 'Sunglasses',   nameKo: '선글라스',    unlock: '10 rate limit hits',      category: 'glasses', color: '#1A1A1A' },
       { id: 'roundGlasses',name:'Round Glasses', nameKo: '둥근안경',   unlock: '20 long sessions (45m+)', category: 'glasses', color: '#4A90D9' },
       { id: 'starGlasses', name: 'Star Glasses', nameKo: '별안경',     unlock: '10 hours on Opus',        category: 'glasses', color: '#F59E0B' },
+      // Pants
+      { id: 'jeans',      name: 'Jeans',        nameKo: '청바지',      unlock: '15 hours total usage',    category: 'pants',   color: '#2196F3' },
+      { id: 'shorts',     name: 'Shorts',       nameKo: '반바지',      unlock: '100 sessions',            category: 'pants',   color: '#2196F3' },
+      { id: 'slacks',     name: 'Slacks',       nameKo: '정장바지',    unlock: '1M tokens used',          category: 'pants',   color: '#2D2D2D' },
+      { id: 'joggers',    name: 'Joggers',      nameKo: '운동바지',    unlock: '100 agent runs',          category: 'pants',   color: '#666666' },
+      { id: 'cargo',      name: 'Cargo Pants',  nameKo: '카고바지',    unlock: '50 hours total usage',    category: 'pants',   color: '#8B6914' },
     ];
 
     const grid = document.getElementById('accessory-grid');
@@ -57,7 +63,7 @@
         <p style="font-size: 0.8rem; color: var(--text); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">${accessory.category}</p>
         <div style="margin: 0.75rem 0;">
           <canvas class="pixel-canvas" width="48" height="48"
-            data-accessory="${accessory.id}" data-color="${accessory.color}"></canvas>
+            data-accessory="${accessory.id}" data-color="${accessory.color}" data-category="${accessory.category}"></canvas>
         </div>
         <div class="unlock-condition">Unlock: ${accessory.unlock}</div>
       `;
@@ -81,56 +87,64 @@
 
       // Draw accessory on top
       ctx.fillStyle = color;
-      if (accessoryId === 'cap' || accessoryId === 'cowboyHat' || accessoryId === 'silkHat' || accessoryId === 'santaHat' || accessoryId === 'partyHat') {
+      var cat = canvas.dataset.category;
+      if (cat === 'hat') {
         // Hat styles — brim
         ctx.fillRect(15, 9, 18, 3);
-        // Crown varies by hat
         if (accessoryId === 'partyHat') {
-          // Tall pointed hat
           ctx.fillRect(21, 2, 6, 8);
         } else if (accessoryId === 'silkHat') {
-          // Tall cylinder
           ctx.fillRect(18, 3, 12, 7);
         } else if (accessoryId === 'santaHat') {
-          // Tapered hat
           ctx.fillRect(20, 4, 8, 6);
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(16, 10, 16, 2); // white brim stripe
-          ctx.fillRect(26, 2, 4, 4);   // white pompom
+          ctx.fillRect(16, 10, 16, 2);
+          ctx.fillRect(26, 2, 4, 4);
         } else if (accessoryId === 'cowboyHat') {
-          // Wide brim + crown
           ctx.fillRect(18, 4, 12, 6);
-          ctx.fillRect(12, 10, 24, 2); // extra wide brim
+          ctx.fillRect(12, 10, 24, 2);
         } else {
-          // Cap brim
           ctx.fillRect(18, 4, 12, 6);
           ctx.fillStyle = '#1A1A1A';
-          ctx.fillRect(15, 10, 10, 2); // peak
+          ctx.fillRect(15, 10, 10, 2);
+        }
+      } else if (cat === 'pants') {
+        // Pants styles
+        ctx.fillRect(14, 28, 20, 6);
+        if (accessoryId === 'shorts') {
+          ctx.fillRect(14, 28, 20, 4);
+        } else if (accessoryId === 'cargo') {
+          ctx.fillRect(14, 28, 20, 8);
+          ctx.fillStyle = '#6B5010';
+          ctx.fillRect(16, 30, 4, 2);
+          ctx.fillRect(28, 30, 4, 2);
+        } else {
+          ctx.fillRect(14, 28, 20, 8);
+          ctx.fillRect(16, 36, 6, 4);
+          ctx.fillRect(26, 36, 6, 4);
         }
       } else {
         // Glasses styles
         if (accessoryId === 'sunglasses') {
           ctx.fillRect(17, 18, 6, 4);
           ctx.fillRect(25, 18, 6, 4);
-          ctx.fillRect(23, 19, 2, 2); // bridge
+          ctx.fillRect(23, 19, 2, 2);
         } else if (accessoryId === 'starGlasses') {
-          // Star shapes approximated as squares with corner accents
           ctx.fillRect(17, 17, 6, 6);
           ctx.fillRect(25, 17, 6, 6);
-          ctx.fillRect(23, 19, 2, 2); // bridge
+          ctx.fillRect(23, 19, 2, 2);
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(18, 18, 2, 2); // star highlight
+          ctx.fillRect(18, 18, 2, 2);
           ctx.fillRect(26, 18, 2, 2);
         } else {
-          // Round/horn-rimmed — simple circle approximation
           ctx.fillRect(17, 17, 6, 6);
           ctx.fillRect(25, 17, 6, 6);
-          ctx.fillRect(23, 19, 2, 2); // bridge
+          ctx.fillRect(23, 19, 2, 2);
           ctx.fillStyle = '#1a1a2e';
-          ctx.fillRect(18, 18, 4, 4); // lens cutout
+          ctx.fillRect(18, 18, 4, 4);
           ctx.fillRect(26, 18, 4, 4);
           ctx.fillStyle = color;
-          ctx.fillRect(19, 19, 2, 2); // frame detail
+          ctx.fillRect(19, 19, 2, 2);
           ctx.fillRect(27, 19, 2, 2);
         }
       }
