@@ -49,6 +49,7 @@ swiftc -o "build/$APP_NAME" \
   Sources/AccessoryType.swift \
   Sources/ProgressTracker.swift \
   Sources/ClawdMemory.swift \
+  Sources/ReminderScheduler.swift \
   Sources/NotificationManager.swift \
   Sources/PixelArtRenderer.swift \
   Sources/CollectionView.swift \

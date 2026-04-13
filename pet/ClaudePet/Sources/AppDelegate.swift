@@ -21,6 +21,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var progressTracker = ProgressTracker()
     private var menuController: StatusMenuController!
     private var notificationManager = NotificationManager()
+    private let clawdMemory = ClawdMemoryStore()
+    private lazy var reminderScheduler = ReminderScheduler(
+        memory: clawdMemory,
+        stateReader: stateReader,
+        notifications: notificationManager
+    )
 
     // Interaction animation state
     private var isPlayingInteraction: Bool = false
@@ -49,6 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupStatusItem()
         startStatePolling()
+        reminderScheduler.start()
         reloadFramesAndAnimate()
         scheduleRandomIdleMotion()
 
