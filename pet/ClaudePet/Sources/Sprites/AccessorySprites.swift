@@ -24,7 +24,6 @@ private let T: UInt32? = nil          // Transparent
 struct AccessorySprites {
 
     /// Get overlay for an accessory at a given state and frame.
-    /// For pants accessories, pass `bodyColor` to derive pants color from body palette.
     static func overlay(accessory: AccessoryType, state: PetState, frameIndex: Int) -> [[UInt32?]]? {
         let base: [[UInt32?]]?
         if accessory.category == .pants {

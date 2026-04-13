@@ -109,9 +109,6 @@ function defaultProgress() {
     selectedHat: null,
     selectedGlasses: null,
     selectedPants: null,
-    pantsColor: 'blue',
-    colorChangeTickets: 0,
-    lastColorTicketMinutes: 0,
     unlockedAt: {},
   };
 }
@@ -151,10 +148,6 @@ async function loadProgress() {
 
   // Ensure new fields exist (forward-compatible)
   if (data.selectedPants === undefined) data.selectedPants = null;
-  if (data.pantsColor === undefined) data.pantsColor = 'blue';
-  if (data.bodyColor === undefined) data.bodyColor = 'terracotta';
-  if (data.colorChangeTickets === undefined) data.colorChangeTickets = 3; // initial 3 free tickets
-  if (data.lastColorTicketMinutes === undefined) data.lastColorTicketMinutes = data.stats.totalTimeMinutes || 0; // start counting from now, not retroactively
 
   return data;
 }
@@ -293,19 +286,6 @@ function checkUnlocks(progress) {
   return changed;
 }
 
-function checkColorTicket(progress) {
-  const totalMinutes = progress.stats.totalTimeMinutes;
-  const lastTicket = progress.lastColorTicketMinutes || 0;
-  const ticketInterval = 480; // 8 hours
-
-  if (totalMinutes - lastTicket >= ticketInterval) {
-    const newTickets = Math.floor((totalMinutes - lastTicket) / ticketInterval);
-    progress.colorChangeTickets = (progress.colorChangeTickets || 0) + newTickets;
-    progress.lastColorTicketMinutes = lastTicket + (newTickets * ticketInterval);
-    process.stderr.write(`[oh-my-clawd] awarded ${newTickets} color ticket(s)\n`);
-  }
-}
-
 function checkRateLimitHit(progress, rateLimit) {
   const fh = rateLimit.fiveHourPercent;
   if (fh != null && fh >= 80 && !lastRateLimitHigh) {
@@ -390,7 +370,6 @@ async function tick() {
     updateStats(progress, sessionDetails);
     checkRateLimitHit(progress, rateLimit);
     checkUnlocks(progress);
-    checkColorTicket(progress);
     await writeProgressAtomic(progress);
     // --- End progress tracking ---
 

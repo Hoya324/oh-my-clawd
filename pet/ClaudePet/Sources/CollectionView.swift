@@ -14,12 +14,6 @@ class ClawdViewModel: ObservableObject {
     @Published var selectedHat: AccessoryType? = nil
     @Published var selectedGlasses: AccessoryType? = nil
     @Published var selectedPants: AccessoryType? = nil
-    @Published var bodyColorName: String = "terracotta"
-    @Published var bodyColorDisplayKO: String = "테라코타"
-    @Published var colorChangeTickets: Int = 0
-    @Published var pendingColorName: String? = nil
-    @Published var pendingColorDisplayKO: String? = nil
-    @Published var pendingColorMain: UInt32 = 0  // for color circle preview
     @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
@@ -65,10 +59,6 @@ class ClawdViewModel: ObservableObject {
         selectedHat = progressTracker.selectedHat()
         selectedGlasses = progressTracker.selectedGlasses()
         selectedPants = progressTracker.selectedPants()
-        let currentBodyColor = progressTracker.bodyColor()
-        bodyColorName = currentBodyColor.name
-        bodyColorDisplayKO = currentBodyColor.displayNameKO
-        colorChangeTickets = progressTracker.colorChangeTickets()
 
         if let next = progressTracker.nextUnlock(),
            let (current, target) = progressTracker.unlockProgress(for: next) {
@@ -162,39 +152,6 @@ class ClawdViewModel: ObservableObject {
         progressTracker.selectPants(newPants)
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
-
-    func rollColor() {
-        guard colorChangeTickets > 0 else { return }
-        // Consume ticket immediately on roll
-        guard var progress = progressTracker.read() else { return }
-        let tickets = progress.colorChangeTickets ?? 0
-        guard tickets > 0 else { return }
-        progress.colorChangeTickets = tickets - 1
-        progressTracker.writeBackPublic(progress)
-        colorChangeTickets = progress.colorChangeTickets ?? 0
-
-        let newColor = BodyColorPalette.randomColor()
-        pendingColorName = newColor.name
-        pendingColorDisplayKO = newColor.displayNameKO
-        pendingColorMain = newColor.main
-    }
-
-    func applyPendingColor() {
-        guard let name = pendingColorName else { return }
-        guard var progress = progressTracker.read() else { return }
-        progress.bodyColor = name
-        progressTracker.writeBackPublic(progress)
-        bodyColorName = name
-        bodyColorDisplayKO = pendingColorDisplayKO ?? name
-        pendingColorName = nil
-        pendingColorDisplayKO = nil
-        NotificationCenter.default.post(name: .accessoryChanged, object: nil)
-    }
-
-    func cancelPendingColor() {
-        pendingColorName = nil
-        pendingColorDisplayKO = nil
-    }
 }
 
 // MARK: - Main Popover View
@@ -232,50 +189,9 @@ struct CollectionPopoverView: View {
                 Text("Clawd")
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                if viewModel.pendingColorName != nil {
-                    // Pending color: show apply/cancel
-                    HStack(spacing: 6) {
-                        // Color circle preview
-                        Circle()
-                            .fill(Color(
-                                red: Double((viewModel.pendingColorMain >> 16) & 0xFF) / 255.0,
-                                green: Double((viewModel.pendingColorMain >> 8) & 0xFF) / 255.0,
-                                blue: Double(viewModel.pendingColorMain & 0xFF) / 255.0
-                            ))
-                            .frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
-                        Button(action: { viewModel.applyPendingColor() }) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.green)
-                        }
-                        .buttonStyle(.plain)
-                        Button(action: { viewModel.cancelPendingColor() }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.red)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } else if viewModel.colorChangeTickets > 0 {
-                    Button(action: { viewModel.rollColor() }) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "dice.fill")
-                                .font(.system(size: 9))
-                            Text("Color (\(viewModel.colorChangeTickets))")
-                                .font(.system(size: 9, weight: .medium))
-                        }
-                        .foregroundColor(.cyan)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.cyan.opacity(0.15)))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text(viewModel.activityLevel.displayName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
-                }
+                Text(viewModel.activityLevel.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
             }
             HStack {
                 Text("Sessions: \(viewModel.activeSessions)")
@@ -591,7 +507,6 @@ struct ClawdPreviewView: NSViewRepresentable {
     let hat: AccessoryType?
     let glasses: AccessoryType?
     var pants: AccessoryType? = nil
-    var bodyColor: BodyColor? = nil
 
     func makeNSView(context: Context) -> NSImageView {
         let imageView = NSImageView()
@@ -607,8 +522,7 @@ struct ClawdPreviewView: NSViewRepresentable {
     private func rendered() -> NSImage {
         PixelArtRenderer.renderFrame(
             state: .normal, activity: .normal,
-            hat: hat, glasses: glasses,
-            pants: pants, bodyColor: bodyColor,
+            hat: hat, glasses: glasses, pants: pants,
             frameIndex: 0
         )
     }
