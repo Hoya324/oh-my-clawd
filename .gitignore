@@ -4,3 +4,4 @@ node_modules/
 pet/ClaudePet/build/
 build/
 .DS_Store
+.worktrees/
