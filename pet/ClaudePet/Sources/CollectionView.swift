@@ -10,6 +10,7 @@ class ClawdViewModel: ObservableObject {
     @Published var activityLevel: ActivityLevel = .normal
     @Published var activeSessions: Int = 0
     @Published var activeAgents: Int = 0
+    @Published var activeProjectNames: [String] = []
     @Published var unlockedAccessories: [AccessoryType] = []
     @Published var selectedHat: AccessoryType? = nil
     @Published var selectedGlasses: AccessoryType? = nil
@@ -33,6 +34,7 @@ class ClawdViewModel: ObservableObject {
             activityLevel = PetState.resolveActivityLevel(from: data)
             activeSessions = data.activeSessions
             activeAgents = data.aggregate.totalRunningAgents
+            activeProjectNames = data.sessions.map { $0.project }
             fiveHourPercent = data.rateLimit.fiveHourPercent
             weeklyPercent = data.rateLimit.weeklyPercent
             fiveHourResetsAt = data.rateLimit.fiveHourResetsAt
@@ -42,6 +44,7 @@ class ClawdViewModel: ObservableObject {
             activityLevel = .normal
             activeSessions = 0
             activeAgents = 0
+            activeProjectNames = []
             fiveHourPercent = nil
             weeklyPercent = nil
             fiveHourResetsAt = nil
@@ -202,6 +205,16 @@ struct CollectionPopoverView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
+            if !viewModel.activeProjectNames.isEmpty {
+                HStack {
+                    Text(projectNamesSummary(viewModel.activeProjectNames))
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary.opacity(0.75))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                }
+            }
             if viewModel.fiveHourPercent != nil || viewModel.weeklyPercent != nil {
                 rateLimitSection
             }
@@ -253,6 +266,13 @@ struct CollectionPopoverView: View {
         if percent >= 90 { return .red }
         if percent >= 70 { return .yellow }
         return .green
+    }
+
+    private func projectNamesSummary(_ names: [String]) -> String {
+        let shown = names.prefix(3)
+        let extra = names.count - shown.count
+        let head = shown.joined(separator: ", ")
+        return extra > 0 ? "\(head) +\(extra) more" : head
     }
 
     private func formatResetTime(_ isoString: String?) -> String? {
