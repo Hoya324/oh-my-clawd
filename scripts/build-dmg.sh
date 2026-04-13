@@ -101,25 +101,41 @@ echo -e "  ${GREEN}Code signed${NC}"
 # ---------------------------------------------------------------------------
 DMG_NAME="OhMyClawd.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
-DMG_STAGING="$BUILD_DIR/dmg-staging"
 
-# Clean up any previous staging / DMG
-rm -rf "$DMG_STAGING" "$DMG_PATH"
-mkdir -p "$DMG_STAGING"
-
-cp -R "$APP_BUNDLE" "$DMG_STAGING/"
-ln -s /Applications "$DMG_STAGING/Applications"
+rm -f "$DMG_PATH"
 
 echo "  Creating DMG …"
-hdiutil create \
-  -volname "$APP_NAME" \
-  -srcfolder "$DMG_STAGING" \
-  -ov \
-  -format UDZO \
-  "$DMG_PATH" \
-  > /dev/null 2>&1
-
-rm -rf "$DMG_STAGING"
+if command -v create-dmg &>/dev/null; then
+  # create-dmg produces a proper .DS_Store so Finder shows both
+  # OhMyClawd.app and the Applications drop-link at known positions.
+  create-dmg \
+    --volname "$APP_NAME" \
+    --window-pos 200 120 \
+    --window-size 560 360 \
+    --icon-size 100 \
+    --icon "$APP_NAME.app" 140 180 \
+    --app-drop-link 420 180 \
+    --hide-extension "$APP_NAME.app" \
+    --no-internet-enable \
+    "$DMG_PATH" \
+    "$APP_BUNDLE" \
+    > /dev/null 2>&1 || { echo -e "${RED}DMG creation failed${NC}"; exit 1; }
+else
+  # Fallback: plain hdiutil (no custom layout — Finder may position
+  # icons unpredictably). Prefer installing create-dmg (brew install create-dmg).
+  DMG_STAGING="$BUILD_DIR/dmg-staging"
+  rm -rf "$DMG_STAGING"
+  mkdir -p "$DMG_STAGING"
+  cp -R "$APP_BUNDLE" "$DMG_STAGING/"
+  ln -s /Applications "$DMG_STAGING/Applications"
+  hdiutil create \
+    -volname "$APP_NAME" \
+    -srcfolder "$DMG_STAGING" \
+    -ov -format UDZO \
+    "$DMG_PATH" \
+    > /dev/null 2>&1
+  rm -rf "$DMG_STAGING"
+fi
 
 # Sign the DMG too
 codesign --force --sign "$SIGN_IDENTITY" "$DMG_PATH" 2>&1
