@@ -48,6 +48,11 @@ swiftc -o "build/$APP_NAME" \
   Sources/PetStateMachine.swift \
   Sources/AccessoryType.swift \
   Sources/ProgressTracker.swift \
+  Sources/ClawdMemory.swift \
+  Sources/ReminderScheduler.swift \
+  Sources/ClawdChat.swift \
+  Sources/ClawdActionRunner.swift \
+  Sources/ClawdSection.swift \
   Sources/NotificationManager.swift \
   Sources/PixelArtRenderer.swift \
   Sources/CollectionView.swift \

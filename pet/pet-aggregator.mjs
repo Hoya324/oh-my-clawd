@@ -109,9 +109,6 @@ function defaultProgress() {
     selectedHat: null,
     selectedGlasses: null,
     selectedPants: null,
-    pantsColor: 'blue',
-    colorChangeTickets: 0,
-    lastColorTicketMinutes: 0,
     unlockedAt: {},
   };
 }
@@ -151,10 +148,6 @@ async function loadProgress() {
 
   // Ensure new fields exist (forward-compatible)
   if (data.selectedPants === undefined) data.selectedPants = null;
-  if (data.pantsColor === undefined) data.pantsColor = 'blue';
-  if (data.bodyColor === undefined) data.bodyColor = 'terracotta';
-  if (data.colorChangeTickets === undefined) data.colorChangeTickets = 3; // initial 3 free tickets
-  if (data.lastColorTicketMinutes === undefined) data.lastColorTicketMinutes = data.stats.totalTimeMinutes || 0; // start counting from now, not retroactively
 
   return data;
 }
@@ -293,19 +286,6 @@ function checkUnlocks(progress) {
   return changed;
 }
 
-function checkColorTicket(progress) {
-  const totalMinutes = progress.stats.totalTimeMinutes;
-  const lastTicket = progress.lastColorTicketMinutes || 0;
-  const ticketInterval = 480; // 8 hours
-
-  if (totalMinutes - lastTicket >= ticketInterval) {
-    const newTickets = Math.floor((totalMinutes - lastTicket) / ticketInterval);
-    progress.colorChangeTickets = (progress.colorChangeTickets || 0) + newTickets;
-    progress.lastColorTicketMinutes = lastTicket + (newTickets * ticketInterval);
-    process.stderr.write(`[oh-my-clawd] awarded ${newTickets} color ticket(s)\n`);
-  }
-}
-
 function checkRateLimitHit(progress, rateLimit) {
   const fh = rateLimit.fiveHourPercent;
   if (fh != null && fh >= 80 && !lastRateLimitHigh) {
@@ -334,29 +314,43 @@ async function tick() {
         const stateFile = join(cwd, '.claude', '.hud', 'session-state.json');
         const usageFile = join(cwd, '.claude', '.hud', 'usage-cache.json');
 
-        const state = await readJsonSafe(stateFile);
-        if (!state) continue;
-
+        const rawState = await readJsonSafe(stateFile);
         const now = Date.now();
-        if (state.timestamp && (now - state.timestamp) > IDLE_THRESHOLD_MS) continue;
+        const stateFresh =
+          rawState?.timestamp &&
+          (now - rawState.timestamp) <= IDLE_THRESHOLD_MS;
+        const state = stateFresh ? rawState : null;
 
-        const usage = await readJsonSafe(usageFile);
-        if (usage?.timestamp && usage.timestamp > latestUsageTs) {
-          latestUsageTs = usage.timestamp;
-          latestUsage = usage.data || null;
+        if (state) {
+          const usage = await readJsonSafe(usageFile);
+          if (usage?.timestamp && usage.timestamp > latestUsageTs) {
+            latestUsageTs = usage.timestamp;
+            latestUsage = usage.data || null;
+          }
+
+          sessionDetails.push({
+            pid: session.pid,
+            project: basename(cwd),
+            model: state.model || 'unknown',
+            contextPercent: state.contextPercent || 0,
+            toolCalls: state.toolCalls || 0,
+            runningAgents: state.runningAgents || 0,
+            sessionMinutes: state.sessionMinutes || 0,
+          });
+
+          if (state.model) models.push(state.model);
+        } else {
+          const startedAt = session.startedAt ?? now;
+          sessionDetails.push({
+            pid: session.pid,
+            project: basename(cwd),
+            model: 'unknown',
+            contextPercent: 0,
+            toolCalls: 0,
+            runningAgents: 0,
+            sessionMinutes: Math.max(0, Math.floor((now - startedAt) / 60_000)),
+          });
         }
-
-        sessionDetails.push({
-          pid: session.pid,
-          project: basename(cwd),
-          model: state.model || 'unknown',
-          contextPercent: state.contextPercent || 0,
-          toolCalls: state.toolCalls || 0,
-          runningAgents: state.runningAgents || 0,
-          sessionMinutes: state.sessionMinutes || 0,
-        });
-
-        if (state.model) models.push(state.model);
       } catch { continue; }
     }
 
@@ -390,7 +384,6 @@ async function tick() {
     updateStats(progress, sessionDetails);
     checkRateLimitHit(progress, rateLimit);
     checkUnlocks(progress);
-    checkColorTicket(progress);
     await writeProgressAtomic(progress);
     // --- End progress tracking ---
 

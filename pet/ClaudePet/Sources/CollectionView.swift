@@ -10,16 +10,11 @@ class ClawdViewModel: ObservableObject {
     @Published var activityLevel: ActivityLevel = .normal
     @Published var activeSessions: Int = 0
     @Published var activeAgents: Int = 0
+    @Published var activeProjectNames: [String] = []
     @Published var unlockedAccessories: [AccessoryType] = []
     @Published var selectedHat: AccessoryType? = nil
     @Published var selectedGlasses: AccessoryType? = nil
     @Published var selectedPants: AccessoryType? = nil
-    @Published var bodyColorName: String = "terracotta"
-    @Published var bodyColorDisplayKO: String = "테라코타"
-    @Published var colorChangeTickets: Int = 0
-    @Published var pendingColorName: String? = nil
-    @Published var pendingColorDisplayKO: String? = nil
-    @Published var pendingColorMain: UInt32 = 0  // for color circle preview
     @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
@@ -30,7 +25,17 @@ class ClawdViewModel: ObservableObject {
     @Published var isHudEnabled: Bool = false
     @Published var updateStatus: UpdateStatus = .idle
 
+    // Companion
+    @Published var reminders: ClawdReminders = .default
+    @Published var openMemos: [ClawdMemo] = []
+    @Published var lastReply: String = ""
+    @Published var chatInProgress: Bool = false
+    @Published var chatError: String? = nil
+
     private let progressTracker = ProgressTracker()
+    private let clawdMemory = ClawdMemoryStore()
+    private lazy var actionRunner = ClawdActionRunner(memory: clawdMemory)
+    private lazy var chat = ClawdChat(memory: clawdMemory)
     private static let hudSettingsPath = NSHomeDirectory() + "/.claude/settings.json"
 
     func refresh(stateData: PetStateData?) {
@@ -39,6 +44,7 @@ class ClawdViewModel: ObservableObject {
             activityLevel = PetState.resolveActivityLevel(from: data)
             activeSessions = data.activeSessions
             activeAgents = data.aggregate.totalRunningAgents
+            activeProjectNames = data.sessions.map { $0.project }
             fiveHourPercent = data.rateLimit.fiveHourPercent
             weeklyPercent = data.rateLimit.weeklyPercent
             fiveHourResetsAt = data.rateLimit.fiveHourResetsAt
@@ -48,6 +54,7 @@ class ClawdViewModel: ObservableObject {
             activityLevel = .normal
             activeSessions = 0
             activeAgents = 0
+            activeProjectNames = []
             fiveHourPercent = nil
             weeklyPercent = nil
             fiveHourResetsAt = nil
@@ -65,10 +72,6 @@ class ClawdViewModel: ObservableObject {
         selectedHat = progressTracker.selectedHat()
         selectedGlasses = progressTracker.selectedGlasses()
         selectedPants = progressTracker.selectedPants()
-        let currentBodyColor = progressTracker.bodyColor()
-        bodyColorName = currentBodyColor.name
-        bodyColorDisplayKO = currentBodyColor.displayNameKO
-        colorChangeTickets = progressTracker.colorChangeTickets()
 
         if let next = progressTracker.nextUnlock(),
            let (current, target) = progressTracker.unlockProgress(for: next) {
@@ -80,6 +83,93 @@ class ClawdViewModel: ObservableObject {
         }
 
         isHudEnabled = Self.readHudEnabled()
+        loadCompanionState()
+    }
+
+    // MARK: - Companion
+
+    func loadCompanionState() {
+        let file = clawdMemory.read()
+        reminders = file.reminders
+        openMemos = file.memos.filter { !$0.done }
+        lastReply = file.chatLog.last(where: { $0.role == .clawd })?.text ?? ""
+    }
+
+    func sendChat(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !chatInProgress else { return }
+        chatInProgress = true
+        chatError = nil
+        chat.send(userText: trimmed) { [weak self] result in
+            guard let self = self else { return }
+            self.chatInProgress = false
+            switch result {
+            case .success(let response):
+                self.actionRunner.apply(userText: trimmed, response: response)
+                self.loadCompanionState()
+            case .failure(let err):
+                self.handleChatFailure(userText: trimmed, error: err)
+            }
+        }
+    }
+
+    private func handleChatFailure(userText: String, error: ClawdChatError) {
+        let fallbackResponse = ClawdResponse(
+            actions: [ClawdAction(
+                type: ClawdActionType.addMemo.rawValue,
+                text: userText, dueAt: nil, tags: [], id: nil,
+                kind: nil, enabled: nil, intervalMin: nil, timeOfDay: nil
+            )],
+            reply: Self.errorMessage(for: error)
+        )
+        actionRunner.apply(userText: userText, response: fallbackResponse)
+        chatError = Self.errorMessage(for: error)
+        loadCompanionState()
+    }
+
+    private static func errorMessage(for error: ClawdChatError) -> String {
+        switch error {
+        case .cliNotFound:
+            return "Claude CLI를 찾지 못했어요. 메모로 저장만 해둘게요."
+        case .timeout:
+            return "응답이 느리네요. 메모로 저장만 해둘게요."
+        case .processFailed(let msg):
+            return "오류: \(msg). 메모로 저장만 해둘게요."
+        case .parseFailed:
+            return "응답을 이해하지 못했어요. 메모로 저장만 해둘게요."
+        }
+    }
+
+    func toggleReminder(kind: String) {
+        let current: ReminderConfig
+        switch kind {
+        case "water":   current = reminders.water
+        case "stretch": current = reminders.stretch
+        case "diary":   current = reminders.diary
+        default: return
+        }
+        actionRunner.setReminderDirect(kind: kind, enabled: !current.enabled)
+        loadCompanionState()
+    }
+
+    func setReminderInterval(kind: String, minutes: Int) {
+        actionRunner.setReminderDirect(kind: kind, intervalMin: minutes)
+        loadCompanionState()
+    }
+
+    func setDiaryTime(_ time: String) {
+        actionRunner.setReminderDirect(kind: "diary", timeOfDay: time)
+        loadCompanionState()
+    }
+
+    func completeMemo(_ id: String) {
+        actionRunner.completeMemo(id: id)
+        loadCompanionState()
+    }
+
+    func deleteMemo(_ id: String) {
+        actionRunner.deleteMemo(id: id)
+        loadCompanionState()
     }
 
     // MARK: - HUD Toggle
@@ -162,39 +252,6 @@ class ClawdViewModel: ObservableObject {
         progressTracker.selectPants(newPants)
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
-
-    func rollColor() {
-        guard colorChangeTickets > 0 else { return }
-        // Consume ticket immediately on roll
-        guard var progress = progressTracker.read() else { return }
-        let tickets = progress.colorChangeTickets ?? 0
-        guard tickets > 0 else { return }
-        progress.colorChangeTickets = tickets - 1
-        progressTracker.writeBackPublic(progress)
-        colorChangeTickets = progress.colorChangeTickets ?? 0
-
-        let newColor = BodyColorPalette.randomColor()
-        pendingColorName = newColor.name
-        pendingColorDisplayKO = newColor.displayNameKO
-        pendingColorMain = newColor.main
-    }
-
-    func applyPendingColor() {
-        guard let name = pendingColorName else { return }
-        guard var progress = progressTracker.read() else { return }
-        progress.bodyColor = name
-        progressTracker.writeBackPublic(progress)
-        bodyColorName = name
-        bodyColorDisplayKO = pendingColorDisplayKO ?? name
-        pendingColorName = nil
-        pendingColorDisplayKO = nil
-        NotificationCenter.default.post(name: .accessoryChanged, object: nil)
-    }
-
-    func cancelPendingColor() {
-        pendingColorName = nil
-        pendingColorDisplayKO = nil
-    }
 }
 
 // MARK: - Main Popover View
@@ -216,12 +273,14 @@ struct CollectionPopoverView: View {
                         Divider()
                         progressSection
                     }
+                    Divider()
+                    ClawdSection(viewModel: viewModel)
                 }
             }
             Divider()
             footerSection
         }
-        .frame(width: 280, height: 520)
+        .frame(width: 280, height: 640)
         .background(Color(NSColor.windowBackgroundColor))
     }
 
@@ -232,50 +291,9 @@ struct CollectionPopoverView: View {
                 Text("Clawd")
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                if viewModel.pendingColorName != nil {
-                    // Pending color: show apply/cancel
-                    HStack(spacing: 6) {
-                        // Color circle preview
-                        Circle()
-                            .fill(Color(
-                                red: Double((viewModel.pendingColorMain >> 16) & 0xFF) / 255.0,
-                                green: Double((viewModel.pendingColorMain >> 8) & 0xFF) / 255.0,
-                                blue: Double(viewModel.pendingColorMain & 0xFF) / 255.0
-                            ))
-                            .frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
-                        Button(action: { viewModel.applyPendingColor() }) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.green)
-                        }
-                        .buttonStyle(.plain)
-                        Button(action: { viewModel.cancelPendingColor() }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.red)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } else if viewModel.colorChangeTickets > 0 {
-                    Button(action: { viewModel.rollColor() }) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "dice.fill")
-                                .font(.system(size: 9))
-                            Text("Color (\(viewModel.colorChangeTickets))")
-                                .font(.system(size: 9, weight: .medium))
-                        }
-                        .foregroundColor(.cyan)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.cyan.opacity(0.15)))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text(viewModel.activityLevel.displayName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
-                }
+                Text(viewModel.activityLevel.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
             }
             HStack {
                 Text("Sessions: \(viewModel.activeSessions)")
@@ -285,6 +303,16 @@ struct CollectionPopoverView: View {
                 Text("Agents: \(viewModel.activeAgents)")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
+            }
+            if !viewModel.activeProjectNames.isEmpty {
+                HStack {
+                    Text(projectNamesSummary(viewModel.activeProjectNames))
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary.opacity(0.75))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                }
             }
             if viewModel.fiveHourPercent != nil || viewModel.weeklyPercent != nil {
                 rateLimitSection
@@ -337,6 +365,13 @@ struct CollectionPopoverView: View {
         if percent >= 90 { return .red }
         if percent >= 70 { return .yellow }
         return .green
+    }
+
+    private func projectNamesSummary(_ names: [String]) -> String {
+        let shown = names.prefix(3)
+        let extra = names.count - shown.count
+        let head = shown.joined(separator: ", ")
+        return extra > 0 ? "\(head) +\(extra) more" : head
     }
 
     private func formatResetTime(_ isoString: String?) -> String? {
@@ -591,7 +626,6 @@ struct ClawdPreviewView: NSViewRepresentable {
     let hat: AccessoryType?
     let glasses: AccessoryType?
     var pants: AccessoryType? = nil
-    var bodyColor: BodyColor? = nil
 
     func makeNSView(context: Context) -> NSImageView {
         let imageView = NSImageView()
@@ -607,8 +641,7 @@ struct ClawdPreviewView: NSViewRepresentable {
     private func rendered() -> NSImage {
         PixelArtRenderer.renderFrame(
             state: .normal, activity: .normal,
-            hat: hat, glasses: glasses,
-            pants: pants, bodyColor: bodyColor,
+            hat: hat, glasses: glasses, pants: pants,
             frameIndex: 0
         )
     }

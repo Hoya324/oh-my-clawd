@@ -13,7 +13,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var currentHat: AccessoryType? = nil
     private var currentGlasses: AccessoryType? = nil
     private var currentPants: AccessoryType? = nil
-    private var currentBodyColor: BodyColor = BodyColorPalette.defaultColor
     private var isWakingUp: Bool = false
     private var frameIndex = 0
     private var currentFrames: [NSImage] = []
@@ -22,6 +21,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var progressTracker = ProgressTracker()
     private var menuController: StatusMenuController!
     private var notificationManager = NotificationManager()
+    private let clawdMemory = ClawdMemoryStore()
+    private lazy var reminderScheduler = ReminderScheduler(
+        memory: clawdMemory,
+        stateReader: stateReader,
+        notifications: notificationManager
+    )
 
     // Interaction animation state
     private var isPlayingInteraction: Bool = false
@@ -44,13 +49,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         currentHat = progressTracker.selectedHat()
         currentGlasses = progressTracker.selectedGlasses()
         currentPants = progressTracker.selectedPants()
-        currentBodyColor = progressTracker.bodyColor()
 
         menuController = StatusMenuController()
         let _ = menuController.setupPopover()
 
         setupStatusItem()
         startStatePolling()
+        reminderScheduler.start()
         reloadFramesAndAnimate()
         scheduleRandomIdleMotion()
 
@@ -105,7 +110,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let newHat = progressTracker.selectedHat()
         let newGlasses = progressTracker.selectedGlasses()
         let newPants = progressTracker.selectedPants()
-        let newBodyColor = progressTracker.bodyColor()
 
         // Capture old values for change detection before updating
         let oldState = currentState
@@ -113,13 +117,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let oldHat = currentHat
         let oldGlasses = currentGlasses
         let oldPants = currentPants
-        let oldBodyColor = currentBodyColor
 
         currentActivity = newActivity
         currentHat = newHat
         currentGlasses = newGlasses
         currentPants = newPants
-        currentBodyColor = newBodyColor
         activeSessions = newSessions
 
         if !isWakingUp && oldState == .idle && newState != .idle {
@@ -147,7 +149,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                            || newHat?.rawValue != oldHat?.rawValue
                            || newGlasses?.rawValue != oldGlasses?.rawValue
                            || newPants?.rawValue != oldPants?.rawValue
-                           || newBodyColor.name != oldBodyColor.name
             currentState = newState
             if needsReload {
                 frameIndex = 0
@@ -168,7 +169,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 hat: currentHat,
                 glasses: currentGlasses,
                 pants: currentPants,
-                bodyColor: currentBodyColor,
                 frameIndex: i
             )
         }
