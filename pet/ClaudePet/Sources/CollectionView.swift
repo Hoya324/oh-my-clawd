@@ -25,7 +25,17 @@ class ClawdViewModel: ObservableObject {
     @Published var isHudEnabled: Bool = false
     @Published var updateStatus: UpdateStatus = .idle
 
+    // Companion
+    @Published var reminders: ClawdReminders = .default
+    @Published var openMemos: [ClawdMemo] = []
+    @Published var lastReply: String = ""
+    @Published var chatInProgress: Bool = false
+    @Published var chatError: String? = nil
+
     private let progressTracker = ProgressTracker()
+    private let clawdMemory = ClawdMemoryStore()
+    private lazy var actionRunner = ClawdActionRunner(memory: clawdMemory)
+    private lazy var chat = ClawdChat(memory: clawdMemory)
     private static let hudSettingsPath = NSHomeDirectory() + "/.claude/settings.json"
 
     func refresh(stateData: PetStateData?) {
@@ -73,6 +83,93 @@ class ClawdViewModel: ObservableObject {
         }
 
         isHudEnabled = Self.readHudEnabled()
+        loadCompanionState()
+    }
+
+    // MARK: - Companion
+
+    func loadCompanionState() {
+        let file = clawdMemory.read()
+        reminders = file.reminders
+        openMemos = file.memos.filter { !$0.done }
+        lastReply = file.chatLog.last(where: { $0.role == .clawd })?.text ?? ""
+    }
+
+    func sendChat(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !chatInProgress else { return }
+        chatInProgress = true
+        chatError = nil
+        chat.send(userText: trimmed) { [weak self] result in
+            guard let self = self else { return }
+            self.chatInProgress = false
+            switch result {
+            case .success(let response):
+                self.actionRunner.apply(userText: trimmed, response: response)
+                self.loadCompanionState()
+            case .failure(let err):
+                self.handleChatFailure(userText: trimmed, error: err)
+            }
+        }
+    }
+
+    private func handleChatFailure(userText: String, error: ClawdChatError) {
+        let fallbackResponse = ClawdResponse(
+            actions: [ClawdAction(
+                type: ClawdActionType.addMemo.rawValue,
+                text: userText, dueAt: nil, tags: [], id: nil,
+                kind: nil, enabled: nil, intervalMin: nil, timeOfDay: nil
+            )],
+            reply: Self.errorMessage(for: error)
+        )
+        actionRunner.apply(userText: userText, response: fallbackResponse)
+        chatError = Self.errorMessage(for: error)
+        loadCompanionState()
+    }
+
+    private static func errorMessage(for error: ClawdChatError) -> String {
+        switch error {
+        case .cliNotFound:
+            return "Claude CLI를 찾지 못했어요. 메모로 저장만 해둘게요."
+        case .timeout:
+            return "응답이 느리네요. 메모로 저장만 해둘게요."
+        case .processFailed(let msg):
+            return "오류: \(msg). 메모로 저장만 해둘게요."
+        case .parseFailed:
+            return "응답을 이해하지 못했어요. 메모로 저장만 해둘게요."
+        }
+    }
+
+    func toggleReminder(kind: String) {
+        let current: ReminderConfig
+        switch kind {
+        case "water":   current = reminders.water
+        case "stretch": current = reminders.stretch
+        case "diary":   current = reminders.diary
+        default: return
+        }
+        actionRunner.setReminderDirect(kind: kind, enabled: !current.enabled)
+        loadCompanionState()
+    }
+
+    func setReminderInterval(kind: String, minutes: Int) {
+        actionRunner.setReminderDirect(kind: kind, intervalMin: minutes)
+        loadCompanionState()
+    }
+
+    func setDiaryTime(_ time: String) {
+        actionRunner.setReminderDirect(kind: "diary", timeOfDay: time)
+        loadCompanionState()
+    }
+
+    func completeMemo(_ id: String) {
+        actionRunner.completeMemo(id: id)
+        loadCompanionState()
+    }
+
+    func deleteMemo(_ id: String) {
+        actionRunner.deleteMemo(id: id)
+        loadCompanionState()
     }
 
     // MARK: - HUD Toggle
@@ -176,12 +273,14 @@ struct CollectionPopoverView: View {
                         Divider()
                         progressSection
                     }
+                    Divider()
+                    ClawdSection(viewModel: viewModel)
                 }
             }
             Divider()
             footerSection
         }
-        .frame(width: 280, height: 520)
+        .frame(width: 280, height: 640)
         .background(Color(NSColor.windowBackgroundColor))
     }
 
