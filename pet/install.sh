@@ -50,6 +50,8 @@ swiftc -o "build/$APP_NAME" \
   Sources/ProgressTracker.swift \
   Sources/ClawdMemory.swift \
   Sources/ReminderScheduler.swift \
+  Sources/ClawdChat.swift \
+  Sources/ClawdActionRunner.swift \
   Sources/NotificationManager.swift \
   Sources/PixelArtRenderer.swift \
   Sources/CollectionView.swift \
