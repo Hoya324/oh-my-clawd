@@ -75,7 +75,7 @@ git clone https://github.com/Hoya324/oh-my-clawd.git ~/.oh-my-clawd
 macOS 메뉴바에 상주하는 다마고치 스타일의 32x32 픽셀아트 캐릭터입니다.
 Claude Code의 공식 마스코트인 **Clawd**(#D97757)가 Claude Code 활동에 실시간으로 반응합니다.
 
-> 8가지 상태 | 3단계 활동 레벨 | 14종 액세서리 | 10가지 바디 컬러
+> 8가지 상태 | 3단계 활동 레벨 | 14종 액세서리 | Claude 기반 Companion
 
 ### Clawd 상태
 
@@ -154,26 +154,60 @@ Claude Code 사용 실적에 따라 Clawd에게 착용시킬 액세서리를 해
 
 > 총 **5 x 4 x 5 = 100가지** 이상의 조합이 가능합니다. (미착용 포함 시 더 많아요!)
 
-### 바디 컬러 변경
+## Clawd Companion
 
-컬러 가챠 티켓을 사용하여 Clawd의 바디 컬러를 변경할 수 있습니다. 10가지 컬러 중 랜덤으로 획득!
+Clawd는 단순한 장식이 아니라, Claude Haiku 기반의 가벼운 데일리 어시스턴트입니다. 자연어로 입력하면 시간을 해석해 메모로 저장하거나, 리마인더를 켜고 끄거나, 그냥 대화도 해줘요.
 
-| 컬러 | 이름 |
-|------|------|
-| 🟤 Terracotta | 테라코타 (기본) |
-| 🔵 Blue | 파란색 |
-| 🔴 Red | 빨간색 |
-| 🟢 Green | 초록색 |
-| 🟣 Purple | 보라색 |
-| 🟡 Gold | 골드 |
-| 🩷 Pink | 분홍색 |
-| 🔷 Navy | 네이비 |
-| 🟩 Mint | 민트 |
-| 🟠 Coral | 코랄 |
+<p align="center">
+  <img src="docs/assets/companion/popover-full.png" width="320" alt="전체 팝오버" />
+</p>
+
+### 자연어 메모 + 리마인더
+
+한국어/영어 자연어 그대로 말하면 Clawd가 시각을 해석해서 메모에 `dueAt`을 붙이고, 해당 시각에 macOS 알림을 발화합니다.
+
+<p align="center">
+  <img src="docs/assets/companion/companion-chat.png" width="420" alt="대화 예시" />
+</p>
+
+- `3시에 회의 있다고 알려줘` → `dueAt: 15:00` 메모, 3시에 알림
+- `12시 40분에 밥 먹으라고` → `dueAt: 12:40` 메모
+- `오늘 뭐 기억해둔 거 있어?` → 열린 메모를 답변으로만 알려줌
+- `스트레칭 알림 2시간마다` → 스트레칭 리마인더 120분으로 전환
+
+### 스케줄 리마인더
+
+세 가지 기본 습관 알림. 각각 on/off + 간격 조절 가능.
+
+<p align="center">
+  <img src="docs/assets/companion/reminders-panel.png" width="320" alt="리마인더 패널" />
+</p>
+
+| 종류 | 기본 주기 | 발화 조건 |
+|------|-----------|-----------|
+| 💧 물 | 60분마다 | Claude 세션 활성 시 |
+| 🧘 스트레칭 | 90분마다 | Claude 세션 활성 시 |
+| 📝 일기 | 매일 22:00 | 오늘 Claude 사용 기록 있을 때 |
+
+네이티브 macOS 알림으로 발화, 종류별 쿨다운, 설정은 `~/.claude/pet/clawd-memory.json`에 영속 저장됩니다.
+
+<p align="center">
+  <img src="docs/assets/companion/notif-water.png" width="380" alt="물 마시기 알림" />
+  <img src="docs/assets/companion/notif-welcome.png" width="380" alt="환영 알림" />
+</p>
+
+### 동작 방식
+
+- **Anthropic API 직접 호출**. Claude Code OAuth 토큰을 macOS 키체인에서 읽어서 씁니다. 왕복 0.5~2초, API 플랜 과금 없음 — `claude -p`와 동일하게 Claude 구독 rate limit에서 차감됩니다.
+- **Fallback**: 키체인 경로 실패 시 로컬 `claude` CLI를 subprocess로 실행.
+- **AI 끄기**: 헤더의 `✨ AI` 칩을 `✏️ 메모`로 토글하면 입력한 텍스트가 즉시 생 메모로 저장됩니다 — LLM 호출 없음, 토큰 소비 0.
+- **웹 질문** (날씨, 기사, 사실 질의) 은 Claude 내장 WebFetch / WebSearch로 자동 처리. 별도 설정 없음.
 
 ## 업데이트
 
-메뉴바 팝오버의 **Check for Updates** 버튼을 클릭하면 GitHub Releases에서 최신 버전을 확인합니다. 새 버전이 있으면 다운로드 페이지로 이동합니다.
+**앱 내 자동 설치.** 런치 후 몇 초 뒤 GitHub에 신버전을 확인합니다. 업데이트가 있으면 팝오버 하단에 `v<현재> → v<신규> 설치` 버튼이 표시됩니다. 클릭하면 Clawd가 DMG를 다운로드해서 자기 자신을 덮어쓰고 재시작합니다. 브라우저 필요 없음.
+
+`최신` 라벨을 클릭하면 수동으로 다시 확인합니다.
 
 ## 요구사항
 

@@ -60,6 +60,11 @@
         <a href="#configuration" class="sidebar-link" data-i18n="docs.sidebar.config">Configuration</a>
       </div>
 
+      <div class="sidebar-group">
+        <div class="sidebar-title">Companion</div>
+        <a href="#companion" class="sidebar-link">Memos &amp; Reminders</a>
+      </div>
+
       <div class="sidebar-section">
         <a href="#update" class="sidebar-link" data-i18n="docs.sidebar.update">Update</a>
       </div>
@@ -304,13 +309,35 @@ cd oh-my-clawd</code></pre>
       <p>The HUD status line can be toggled on or off via the <code>install.sh</code> script. Run <code>./install.sh</code> to enable or <code>./uninstall.sh</code> to disable the HUD.</p>
       <p>Accessory selection is available through the app popover. Click the Clawd icon in the menu bar to open the popover, then choose the active accessory from the collection grid.</p>
 
+      <!-- Companion -->
+      <h2 id="companion">Companion</h2>
+      <p>Clawd doubles as a lightweight daily assistant powered by Claude Haiku. Type naturally in the popover and Clawd parses time, saves memos, toggles reminders, or just chats back.</p>
+      <p style="text-align:center;">
+        <img src="assets/companion/popover-full.png" alt="Full companion popover" style="max-width:320px;" />
+      </p>
+      <p>Supported intents:</p>
+      <ul>
+        <li><code>3시에 회의 있다고 알려줘</code> → memo with <code>dueAt: 15:00</code>; native notification at 3pm.</li>
+        <li><code>오늘 뭐 기억해둔 거 있어?</code> → lists open memos in the reply, no memo created.</li>
+        <li><code>스트레칭 알림 2시간마다</code> → flips the stretch reminder interval in place.</li>
+        <li><code>오늘 날씨 어때?</code> → answered via Claude's built-in WebFetch / WebSearch.</li>
+      </ul>
+      <p>Three built-in habit reminders (water, stretch, diary) fire macOS native notifications. Water and stretch only fire while a Claude session is active.</p>
+      <p style="text-align:center;">
+        <img src="assets/companion/reminders-panel.png" alt="Reminders panel" style="max-width:320px;" />
+        <br/>
+        <img src="assets/companion/notif-water.png" alt="Water notification" style="max-width:380px;margin-top:8px;" />
+      </p>
+      <p>Clawd calls the Anthropic API directly with your Claude Code OAuth token (read from the macOS keychain). Round-trip is 0.5–2 seconds and it counts against your <strong>Claude subscription</strong> rate limit — no separate API-plan billing. A local <code>claude</code> CLI subprocess is used as a fallback.</p>
+      <p>Flip the <code>✨ AI</code> pill in the header to <code>✏️ 메모</code> to save raw memos instantly without any LLM call.</p>
+
       <!-- Update -->
       <h2 id="update" data-i18n="docs.update.title">Update</h2>
-      <p data-i18n="docs.update.desc">Check for updates directly from the app popover, or download the latest DMG from GitHub Releases.</p>
+      <p data-i18n="docs.update.desc">The app auto-installs updates in place. Click "설치" in the popover footer and Clawd downloads the latest DMG, replaces itself, and relaunches.</p>
       <p>
-        Use the <strong>Check for Updates</strong> button in the popover to see if a new version is available. If an update is found, you will be directed to the
+        A few seconds after each launch Clawd checks GitHub for a newer release. If one exists, the footer shows <code>v&lt;current&gt; → v&lt;new&gt; 설치</code>. Click <strong>최신</strong> to manually re-check. The raw DMG is always available on the
         <a href="https://github.com/Hoya324/oh-my-clawd/releases/latest" target="_blank" rel="noopener">GitHub Releases</a>
-        page to download the latest DMG.
+        page.
       </p>
 
     </main>

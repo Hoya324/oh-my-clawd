@@ -75,7 +75,7 @@ Then **restart Claude Code**.
 A Tamagotchi-style 32x32 pixel art character that lives in your macOS menu bar.
 **Clawd** (#D97757), the official Claude Code mascot, reacts to your Claude Code activity in real time.
 
-> 8 States | 3 Activity Levels | 14 Accessories | 10 Body Colors
+> 8 States | 3 Activity Levels | 14 Accessories | Claude-powered Companion
 
 ### Clawd States
 
@@ -154,26 +154,60 @@ Mix and match hats + glasses + pants to create your own unique style.
 
 > With **5 hats x 4 glasses x 5 pants = 100+** possible combinations (even more if you include no-accessory slots!)
 
-### Body Color Change
+## Clawd Companion
 
-Use color gacha tickets to change Clawd's body color. 10 colors available, picked at random!
+Clawd isn't just decoration — it's a lightweight daily assistant powered by Claude Haiku. Type naturally, and it parses time, saves memos, toggles reminders, or just chats back.
 
-| Color | Name |
-|-------|------|
-| 🟤 Terracotta | Default |
-| 🔵 Blue | Blue |
-| 🔴 Red | Red |
-| 🟢 Green | Green |
-| 🟣 Purple | Purple |
-| 🟡 Gold | Gold |
-| 🩷 Pink | Pink |
-| 🔷 Navy | Navy |
-| 🟩 Mint | Mint |
-| 🟠 Coral | Coral |
+<p align="center">
+  <img src="docs/assets/companion/popover-full.png" width="320" alt="Full companion popover" />
+</p>
+
+### Natural language memos + reminders
+
+Ask in plain Korean or English. Clawd resolves relative times to concrete timestamps and fires a native notification when due.
+
+<p align="center">
+  <img src="docs/assets/companion/companion-chat.png" width="420" alt="Chat example" />
+</p>
+
+- `3시에 회의 있다고 알려줘` → memo with `dueAt: 15:00`, notification at 3pm
+- `12시 40분에 밥 먹으라고` → memo with `dueAt: 12:40`
+- `오늘 뭐 기억해둔 거 있어?` → lists open memos in the reply, creates nothing
+- `스트레칭 알림 2시간마다` → flips the stretch reminder to 120m
+
+### Scheduled reminders
+
+Three built-in habit nudges with per-kind on/off and interval control:
+
+<p align="center">
+  <img src="docs/assets/companion/reminders-panel.png" width="320" alt="Reminders panel" />
+</p>
+
+| Reminder | Default | Fires when |
+|----------|---------|-----------|
+| 💧 Water | every 60m | a Claude session is active |
+| 🧘 Stretch | every 90m | a Claude session is active |
+| 📝 Diary | once a day at 22:00 | you've used Claude today |
+
+Native macOS notifications, cooldowns per kind, and the intervals persist across restarts in `~/.claude/pet/clawd-memory.json`.
+
+<p align="center">
+  <img src="docs/assets/companion/notif-water.png" width="380" alt="Water reminder notification" />
+  <img src="docs/assets/companion/notif-welcome.png" width="380" alt="Welcome notification" />
+</p>
+
+### How does it run?
+
+- **Direct Anthropic API** via your Claude Code OAuth token (read from the macOS keychain). 0.5–2s round-trip, no API-plan billing — it counts against your Claude subscription rate limit just like `claude -p`.
+- **Fallback**: spawns the local `claude` CLI when the keychain path fails.
+- **AI off**: flip the `✨ AI` pill in the header to `✏️ 메모`. Your input saves as a raw memo instantly — no LLM call, no tokens.
+- **Web questions** (weather, news, facts) work through Claude's built-in WebFetch / WebSearch. No extra config.
 
 ## Updates
 
-Click the **Check for Updates** button in the menu bar popover to check for the latest version on GitHub Releases. If a new version is available, it will open the download page.
+**Auto in-app install.** A few seconds after launch Clawd pings GitHub. If a newer release is published, the popover footer shows `v<current> → v<new> 설치`. Click it — Clawd downloads the DMG, replaces itself, and relaunches. No browser required.
+
+Click the `최신` label to manually re-check.
 
 ## Requirements
 
