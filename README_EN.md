@@ -120,7 +120,7 @@ Unlock accessories for Clawd based on your Claude Code usage milestones.
 Clawd doubles as a lightweight daily assistant. Type naturally and Claude Haiku parses time, saves memos, toggles reminders, or just chats.
 
 <p align="center">
-  <img src="docs/assets/companion/popover-full.png" width="320" alt="Full companion popover" />
+  <img src="docs/assets/companion/popover-ai-mode.png" width="300" alt="Clawd Companion in AI mode" />
 </p>
 
 ### Natural language memos + reminders
@@ -151,6 +151,10 @@ Water (60m), stretch (90m), and diary (daily at 22:00). Water/stretch fire only 
 ### Memo-only mode (no AI)
 
 Tap the `✨ AI` pill in the Clawd header to flip it to `✏️ Memo`. Typed input is saved as a raw memo **instantly** — no LLM round-trip, no network, zero tokens. Use this for quick jotting; flip back to AI mode when you need time parsing or reminders.
+
+<p align="center">
+  <img src="docs/assets/companion/popover-memo-mode.png" width="300" alt="Memo-only mode" />
+</p>
 
 ### How it runs
 

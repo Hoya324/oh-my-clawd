@@ -159,7 +159,7 @@ Mix and match hats + glasses + pants to create your own unique style.
 Clawd isn't just decoration — it's a lightweight daily assistant powered by Claude Haiku. Type naturally, and it parses time, saves memos, toggles reminders, or just chats back.
 
 <p align="center">
-  <img src="docs/assets/companion/popover-full.png" width="320" alt="Full companion popover" />
+  <img src="docs/assets/companion/popover-ai-mode.png" width="300" alt="Clawd Companion in AI mode" />
 </p>
 
 ### Natural language memos + reminders
@@ -199,6 +199,10 @@ Native macOS notifications, cooldowns per kind, and the intervals persist across
 ### Memo-only mode (no AI)
 
 Don't want to burn rate-limit quota on a quick jot? Tap the `✨ AI` pill in the Clawd header — it flips to `✏️ 메모`. In this mode whatever you type is saved as a raw memo **instantly**: no LLM round-trip, no network, zero tokens. Flip it back anytime.
+
+<p align="center">
+  <img src="docs/assets/companion/popover-memo-mode.png" width="300" alt="Clawd Companion in memo-only mode" />
+</p>
 
 Use AI mode for natural time parsing (`"3시에 ..."`) and reminders. Use memo mode for fast capture (`"보일러 점검"`, `"장봐야함"`).
 
