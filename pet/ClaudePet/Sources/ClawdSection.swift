@@ -230,16 +230,13 @@ struct ClawdSection: View {
                     .foregroundColor(.secondary)
             }
 
-            Menu {
-                Button("완료") { viewModel.completeMemo(memo.id) }
-                Button("삭제", role: .destructive) { viewModel.deleteMemo(memo.id) }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+            Button(action: { viewModel.deleteMemo(memo.id) }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.6))
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .buttonStyle(.plain)
+            .help("삭제")
         }
     }
 
