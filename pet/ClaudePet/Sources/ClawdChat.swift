@@ -46,20 +46,36 @@ enum ClawdChatError: Error {
 
 final class ClawdChat {
     static let modelId = "claude-haiku-4-5"
-    private let timeoutSeconds: TimeInterval = 10
+    private let timeoutSeconds: TimeInterval = 30
     private let memory: ClawdMemoryStore
+    private let apiClient: ClawdAPIClient
 
     init(memory: ClawdMemoryStore) {
         self.memory = memory
+        self.apiClient = ClawdAPIClient(memory: memory)
     }
 
-    /// Runs `claude -p` on a background thread and completes on the main queue.
+    /// Dispatch order:
+    /// 1) Direct Anthropic API call using the OAuth token from keychain
+    ///    — ~0.5-2s, works on any Mac where Claude Code is signed in.
+    /// 2) Fallback: spawn `claude -p` subprocess (~3-8s cold start).
+    /// 3) Final failure bubbles up to the caller, which saves as raw memo.
     func send(userText: String,
               completion: @escaping (Result<ClawdResponse, ClawdChatError>) -> Void) {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-            let result = self.runBlocking(userText: userText)
-            DispatchQueue.main.async { completion(result) }
+        apiClient.send(userText: userText) { [weak self] result in
+            switch result {
+            case .success:
+                completion(result)
+            case .failure(let err):
+                // Any API failure → try the CLI subprocess. Credential errors,
+                // expired tokens, and network hiccups all fall through.
+                NSLog("[Clawd] API path failed: \(err); trying CLI fallback")
+                guard let self = self else { return }
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let fallback = self.runBlocking(userText: userText)
+                    DispatchQueue.main.async { completion(fallback) }
+                }
+            }
         }
     }
 
@@ -137,7 +153,30 @@ final class ClawdChat {
     private static let resolveLock = NSLock()
     private static var cachedPath: String?
 
-    /// Public: call once at app launch to warm the cache. Non-blocking.
+    /// The transport Clawd will use for the next request.
+    enum Connection {
+        case api          // OAuth token available in keychain (fastest)
+        case cli(String)  // claude CLI binary path
+        case none         // nothing found
+    }
+
+    /// Public: call once at app launch. Resolves the fastest available
+    /// connection in the background without blocking the UI.
+    static func warmUpConnection(completion: ((Connection) -> Void)? = nil) {
+        DispatchQueue.global(qos: .utility).async {
+            if ClawdAPIClient.readOAuthToken() != nil {
+                DispatchQueue.main.async { completion?(.api) }
+                return
+            }
+            if let p = resolveClaudePath() {
+                DispatchQueue.main.async { completion?(.cli(p)) }
+                return
+            }
+            DispatchQueue.main.async { completion?(.none) }
+        }
+    }
+
+    /// Legacy alias kept for callers that only care about the CLI path.
     static func warmUpClaudePath(completion: ((String?) -> Void)? = nil) {
         DispatchQueue.global(qos: .utility).async {
             let p = resolveClaudePath()

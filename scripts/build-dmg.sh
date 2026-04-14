@@ -43,6 +43,7 @@ swiftc -o "$BUILD_DIR/$APP_NAME" \
   "$PET_DIR/Sources/ProgressTracker.swift" \
   "$PET_DIR/Sources/ClawdMemory.swift" \
   "$PET_DIR/Sources/ReminderScheduler.swift" \
+  "$PET_DIR/Sources/ClawdAPIClient.swift" \
   "$PET_DIR/Sources/ClawdChat.swift" \
   "$PET_DIR/Sources/ClawdActionRunner.swift" \
   "$PET_DIR/Sources/ClawdSection.swift" \

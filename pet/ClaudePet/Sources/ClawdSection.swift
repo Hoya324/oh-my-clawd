@@ -13,12 +13,12 @@ struct ClawdSection: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.secondary)
                 Circle()
-                    .fill(viewModel.claudeCliPath != nil ? Color.green : Color.orange)
+                    .fill(viewModel.isConnected ? Color.green : Color.orange)
                     .frame(width: 6, height: 6)
-                Text(viewModel.claudeCliPath != nil ? "연결됨" : "CLI 없음")
+                Text(viewModel.connectionLabel)
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.8))
-                    .help(viewModel.claudeCliPath ?? "claude CLI를 찾지 못했어요")
+                    .help(viewModel.claudeCliPath ?? "Claude Code OAuth / CLI")
                 Spacer()
             }
 

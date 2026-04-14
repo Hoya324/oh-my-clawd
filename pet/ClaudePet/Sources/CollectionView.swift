@@ -32,6 +32,8 @@ class ClawdViewModel: ObservableObject {
     @Published var chatInProgress: Bool = false
     @Published var chatError: String? = nil
     @Published var claudeCliPath: String? = nil
+    @Published var connectionLabel: String = "연결 확인 중…"
+    @Published var isConnected: Bool = false
 
     private let progressTracker = ProgressTracker()
     private let clawdMemory = ClawdMemoryStore()

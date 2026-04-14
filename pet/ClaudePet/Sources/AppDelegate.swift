@@ -59,10 +59,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         reloadFramesAndAnimate()
         scheduleRandomIdleMotion()
 
-        // Warm up the claude CLI path so the first user message is instant,
-        // and so the UI can reflect connection state on launch.
-        ClawdChat.warmUpClaudePath { [weak self] path in
-            self?.menuController.viewModel.claudeCliPath = path
+        // Warm up Clawd's connection (API token first, CLI fallback) so the
+        // first user message is instant and the UI shows live state.
+        ClawdChat.warmUpConnection { [weak self] conn in
+            guard let vm = self?.menuController.viewModel else { return }
+            switch conn {
+            case .api:
+                vm.connectionLabel = "API 연결됨"
+                vm.isConnected = true
+            case .cli(let path):
+                vm.connectionLabel = "CLI 연결됨"
+                vm.claudeCliPath = path
+                vm.isConnected = true
+            case .none:
+                vm.connectionLabel = "연결 없음"
+                vm.isConnected = false
+            }
         }
 
         NSWorkspace.shared.notificationCenter.addObserver(
