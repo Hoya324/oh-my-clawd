@@ -35,6 +35,7 @@ class ClawdViewModel: ObservableObject {
     @Published var claudeCliPath: String? = nil
     @Published var connectionLabel: String = "연결 확인 중…"
     @Published var isConnected: Bool = false
+    @Published var aiEnabled: Bool = true
 
     private let progressTracker = ProgressTracker()
     private let clawdMemory = ClawdMemoryStore()
@@ -97,14 +98,37 @@ class ClawdViewModel: ObservableObject {
         reminders = file.reminders
         openMemos = file.memos.filter { !$0.done }
         lastReply = file.chatLog.last(where: { $0.role == .clawd })?.text ?? ""
+        aiEnabled = file.aiEnabled ?? true
+    }
+
+    func toggleAI() {
+        clawdMemory.update { $0.aiEnabled = !($0.aiEnabled ?? true) }
+        loadCompanionState()
     }
 
     func sendChat(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !chatInProgress else { return }
-        chatInProgress = true
         chatError = nil
         lastFailedInput = nil
+
+        // AI disabled: save the raw text as a memo with no dueAt. Instant,
+        // no network, no token usage.
+        if !aiEnabled {
+            let response = ClawdResponse(
+                actions: [ClawdAction(
+                    type: ClawdActionType.addMemo.rawValue,
+                    text: trimmed, dueAt: nil, tags: [], id: nil,
+                    kind: nil, enabled: nil, intervalMin: nil, timeOfDay: nil
+                )],
+                reply: "메모로 저장했어요."
+            )
+            actionRunner.apply(userText: trimmed, response: response)
+            loadCompanionState()
+            return
+        }
+
+        chatInProgress = true
         chat.send(userText: trimmed) { [weak self] result in
             guard let self = self else { return }
             self.chatInProgress = false

@@ -47,12 +47,14 @@ struct ClawdMemoryFile: Codable, Equatable {
     var reminders: ClawdReminders
     var memos: [ClawdMemo]
     var chatLog: [ChatTurn]
+    var aiEnabled: Bool?        // nil = default true; false = memo-only mode
 
     static let empty = ClawdMemoryFile(
         version: 1,
         reminders: .default,
         memos: [],
-        chatLog: []
+        chatLog: [],
+        aiEnabled: true
     )
 }
 

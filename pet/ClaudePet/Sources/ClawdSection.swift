@@ -13,17 +13,41 @@ struct ClawdSection: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.secondary)
                 Circle()
-                    .fill(viewModel.isConnected ? Color.green : Color.orange)
+                    .fill(viewModel.isConnected && viewModel.aiEnabled
+                          ? Color.green : Color.orange)
                     .frame(width: 6, height: 6)
-                Text(viewModel.connectionLabel)
+                Text(viewModel.aiEnabled ? viewModel.connectionLabel : "메모 모드")
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.8))
                     .help(viewModel.claudeCliPath ?? "Claude Code OAuth / CLI")
                 Spacer()
+                Button(action: { viewModel.toggleAI() }) {
+                    HStack(spacing: 3) {
+                        Image(systemName: viewModel.aiEnabled
+                              ? "sparkles"
+                              : "square.and.pencil")
+                            .font(.system(size: 9))
+                        Text(viewModel.aiEnabled ? "AI" : "메모")
+                            .font(.system(size: 9, weight: .medium))
+                    }
+                    .foregroundColor(viewModel.aiEnabled ? .cyan : .secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: 4)
+                        .fill((viewModel.aiEnabled ? Color.cyan : Color.secondary)
+                              .opacity(0.15)))
+                }
+                .buttonStyle(.plain)
+                .help(viewModel.aiEnabled
+                      ? "AI 끄면 입력이 바로 메모로 저장됩니다"
+                      : "AI 켜면 자연어로 메모/리마인더를 만들 수 있어요")
             }
 
             HStack(spacing: 6) {
-                TextField("Clawd에게 말하기…", text: $input, onCommit: submit)
+                TextField(viewModel.aiEnabled
+                          ? "Clawd에게 말하기…"
+                          : "메모 입력…",
+                          text: $input, onCommit: submit)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                     .focused($inputFocused)
