@@ -31,6 +31,7 @@ class ClawdViewModel: ObservableObject {
     @Published var lastReply: String = ""
     @Published var chatInProgress: Bool = false
     @Published var chatError: String? = nil
+    @Published var claudeCliPath: String? = nil
 
     private let progressTracker = ProgressTracker()
     private let clawdMemory = ClawdMemoryStore()

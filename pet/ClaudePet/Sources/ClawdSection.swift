@@ -8,10 +8,17 @@ struct ClawdSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 4) {
                 Text("Clawd")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.secondary)
+                Circle()
+                    .fill(viewModel.claudeCliPath != nil ? Color.green : Color.orange)
+                    .frame(width: 6, height: 6)
+                Text(viewModel.claudeCliPath != nil ? "연결됨" : "CLI 없음")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary.opacity(0.8))
+                    .help(viewModel.claudeCliPath ?? "claude CLI를 찾지 못했어요")
                 Spacer()
             }
 

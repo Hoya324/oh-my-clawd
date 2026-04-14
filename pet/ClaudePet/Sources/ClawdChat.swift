@@ -81,6 +81,21 @@ final class ClawdChat {
             "--model", Self.modelId,
             "--output-format", "json",
         ]
+        // GUI-launched apps get a minimal environment. Give claude a PATH that
+        // covers the common install locations so it can find node/helpers.
+        var env = ProcessInfo.processInfo.environment
+        let home = NSHomeDirectory()
+        let extraPaths = [
+            "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
+            home + "/.bun/bin", home + "/.local/bin", home + "/.npm-global/bin",
+            (claudePath as NSString).deletingLastPathComponent,
+        ]
+        let existingPath = env["PATH"] ?? ""
+        env["PATH"] = (extraPaths + [existingPath]).filter { !$0.isEmpty }
+            .joined(separator: ":")
+        env["HOME"] = home
+        task.environment = env
+
         let stdin = Pipe()
         let stdout = Pipe()
         let stderr = Pipe()
@@ -118,29 +133,104 @@ final class ClawdChat {
         return Self.extractResponse(from: outStr)
     }
 
-    private static func resolveClaudePath() -> String? {
+    private static let cachePath = NSHomeDirectory() + "/.claude/pet/clawd-cli-path.txt"
+    private static let resolveLock = NSLock()
+    private static var cachedPath: String?
+
+    /// Public: call once at app launch to warm the cache. Non-blocking.
+    static func warmUpClaudePath(completion: ((String?) -> Void)? = nil) {
+        DispatchQueue.global(qos: .utility).async {
+            let p = resolveClaudePath()
+            DispatchQueue.main.async { completion?(p) }
+        }
+    }
+
+    static func resolveClaudePath() -> String? {
+        resolveLock.lock()
+        defer { resolveLock.unlock() }
+
+        if let p = cachedPath,
+           FileManager.default.isExecutableFile(atPath: p) { return p }
+
+        if let cached = try? String(contentsOfFile: cachePath, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !cached.isEmpty,
+           FileManager.default.isExecutableFile(atPath: cached) {
+            cachedPath = cached
+            return cached
+        }
+
+        let found = scanKnownLocations() ?? scanViaShell() ?? scanViaSpotlight()
+        if let p = found {
+            cachedPath = p
+            try? p.write(toFile: cachePath, atomically: true, encoding: .utf8)
+        }
+        return found
+    }
+
+    private static func scanKnownLocations() -> String? {
+        let home = NSHomeDirectory()
         let candidates = [
-            NSHomeDirectory() + "/.claude/local/claude",
+            home + "/.claude/local/claude",
             "/usr/local/bin/claude",
             "/opt/homebrew/bin/claude",
+            home + "/.local/bin/claude",
+            home + "/.bun/bin/claude",
+            home + "/.npm-global/bin/claude",
+            "/Applications/cmux.app/Contents/Resources/bin/claude",
+            home + "/Applications/cmux.app/Contents/Resources/bin/claude",
         ]
-        for p in candidates where FileManager.default.isExecutableFile(atPath: p) {
-            return p
+        return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
+    }
+
+    /// Ask interactive zsh/bash to resolve `claude` from the user's shell init.
+    /// GUI-launched apps don't inherit terminal PATH, so we ask the shell itself.
+    private static func scanViaShell() -> String? {
+        for shell in ["/bin/zsh", "/bin/bash"] {
+            guard FileManager.default.isExecutableFile(atPath: shell) else { continue }
+            let proc = Process()
+            proc.launchPath = shell
+            proc.arguments = ["-ilc", "command -v claude"]
+            let pipe = Pipe()
+            proc.standardOutput = pipe
+            proc.standardError = Pipe()
+            do { try proc.run() } catch { continue }
+            proc.waitUntilExit()
+            guard proc.terminationStatus == 0 else { continue }
+            let out = String(
+                data: pipe.fileHandleForReading.readDataToEndOfFile(),
+                encoding: .utf8
+            )?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let p = out, !p.isEmpty,
+               FileManager.default.isExecutableFile(atPath: p) {
+                return p
+            }
         }
-        let which = Process()
-        which.launchPath = "/bin/sh"
-        which.arguments = ["-lc", "command -v claude"]
+        return nil
+    }
+
+    /// Last-resort Spotlight scan. Slow, so only hit when other probes fail.
+    private static func scanViaSpotlight() -> String? {
+        let proc = Process()
+        proc.launchPath = "/usr/bin/mdfind"
+        proc.arguments = [
+            "kMDItemFSName == 'claude' && kMDItemContentType == 'public.unix-executable'"
+        ]
         let pipe = Pipe()
-        which.standardOutput = pipe
-        which.standardError = Pipe()
-        do { try which.run() } catch { return nil }
-        which.waitUntilExit()
-        guard which.terminationStatus == 0 else { return nil }
+        proc.standardOutput = pipe
+        proc.standardError = Pipe()
+        do { try proc.run() } catch { return nil }
+        proc.waitUntilExit()
+        guard proc.terminationStatus == 0 else { return nil }
         let out = String(
             data: pipe.fileHandleForReading.readDataToEndOfFile(),
             encoding: .utf8
-        )?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (out?.isEmpty == false) ? out : nil
+        ) ?? ""
+        let lines = out.split(separator: "\n").map(String.init)
+        return lines.first {
+            $0.hasSuffix("/bin/claude") &&
+            FileManager.default.isExecutableFile(atPath: $0)
+        } ?? lines.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
     // MARK: - Prompt

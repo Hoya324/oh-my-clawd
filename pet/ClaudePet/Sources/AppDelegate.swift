@@ -59,6 +59,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         reloadFramesAndAnimate()
         scheduleRandomIdleMotion()
 
+        // Warm up the claude CLI path so the first user message is instant,
+        // and so the UI can reflect connection state on launch.
+        ClawdChat.warmUpClaudePath { [weak self] path in
+            self?.menuController.viewModel.claudeCliPath = path
+        }
+
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(onSleep),
             name: NSWorkspace.willSleepNotification, object: nil
