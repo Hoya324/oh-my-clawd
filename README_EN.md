@@ -148,11 +148,14 @@ Water (60m), stretch (90m), and diary (daily at 22:00). Water/stretch fire only 
   <img src="docs/assets/companion/notif-welcome.png" width="380" alt="Welcome notification" />
 </p>
 
+### Memo-only mode (no AI)
+
+Tap the `✨ AI` pill in the Clawd header to flip it to `✏️ Memo`. Typed input is saved as a raw memo **instantly** — no LLM round-trip, no network, zero tokens. Use this for quick jotting; flip back to AI mode when you need time parsing or reminders.
+
 ### How it runs
 
 - Direct Anthropic API via your Claude Code OAuth token (read from the macOS keychain). ~0.5–2s round-trip, and it counts against your **Claude subscription** rate limit — no separate API-plan billing.
 - Falls back to the local `claude` CLI when the keychain path fails.
-- Flip the header `✨ AI` pill to `✏️ Memo` to save raw memos instantly without any LLM call.
 
 ## Updates
 

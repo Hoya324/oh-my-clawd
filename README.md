@@ -196,11 +196,16 @@ Native macOS notifications, cooldowns per kind, and the intervals persist across
   <img src="docs/assets/companion/notif-welcome.png" width="380" alt="Welcome notification" />
 </p>
 
+### Memo-only mode (no AI)
+
+Don't want to burn rate-limit quota on a quick jot? Tap the `✨ AI` pill in the Clawd header — it flips to `✏️ 메모`. In this mode whatever you type is saved as a raw memo **instantly**: no LLM round-trip, no network, zero tokens. Flip it back anytime.
+
+Use AI mode for natural time parsing (`"3시에 ..."`) and reminders. Use memo mode for fast capture (`"보일러 점검"`, `"장봐야함"`).
+
 ### How does it run?
 
 - **Direct Anthropic API** via your Claude Code OAuth token (read from the macOS keychain). 0.5–2s round-trip, no API-plan billing — it counts against your Claude subscription rate limit just like `claude -p`.
 - **Fallback**: spawns the local `claude` CLI when the keychain path fails.
-- **AI off**: flip the `✨ AI` pill in the header to `✏️ 메모`. Your input saves as a raw memo instantly — no LLM call, no tokens.
 - **Web questions** (weather, news, facts) work through Claude's built-in WebFetch / WebSearch. No extra config.
 
 ## Updates

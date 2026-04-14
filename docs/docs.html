@@ -328,8 +328,15 @@ cd oh-my-clawd</code></pre>
         <br/>
         <img src="assets/companion/notif-water.png" alt="Water notification" style="max-width:380px;margin-top:8px;" />
       </p>
+      <h3 id="memo-only-mode">Memo-only mode (no AI)</h3>
+      <p>Tap the <code>✨ AI</code> pill in the Clawd header to flip it to <code>✏️ 메모</code>. In this mode whatever you type is saved as a raw memo <strong>instantly</strong> — no LLM round-trip, no network, zero tokens. Flip back anytime.</p>
+      <ul>
+        <li><strong>AI mode</strong>: natural-language time parsing, reminders, chat.</li>
+        <li><strong>Memo mode</strong>: fast capture for short notes you don't need parsed.</li>
+      </ul>
+
+      <h3 id="companion-runtime">How it runs</h3>
       <p>Clawd calls the Anthropic API directly with your Claude Code OAuth token (read from the macOS keychain). Round-trip is 0.5–2 seconds and it counts against your <strong>Claude subscription</strong> rate limit — no separate API-plan billing. A local <code>claude</code> CLI subprocess is used as a fallback.</p>
-      <p>Flip the <code>✨ AI</code> pill in the header to <code>✏️ 메모</code> to save raw memos instantly without any LLM call.</p>
 
       <!-- Update -->
       <h2 id="update" data-i18n="docs.update.title">Update</h2>
