@@ -61,6 +61,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Warm up Clawd's connection (API token first, CLI fallback) so the
         // first user message is instant and the UI shows live state.
+        // Check for updates shortly after launch so the popover opens with
+        // a concrete state (최신 / 설치 버튼) instead of the Check button.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.menuController.viewModel.checkForUpdates()
+        }
+
         ClawdChat.warmUpConnection { [weak self] conn in
             guard let vm = self?.menuController.viewModel else { return }
             switch conn {

@@ -131,16 +131,27 @@ final class ClawdAPIClient {
         Help the user remember things, nudge good habits, and occasionally chat. \
         Reply in the user's language (default 한국어).
 
-        You MUST respond with a single JSON object, no prose, no code fences:
-        {"actions": Action[], "reply": string}
+        You MUST respond with a single JSON object, no prose, no code fences, \
+        no markdown. The response must exactly match this shape:
 
-        Supported actions (ignore unknown fields, emit none if not needed):
-          - add_memo      { "text": string, "dueAt": ISO8601 | null, "tags": string[] }
-          - complete_memo { "id": string }
-          - delete_memo   { "id": string }
-          - set_reminder  { "kind": "water"|"stretch"|"diary",
-                            "enabled": bool?, "intervalMin": number?,
-                            "timeOfDay": "HH:mm"? }
+          {"actions": [ { "type": "<action_name>", ...fields }, ... ],
+           "reply":   "<1-2 sentence reply to the user>"}
+
+        Each action object MUST be flat — `type` is a sibling of the fields, \
+        NOT a wrapping key. Example of the CORRECT shape:
+
+          {"type": "add_memo", "text": "점심 먹기",
+           "dueAt": "2026-04-14T12:40:00+09:00", "tags": ["점심"]}
+
+        WRONG (do not nest the type as a key):
+          {"add_memo": {"text": "점심 먹기", "dueAt": "..."}}
+
+        Supported action types:
+          - add_memo      { type:"add_memo",      text:string, dueAt:ISO8601|null, tags:string[] }
+          - complete_memo { type:"complete_memo", id:string }
+          - delete_memo   { type:"delete_memo",   id:string }
+          - set_reminder  { type:"set_reminder",  kind:"water"|"stretch"|"diary",
+                            enabled?:bool, intervalMin?:number, timeOfDay?:"HH:mm" }
 
         For general questions (weather, news, facts) answer briefly in `reply` \
         with actions: []. Do not create memos the user did not ask for. \
@@ -181,24 +192,59 @@ final class ClawdAPIClient {
         return .failure(.parseFailed(raw: text))
     }
 
+    /// Shared lenient parser used by both the API path and the CLI fallback.
     /// Try several decode strategies in order:
     /// 1. Raw text is already a clean JSON object.
     /// 2. Wrapped in ```json ... ``` fences.
-    /// 3. JSON object embedded somewhere inside prose — extract by
-    ///    finding the first balanced `{...}` block.
-    private static func parseLenient(_ text: String) -> ClawdResponse? {
+    /// 3. JSON object embedded somewhere inside prose.
+    /// Each candidate is also passed through an action-shape normalizer
+    /// so both {"type":"add_memo",...} and {"add_memo":{...}} are accepted.
+    static func parseLenient(_ text: String) -> ClawdResponse? {
         let candidates = [
             text,
             stripFences(text),
             firstJSONObject(in: text) ?? "",
         ]
         for c in candidates where !c.isEmpty {
-            if let data = c.data(using: .utf8),
-               let response = try? JSONDecoder().decode(ClawdResponse.self, from: data) {
-                return response
-            }
+            if let r = decodeWithNormalization(c) { return r }
         }
         return nil
+    }
+
+    private static func decodeWithNormalization(_ jsonText: String) -> ClawdResponse? {
+        guard let data = jsonText.data(using: .utf8),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        let reply = (root["reply"] as? String) ?? ""
+        let rawActions = (root["actions"] as? [[String: Any]]) ?? []
+        let normalized = rawActions.map(normalizeAction)
+        guard let normData = try? JSONSerialization.data(
+                withJSONObject: ["actions": normalized, "reply": reply]
+              ),
+              let response = try? JSONDecoder().decode(ClawdResponse.self, from: normData) else {
+            return nil
+        }
+        return response
+    }
+
+    /// Accept both the canonical flat form `{"type":"add_memo", ...}` and the
+    /// nested form `{"add_memo": {...}}` that Haiku occasionally emits.
+    private static func normalizeAction(_ raw: [String: Any]) -> [String: Any] {
+        if raw["type"] is String { return raw }
+        let knownTypes: Set<String> = [
+            "add_memo", "complete_memo", "delete_memo", "set_reminder"
+        ]
+        for (key, value) in raw where knownTypes.contains(key) {
+            var flat: [String: Any] = ["type": key]
+            if let inner = value as? [String: Any] {
+                for (k, v) in inner { flat[k] = v }
+            } else {
+                flat["value"] = value
+            }
+            return flat
+        }
+        return raw
     }
 
     private static func stripFences(_ s: String) -> String {

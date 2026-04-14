@@ -210,12 +210,29 @@ class ClawdViewModel: ObservableObject {
         updateStatus = .checking
         UpdateChecker.check { [weak self] status in
             self?.updateStatus = status
-            if case .upToDate = status {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    self?.updateStatus = .idle
+        }
+    }
+
+    /// Download and install the latest release, then relaunch.
+    func installUpdate() {
+        guard case .available(let version, let dmgURL) = updateStatus,
+              !dmgURL.isEmpty else { return }
+        updateStatus = .installing(0)
+        UpdateInstaller.installAndRelaunch(
+            dmgURL: dmgURL,
+            version: version,
+            progress: { [weak self] p in
+                self?.updateStatus = .installing(p)
+            },
+            completion: { [weak self] result in
+                switch result {
+                case .success(let v):
+                    self?.updateStatus = .installed(v)
+                case .failure(let e):
+                    self?.updateStatus = .failed(e.localizedDescription)
                 }
             }
-        }
+        )
     }
 
     func openReleasePage() {
@@ -520,56 +537,90 @@ struct CollectionPopoverView: View {
 
     @ViewBuilder
     private var updateButton: some View {
+        let current = UpdateChecker.currentVersion
+        HStack(spacing: 4) {
+            Text("v\(current)")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundColor(.secondary)
+            Spacer()
+            updateStatusTrailing(current: current)
+        }
+    }
+
+    @ViewBuilder
+    private func updateStatusTrailing(current: String) -> some View {
         switch viewModel.updateStatus {
         case .idle:
             Button(action: { viewModel.checkForUpdates() }) {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 9))
+                    Text("업데이트 확인")
                         .font(.system(size: 10))
-                    Text("Check for Updates")
-                        .font(.system(size: 11))
                 }
             }
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
         case .checking:
-            HStack(spacing: 4) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Checking...")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-            }
-        case .upToDate(let version):
-            HStack(spacing: 4) {
-                Image(systemName: "checkmark.circle.fill")
+            HStack(spacing: 3) {
+                ProgressView().controlSize(.small)
+                Text("확인 중…")
                     .font(.system(size: 10))
-                    .foregroundColor(.green)
-                Text("Up to date (v\(version))")
-                    .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
-        case .available(let version):
-            Button(action: { viewModel.openReleasePage() }) {
-                HStack(spacing: 4) {
+        case .upToDate:
+            HStack(spacing: 3) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 9))
+                    .foregroundColor(.green)
+                Text("최신")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+        case .available(let version, _):
+            Button(action: { viewModel.installUpdate() }) {
+                HStack(spacing: 3) {
                     Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.cyan)
-                    Text("Update Available: \(version)")
-                        .font(.system(size: 11))
-                        .foregroundColor(.cyan)
+                        .font(.system(size: 9))
+                    Text("→ v\(version) 설치")
+                        .font(.system(size: 10, weight: .semibold))
                 }
+                .foregroundColor(.cyan)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.cyan.opacity(0.15)))
             }
             .buttonStyle(.plain)
-        case .failed:
+        case .installing(let p):
             HStack(spacing: 4) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.yellow)
-                Text("Check failed")
-                    .font(.system(size: 11))
+                ProgressView(value: p)
+                    .frame(width: 60)
+                Text("\(Int(p * 100))%")
+                    .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(.secondary)
             }
+        case .installed(let v):
+            HStack(spacing: 3) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 9))
+                    .foregroundColor(.green)
+                Text("v\(v) 설치됨. 재시작 중…")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+        case .failed(let msg):
+            HStack(spacing: 3) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 9))
+                    .foregroundColor(.yellow)
+                Text(msg.isEmpty ? "업데이트 실패" : msg)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .help(msg)
         }
     }
 }
