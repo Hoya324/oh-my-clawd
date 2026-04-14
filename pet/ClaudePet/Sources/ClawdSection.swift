@@ -96,6 +96,8 @@ struct ClawdSection: View {
                 }
             }
 
+            notifDiagnosticRow
+
             DisclosureGroup(isExpanded: $remindersExpanded) {
                 VStack(spacing: 6) {
                     reminderRow(
@@ -145,6 +147,61 @@ struct ClawdSection: View {
     private func retryLastFailed() {
         if let text = viewModel.lastFailedInput {
             viewModel.sendChat(text)
+        }
+    }
+
+    private var notifDiagnosticRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: notifIcon)
+                .font(.system(size: 10))
+                .foregroundColor(notifColor)
+            Text(viewModel.testNotifStatus ?? notifLabel)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer()
+            if viewModel.notifAuthState == .denied {
+                Button("열기") { viewModel.openNotificationSettings() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 10))
+                    .foregroundColor(.cyan)
+            }
+            Button(action: { viewModel.sendTestNotification() }) {
+                Text("테스트")
+                    .font(.system(size: 10))
+                    .foregroundColor(.cyan)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var notifIcon: String {
+        switch viewModel.notifAuthState {
+        case .authorized, .provisional, .ephemeral: return "bell.fill"
+        case .denied: return "bell.slash"
+        case .notDetermined: return "bell.badge"
+        case .unknown: return "bell"
+        }
+    }
+
+    private var notifColor: Color {
+        switch viewModel.notifAuthState {
+        case .authorized, .provisional, .ephemeral: return .green
+        case .denied: return .red
+        case .notDetermined: return .orange
+        case .unknown: return .secondary
+        }
+    }
+
+    private var notifLabel: String {
+        switch viewModel.notifAuthState {
+        case .authorized:    return "알림 켜짐"
+        case .provisional:   return "알림 대기"
+        case .ephemeral:     return "알림 임시"
+        case .denied:        return "알림 꺼짐 — 설정에서 켜주세요"
+        case .notDetermined: return "알림 권한 요청 대기"
+        case .unknown:       return "알림 상태 확인 중…"
         }
     }
 

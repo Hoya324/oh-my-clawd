@@ -36,11 +36,14 @@ class ClawdViewModel: ObservableObject {
     @Published var connectionLabel: String = "연결 확인 중…"
     @Published var isConnected: Bool = false
     @Published var aiEnabled: Bool = true
+    @Published var notifAuthState: NotificationAuthState = .unknown
+    @Published var testNotifStatus: String? = nil
 
     private let progressTracker = ProgressTracker()
     private let clawdMemory = ClawdMemoryStore()
     private lazy var actionRunner = ClawdActionRunner(memory: clawdMemory)
     private lazy var chat = ClawdChat(memory: clawdMemory)
+    weak var notificationManager: NotificationManager?
     private static let hudSettingsPath = NSHomeDirectory() + "/.claude/settings.json"
 
     func refresh(stateData: PetStateData?) {
@@ -104,6 +107,25 @@ class ClawdViewModel: ObservableObject {
     func toggleAI() {
         clawdMemory.update { $0.aiEnabled = !($0.aiEnabled ?? true) }
         loadCompanionState()
+    }
+
+    func sendTestNotification() {
+        testNotifStatus = "전송 중…"
+        guard let nm = notificationManager else {
+            testNotifStatus = "알림 매니저를 찾지 못했어요."
+            return
+        }
+        nm.sendTestNotification { [weak self] success, message in
+            self?.testNotifStatus = message
+            self?.notifAuthState = nm.authState
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                self?.testNotifStatus = nil
+            }
+        }
+    }
+
+    func openNotificationSettings() {
+        NotificationManager.openSystemNotificationSettings()
     }
 
     func sendChat(_ text: String) {

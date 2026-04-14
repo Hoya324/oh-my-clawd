@@ -52,6 +52,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menuController = StatusMenuController()
         let _ = menuController.setupPopover()
+        menuController.viewModel.notificationManager = notificationManager
+        notificationManager.onAuthStateChange = { [weak self] state in
+            self?.menuController.viewModel.notifAuthState = state
+        }
+        notificationManager.refreshAuthState()
 
         setupStatusItem()
         startStatePolling()
