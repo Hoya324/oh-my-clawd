@@ -31,6 +31,7 @@ class ClawdViewModel: ObservableObject {
     @Published var lastReply: String = ""
     @Published var chatInProgress: Bool = false
     @Published var chatError: String? = nil
+    @Published var lastFailedInput: String? = nil
     @Published var claudeCliPath: String? = nil
     @Published var connectionLabel: String = "연결 확인 중…"
     @Published var isConnected: Bool = false
@@ -103,6 +104,7 @@ class ClawdViewModel: ObservableObject {
         guard !trimmed.isEmpty, !chatInProgress else { return }
         chatInProgress = true
         chatError = nil
+        lastFailedInput = nil
         chat.send(userText: trimmed) { [weak self] result in
             guard let self = self else { return }
             self.chatInProgress = false
@@ -117,29 +119,20 @@ class ClawdViewModel: ObservableObject {
     }
 
     private func handleChatFailure(userText: String, error: ClawdChatError) {
-        let fallbackResponse = ClawdResponse(
-            actions: [ClawdAction(
-                type: ClawdActionType.addMemo.rawValue,
-                text: userText, dueAt: nil, tags: [], id: nil,
-                kind: nil, enabled: nil, intervalMin: nil, timeOfDay: nil
-            )],
-            reply: Self.errorMessage(for: error)
-        )
-        actionRunner.apply(userText: userText, response: fallbackResponse)
         chatError = Self.errorMessage(for: error)
-        loadCompanionState()
+        lastFailedInput = userText
     }
 
     private static func errorMessage(for error: ClawdChatError) -> String {
         switch error {
         case .cliNotFound:
-            return "Claude CLI를 찾지 못했어요. 메모로 저장만 해둘게요."
+            return "Claude 연결이 없어요. Claude Code에 로그인되어 있는지 확인해주세요."
         case .timeout:
-            return "응답이 느리네요. 메모로 저장만 해둘게요."
+            return "응답이 오지 않았어요. 다시 한번 보내볼까요?"
         case .processFailed(let msg):
-            return "오류: \(msg). 메모로 저장만 해둘게요."
+            return "오류가 났어요: \(msg)"
         case .parseFailed:
-            return "응답을 이해하지 못했어요. 메모로 저장만 해둘게요."
+            return "응답을 이해하지 못했어요. 다시 시도해주세요."
         }
     }
 

@@ -164,19 +164,41 @@ final class ClawdAPIClient {
             let raw = String(data: data, encoding: .utf8) ?? ""
             return .failure(.parseFailed(raw: raw))
         }
-        // Concatenate all text blocks (usually one).
         let text = content.compactMap { block -> String? in
             if (block["type"] as? String) == "text",
                let t = block["text"] as? String { return t }
             return nil
         }.joined()
 
-        let cleaned = stripFences(text)
-        guard let body = cleaned.data(using: .utf8),
-              let response = try? JSONDecoder().decode(ClawdResponse.self, from: body) else {
-            return .failure(.parseFailed(raw: text))
+        if let parsed = parseLenient(text) {
+            return .success(parsed)
         }
-        return .success(response)
+        // Fallback: treat any free-form text as a plain reply with no actions.
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            return .success(ClawdResponse(actions: [], reply: trimmed))
+        }
+        return .failure(.parseFailed(raw: text))
+    }
+
+    /// Try several decode strategies in order:
+    /// 1. Raw text is already a clean JSON object.
+    /// 2. Wrapped in ```json ... ``` fences.
+    /// 3. JSON object embedded somewhere inside prose — extract by
+    ///    finding the first balanced `{...}` block.
+    private static func parseLenient(_ text: String) -> ClawdResponse? {
+        let candidates = [
+            text,
+            stripFences(text),
+            firstJSONObject(in: text) ?? "",
+        ]
+        for c in candidates where !c.isEmpty {
+            if let data = c.data(using: .utf8),
+               let response = try? JSONDecoder().decode(ClawdResponse.self, from: data) {
+                return response
+            }
+        }
+        return nil
     }
 
     private static func stripFences(_ s: String) -> String {
@@ -189,5 +211,34 @@ final class ClawdAPIClient {
             t = t.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return t
+    }
+
+    /// Scan for the first balanced `{...}` block, respecting string
+    /// literals and escapes. Returns nil if none found.
+    private static func firstJSONObject(in text: String) -> String? {
+        var depth = 0
+        var inString = false
+        var escape = false
+        var startIdx: String.Index?
+        for idx in text.indices {
+            let ch = text[idx]
+            if escape { escape = false; continue }
+            if inString {
+                if ch == "\\" { escape = true }
+                else if ch == "\"" { inString = false }
+                continue
+            }
+            if ch == "\"" { inString = true; continue }
+            if ch == "{" {
+                if depth == 0 { startIdx = idx }
+                depth += 1
+            } else if ch == "}" {
+                depth -= 1
+                if depth == 0, let start = startIdx {
+                    return String(text[start...idx])
+                }
+            }
+        }
+        return nil
     }
 }

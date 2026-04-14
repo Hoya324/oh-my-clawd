@@ -41,16 +41,34 @@ struct ClawdSection: View {
             }
 
             if !viewModel.lastReply.isEmpty || viewModel.chatError != nil {
-                HStack(alignment: .top, spacing: 4) {
-                    Image(systemName: viewModel.chatError != nil
-                          ? "exclamationmark.circle"
-                          : "bubble.left.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(viewModel.chatError != nil ? .orange : .secondary)
-                    Text(viewModel.chatError ?? viewModel.lastReply)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: viewModel.chatError != nil
+                              ? "exclamationmark.circle"
+                              : "bubble.left.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(viewModel.chatError != nil ? .orange : .secondary)
+                        Text(viewModel.chatError ?? viewModel.lastReply)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if viewModel.chatError != nil,
+                       let failed = viewModel.lastFailedInput {
+                        Button(action: retryLastFailed) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 9))
+                                Text("다시 보내기: \(failed)")
+                                    .font(.system(size: 10))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
+                            .foregroundColor(.cyan)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.leading, 14)
+                    }
                 }
             }
 
@@ -98,6 +116,12 @@ struct ClawdSection: View {
         let text = input
         input = ""
         viewModel.sendChat(text)
+    }
+
+    private func retryLastFailed() {
+        if let text = viewModel.lastFailedInput {
+            viewModel.sendChat(text)
+        }
     }
 
     private func reminderRow(emoji: String,

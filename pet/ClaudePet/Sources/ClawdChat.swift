@@ -342,12 +342,53 @@ final class ClawdChat {
             return .failure(.parseFailed(raw: cliOutput))
         }
 
-        let cleaned = stripFences(assistantText)
-        guard let body = cleaned.data(using: .utf8),
-              let response = try? JSONDecoder().decode(ClawdResponse.self, from: body) else {
-            return .failure(.parseFailed(raw: assistantText))
+        // Try direct, fenced, embedded-JSON, then fall back to plain text reply.
+        if let parsed = parseLenient(assistantText) {
+            return .success(parsed)
         }
-        return .success(response)
+        let trimmed = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            return .success(ClawdResponse(actions: [], reply: trimmed))
+        }
+        return .failure(.parseFailed(raw: assistantText))
+    }
+
+    private static func parseLenient(_ text: String) -> ClawdResponse? {
+        let candidates = [text, stripFences(text), firstJSONObject(in: text) ?? ""]
+        for c in candidates where !c.isEmpty {
+            if let data = c.data(using: .utf8),
+               let response = try? JSONDecoder().decode(ClawdResponse.self, from: data) {
+                return response
+            }
+        }
+        return nil
+    }
+
+    private static func firstJSONObject(in text: String) -> String? {
+        var depth = 0
+        var inString = false
+        var escape = false
+        var startIdx: String.Index?
+        for idx in text.indices {
+            let ch = text[idx]
+            if escape { escape = false; continue }
+            if inString {
+                if ch == "\\" { escape = true }
+                else if ch == "\"" { inString = false }
+                continue
+            }
+            if ch == "\"" { inString = true; continue }
+            if ch == "{" {
+                if depth == 0 { startIdx = idx }
+                depth += 1
+            } else if ch == "}" {
+                depth -= 1
+                if depth == 0, let start = startIdx {
+                    return String(text[start...idx])
+                }
+            }
+        }
+        return nil
     }
 
     private static func stripFences(_ s: String) -> String {
