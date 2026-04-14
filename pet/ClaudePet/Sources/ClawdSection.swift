@@ -150,35 +150,34 @@ struct ClawdSection: View {
         }
     }
 
+    @ViewBuilder
     private var notifDiagnosticRow: some View {
-        HStack(spacing: 6) {
-            Image(systemName: notifIcon)
-                .font(.system(size: 10))
-                .foregroundColor(notifColor)
-            Text(viewModel.testNotifStatus ?? notifLabel)
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer()
-            if viewModel.notifAuthState == .denied {
-                Button("열기") { viewModel.openNotificationSettings() }
-                    .buttonStyle(.plain)
+        let state = viewModel.notifAuthState
+        if state == .denied || state == .notDetermined || state == .authorizedNoBanner {
+            HStack(spacing: 6) {
+                Image(systemName: notifIcon)
                     .font(.system(size: 10))
-                    .foregroundColor(.cyan)
-            }
-            Button(action: { viewModel.sendTestNotification() }) {
-                Text("테스트")
+                    .foregroundColor(notifColor)
+                Text(notifLabel)
                     .font(.system(size: 10))
-                    .foregroundColor(.cyan)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                if state == .denied || state == .authorizedNoBanner {
+                    Button("설정 열기") { viewModel.openNotificationSettings() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 10))
+                        .foregroundColor(.cyan)
+                }
             }
-            .buttonStyle(.plain)
         }
     }
 
     private var notifIcon: String {
         switch viewModel.notifAuthState {
         case .authorized, .provisional, .ephemeral: return "bell.fill"
+        case .authorizedNoBanner: return "bell.badge.slash"
         case .denied: return "bell.slash"
         case .notDetermined: return "bell.badge"
         case .unknown: return "bell"
@@ -188,6 +187,7 @@ struct ClawdSection: View {
     private var notifColor: Color {
         switch viewModel.notifAuthState {
         case .authorized, .provisional, .ephemeral: return .green
+        case .authorizedNoBanner: return .orange
         case .denied: return .red
         case .notDetermined: return .orange
         case .unknown: return .secondary
@@ -196,12 +196,13 @@ struct ClawdSection: View {
 
     private var notifLabel: String {
         switch viewModel.notifAuthState {
-        case .authorized:    return "알림 켜짐"
-        case .provisional:   return "알림 대기"
-        case .ephemeral:     return "알림 임시"
-        case .denied:        return "알림 꺼짐 — 설정에서 켜주세요"
-        case .notDetermined: return "알림 권한 요청 대기"
-        case .unknown:       return "알림 상태 확인 중…"
+        case .authorized:           return "알림 켜짐"
+        case .provisional:          return "알림 대기"
+        case .ephemeral:            return "알림 임시"
+        case .authorizedNoBanner:   return "배너가 꺼져있어요. 설정 → 알림 → OhMyClawd → 알림 스타일을 '배너' 또는 '알림'으로 바꿔주세요."
+        case .denied:               return "알림 꺼짐 — 설정에서 켜주세요"
+        case .notDetermined:        return "알림 권한 요청 대기"
+        case .unknown:              return "알림 상태 확인 중…"
         }
     }
 

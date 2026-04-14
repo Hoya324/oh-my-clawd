@@ -615,14 +615,18 @@ struct CollectionPopoverView: View {
                     .foregroundColor(.secondary)
             }
         case .upToDate:
-            HStack(spacing: 3) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 9))
-                    .foregroundColor(.green)
-                Text("최신")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+            Button(action: { viewModel.checkForUpdates() }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 9))
+                        .foregroundColor(.green)
+                    Text("최신")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
             }
+            .buttonStyle(.plain)
+            .help("클릭하면 업데이트를 다시 확인해요")
         case .available(let version, _):
             Button(action: { viewModel.installUpdate() }) {
                 HStack(spacing: 3) {

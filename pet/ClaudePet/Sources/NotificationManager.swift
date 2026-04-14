@@ -8,6 +8,9 @@ enum NotificationAuthState: Equatable {
     case authorized
     case provisional
     case ephemeral
+    /// Allowed, but the user set alert style to None → notifications land in
+    /// Notification Center silently without a banner on the screen edge.
+    case authorizedNoBanner
 }
 
 final class NotificationManager {
@@ -33,18 +36,55 @@ final class NotificationManager {
 
     func refreshAuthState() {
         UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
-            let state: NotificationAuthState
+            let base: NotificationAuthState
             switch settings.authorizationStatus {
-            case .notDetermined: state = .notDetermined
-            case .denied:        state = .denied
-            case .authorized:    state = .authorized
-            case .provisional:   state = .provisional
-            case .ephemeral:     state = .ephemeral
-            @unknown default:    state = .unknown
+            case .notDetermined: base = .notDetermined
+            case .denied:        base = .denied
+            case .authorized:    base = .authorized
+            case .provisional:   base = .provisional
+            case .ephemeral:     base = .ephemeral
+            @unknown default:    base = .unknown
+            }
+            // Detect "alert style: None" — user allowed notifications but
+            // told macOS not to show banners.
+            let state: NotificationAuthState
+            if base == .authorized && settings.alertStyle == .none {
+                state = .authorizedNoBanner
+            } else {
+                state = base
             }
             DispatchQueue.main.async {
-                self?.authState = state
-                self?.onAuthStateChange?(state)
+                guard let self = self else { return }
+                let wasAuthorized = Self.isAuthorized(self.authState)
+                let nowAuthorized = Self.isAuthorized(state)
+                self.authState = state
+                self.onAuthStateChange?(state)
+                // Fire a welcome ping on the transition into "authorized".
+                if !wasAuthorized && nowAuthorized {
+                    self.fireWelcome()
+                }
+            }
+        }
+    }
+
+    private static func isAuthorized(_ s: NotificationAuthState) -> Bool {
+        s == .authorized || s == .provisional || s == .ephemeral
+            || s == .authorizedNoBanner
+    }
+
+    private func fireWelcome() {
+        let content = UNMutableNotificationContent()
+        content.title = "Clawd"
+        content.body = "알림이 켜졌어요. 이제 물·스트레칭·메모를 챙겨드릴게요 🐾"
+        content.sound = .default
+        let req = UNNotificationRequest(
+            identifier: "clawd-welcome-\(Int(Date().timeIntervalSince1970))",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(req) { error in
+            if let e = error {
+                NSLog("[Clawd] welcome notification failed: \(e)")
             }
         }
     }
