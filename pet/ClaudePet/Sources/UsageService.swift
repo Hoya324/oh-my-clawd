@@ -23,11 +23,12 @@ struct UsageSnapshot: Equatable {
     /// applies and the new one is unknown until Claude Code reports again.
     var fiveHourResetSinceUpdate = false
     var weeklyResetSinceUpdate = false
-    /// "statusline" when the HUD recorded it from Claude Code. Anything else
-    /// is a leftover from v2.2.0, which fetched usage itself.
+    /// "statusline" when the HUD recorded it from Claude Code, "cli" when the
+    /// refresh button asked Claude Code. Anything else is a leftover from
+    /// v2.2.0, which fetched usage itself.
     var source: String = "statusline"
 
-    var isFromClaudeCode: Bool { source == "statusline" }
+    var isFromClaudeCode: Bool { source == "statusline" || source == "cli" }
 
     var rateLimit: RateLimitData {
         let iso = ISO8601DateFormatter()

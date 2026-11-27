@@ -178,20 +178,7 @@ final class ClawdChat {
             "--model", Self.modelId,
             "--output-format", "json",
         ]
-        // GUI-launched apps get a minimal environment. Give claude a PATH that
-        // covers the common install locations so it can find node/helpers.
-        var env = ProcessInfo.processInfo.environment
-        let home = NSHomeDirectory()
-        let extraPaths = [
-            "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
-            home + "/.bun/bin", home + "/.local/bin", home + "/.npm-global/bin",
-            (claudePath as NSString).deletingLastPathComponent,
-        ]
-        let existingPath = env["PATH"] ?? ""
-        env["PATH"] = (extraPaths + [existingPath]).filter { !$0.isEmpty }
-            .joined(separator: ":")
-        env["HOME"] = home
-        task.environment = env
+        task.environment = Self.cliEnvironment(claudePath: claudePath)
 
         let stdin = Pipe()
         let stdout = Pipe()
@@ -231,6 +218,24 @@ final class ClawdChat {
         return Self.extractResponse(from: outStr)
     }
 
+    /// GUI-launched apps get a minimal environment. Give claude a PATH that
+    /// covers the common install locations so it (and user hooks) can find
+    /// node and other helpers.
+    static func cliEnvironment(claudePath: String) -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        let home = NSHomeDirectory()
+        let extraPaths = [
+            "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
+            home + "/.bun/bin", home + "/.local/bin", home + "/.npm-global/bin",
+            (claudePath as NSString).deletingLastPathComponent,
+        ]
+        let existingPath = env["PATH"] ?? ""
+        env["PATH"] = (extraPaths + [existingPath]).filter { !$0.isEmpty }
+            .joined(separator: ":")
+        env["HOME"] = home
+        return env
+    }
+
     /// With --output-format json, `claude -p` reports failures on stdout
     /// ({"is_error":true,"result":"…"}) and leaves stderr empty, which used
     /// to surface as a bare "exit 1:".
@@ -247,7 +252,7 @@ final class ClawdChat {
         }
         let lower = detail.lowercased()
         if lower.contains("login") || lower.contains("api key") || lower.contains("authenticat") || lower.contains("401") {
-            return "Claude 로그인 정보를 찾지 못했어요. 터미널에서 claude를 실행해 로그인 상태를 확인해 주세요."
+            return "Claude 로그인이 필요해요. 아래 로그인 버튼을 누르면 브라우저에서 로그인할 수 있어요."
         }
         return "exit \(status): \(detail.prefix(200))"
     }

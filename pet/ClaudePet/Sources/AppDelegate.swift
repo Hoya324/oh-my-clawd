@@ -26,6 +26,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let progressTracker = ProgressTracker()
     private let selectionStore = SelectionStore()
     private let usageService = UsageService()
+    private let authMonitor = ClaudeAuthMonitor()
     private let chatMonitor = ChatActivityMonitor()
     private let runtimeInstaller = RuntimeInstaller()
     private var menuController: StatusMenuController!
@@ -56,6 +57,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         vm.notificationManager = notificationManager
         vm.onUsageDisplayModeChange = { [weak self] _ in self?.updateStatusTitle() }
         vm.onRefreshUsage = { [weak self] in self?.usageService.refresh(force: true) }
+        vm.onBeginLogin = { [weak self] in self?.authMonitor.beginLogin() ?? false }
+        vm.onCancelLogin = { [weak self] in self?.authMonitor.cancelLogin() }
+        vm.onCheckAuth = { [weak self] in self?.authMonitor.check() }
+        authMonitor.onChange = { [weak self] state in
+            guard let vm = self?.menuController.viewModel else { return }
+            vm.applyAuthState(state)
+            if vm.isConnected {
+                vm.connectionLabel = state == .loggedOut || state == .loggingIn
+                    ? "Claude Code 로그인 필요" : "Claude Code 연결됨"
+            }
+        }
         notificationManager.onAuthStateChange = { [weak self] state in
             self?.menuController.viewModel.notifAuthState = state
         }
@@ -78,7 +90,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.notificationManager.sendClawdMessage(
                 key: "hud-migrated",
                 title: "HUD를 새 버전으로 바꿨어요",
-                body: "Claude Code를 다시 열거나 메시지를 하나 보내면 사용량이 갱신돼요."
+                body: "Claude Code를 쓰거나 팝오버의 새로고침을 누르면 사용량이 갱신돼요."
             )
         }
         runtimeInstaller.ensureInstalled { [weak self] status in
@@ -101,6 +113,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 vm.connectionLabel = "Claude Code 연결됨"
                 vm.claudeCliPath = path
                 vm.isConnected = true
+                self?.authMonitor.start()
             case .none:
                 vm.connectionLabel = "Claude Code 없음"
                 vm.isConnected = false

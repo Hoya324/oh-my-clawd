@@ -207,7 +207,9 @@ cd oh-my-clawd</code></pre>
       <ul>
         <li>Values are the official usage Claude Code passes to the status line (<code>rate_limits</code>), so the HUD must be on and they update while you use Claude Code. Pro and Max only.</li>
         <li>Limits are account-wide: claude.ai, desktop and mobile usage count too and show up with the next Claude Code reply.</li>
-        <li>Old values are dimmed and labelled with their age; a window past its reset time shows as reset.</li>
+        <li>The refresh button next to usage sends Claude Code one tiny message and reads the official <code>rate_limit_event</code>, so the numbers are current right away. It runs only when pressed and costs a sliver of usage.</li>
+        <li>The popover shows how old the numbers are; a window past its reset time is dimmed and shown as reset.</li>
+        <li>When Claude Code is signed out (<code>claude auth status</code>), a sign-in button opens <code>claude auth login</code> in Terminal. Sign in in the browser and Clawd notices on its own.</li>
         <li>Not using Claude Code? The usage card links to claude.ai's official Settings &gt; Usage page.</li>
         <li>A status line left over from an older oh-my-clawd HUD is switched to the bundled HUD automatically.</li>
         <li>Anthropic's terms reserve subscription OAuth for Claude Code and Claude.ai, so Clawd never reads Claude Code's login or calls the API with it.</li>

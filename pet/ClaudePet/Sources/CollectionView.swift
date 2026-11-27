@@ -46,6 +46,9 @@ class ClawdViewModel: ObservableObject {
     @Published var testNotifStatus: String? = nil
     // UI state for ClawdSection (see the note there about @State)
     @Published var chatInput: String = ""
+    @Published var authState: ClaudeAuthState = .unknown
+    @Published var usageRefreshing: Bool = false
+    @Published var usageRefreshMessage: String? = nil
     @Published var remindersExpanded: Bool = false
 
     private let progressTracker = ProgressTracker()
@@ -55,6 +58,10 @@ class ClawdViewModel: ObservableObject {
     var onUsageDisplayModeChange: ((UsageDisplayMode) -> Void)?
     /// Set by AppDelegate: refresh usage immediately (popover button).
     var onRefreshUsage: (() -> Void)?
+    /// Set by AppDelegate: login state (ClaudeAuthMonitor).
+    var onBeginLogin: (() -> Bool)?
+    var onCancelLogin: (() -> Void)?
+    var onCheckAuth: (() -> Void)?
     private lazy var actionRunner = ClawdActionRunner(memory: clawdMemory)
     private lazy var chat = ClawdChat(memory: clawdMemory)
     weak var notificationManager: NotificationManager?
@@ -102,6 +109,52 @@ class ClawdViewModel: ObservableObject {
 
     func refreshUsage() {
         onRefreshUsage?()
+    }
+
+    /// Refresh button: asks Claude Code for the current usage with one tiny
+    /// message. Only on request, since it spends a sliver of usage.
+    func refreshUsageFromClaude() {
+        guard !usageRefreshing else { return }
+        usageRefreshing = true
+        usageRefreshMessage = nil
+        UsageRefresher.refresh { [weak self] result in
+            guard let self = self else { return }
+            self.usageRefreshing = false
+            switch result {
+            case .success:
+                self.usageRefreshMessage = nil
+                self.onRefreshUsage?()
+            case .failure(let err):
+                if err == .notLoggedIn { self.onCheckAuth?() }
+                self.usageRefreshMessage = err.message
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+                    if self?.usageRefreshMessage == err.message { self?.usageRefreshMessage = nil }
+                }
+            }
+        }
+    }
+
+    // MARK: - Claude Code login
+
+    var needsLogin: Bool { authState == .loggedOut || authState == .loggingIn }
+
+    func beginLogin() {
+        if onBeginLogin?() != true {
+            usageRefreshMessage = "로그인 창을 열지 못했어요. 터미널에서 claude auth login 을 실행해 주세요"
+        }
+    }
+
+    func cancelLogin() {
+        onCancelLogin?()
+    }
+
+    func applyAuthState(_ state: ClaudeAuthState) {
+        let wasLoggingIn = authState == .loggingIn
+        authState = state
+        if state == .loggedIn {
+            if chatError?.hasPrefix("Claude 로그인") == true { chatError = nil }
+            if wasLoggingIn { refreshUsageFromClaude() }
+        }
     }
 
     // MARK: - Companion
@@ -177,6 +230,7 @@ class ClawdViewModel: ObservableObject {
     private func handleChatFailure(userText: String, error: ClawdChatError) {
         chatError = Self.errorMessage(for: error)
         lastFailedInput = userText
+        if chatError?.hasPrefix("Claude 로그인") == true { onCheckAuth?() }
     }
 
     private static func errorMessage(for error: ClawdChatError) -> String {
@@ -410,6 +464,9 @@ struct CollectionPopoverView: View {
     @ViewBuilder
     private var usageCard: some View {
         VStack(spacing: 5) {
+            if viewModel.needsLogin {
+                loginBanner
+            }
             switch (viewModel.usage, viewModel.usageStatus) {
             case (.some(let u), _):
                 usageHeader(u)
@@ -427,10 +484,10 @@ struct CollectionPopoverView: View {
                         .foregroundColor(.secondary.opacity(0.8))
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    if viewModel.usageStatus == .stale {
-                        usagePageLink
-                    }
                     usageInfoButton
+                }
+                if let msg = viewModel.usageRefreshMessage {
+                    usageRefreshNote(msg)
                 }
             case (.none, .hudOff):
                 usageGuide(
@@ -440,16 +497,94 @@ struct CollectionPopoverView: View {
                 )
             case (.none, .waitingForData):
                 usageGuide(
-                    title: "Claude Code를 한 번 쓰면 사용량이 보여요",
-                    detail: "Claude Code는 세션의 첫 응답 뒤에 사용량을 알려줘요. 열려 있는 세션에서 메시지를 한 번 보내 주세요. Pro, Max 구독에서만 제공돼요. 지금 바로 보려면 claude.ai 사용량 페이지를 열어 보세요.",
-                    action: nil
+                    title: "새로고침을 누르면 사용량이 보여요",
+                    detail: "Claude Code에 짧은 메시지를 하나 보내서 공식 사용량을 받아와요. Claude Code를 쓰는 동안에는 자동으로 갱신돼요. Pro, Max 구독에서만 제공돼요.",
+                    action: viewModel.isConnected
+                        ? (label: "새로고침", run: { viewModel.refreshUsageFromClaude() })
+                        : nil
                 )
+                if let msg = viewModel.usageRefreshMessage {
+                    usageRefreshNote(msg)
+                }
             case (.none, _):
                 usagePlaceholder("사용량 확인 중…")
             }
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+    }
+
+    /// "Claude Code 로그인이 필요해요 [로그인]", or the waiting state while the
+    /// login Terminal is open.
+    private var loginBanner: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "person.crop.circle.badge.exclamationmark")
+                .font(.system(size: 11))
+                .foregroundColor(.orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(viewModel.authState == .loggingIn ? "브라우저에서 로그인해 주세요" : "Claude Code 로그인이 필요해요")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(viewModel.authState == .loggingIn
+                     ? "로그인이 끝나면 자동으로 알아채요"
+                     : "로그인해야 대화와 사용량 새로고침을 쓸 수 있어요")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            if viewModel.authState == .loggingIn {
+                ProgressView().controlSize(.small)
+                Button("취소") { viewModel.cancelLogin() }
+                    .font(.system(size: 10))
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
+            } else {
+                Button(action: { viewModel.beginLogin() }) {
+                    Text("로그인")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor))
+                }
+                .buttonStyle(.plain)
+                .help("터미널에서 claude auth login 을 열어요. 브라우저에서 로그인만 하면 돼요")
+            }
+        }
+        .padding(6)
+        .background(RoundedRectangle(cornerRadius: 5).fill(Color.orange.opacity(0.1)))
+    }
+
+    /// Circular arrow next to "사용량": asks Claude Code for fresh numbers.
+    private var usageRefreshButton: some View {
+        Group {
+            if viewModel.usageRefreshing {
+                ProgressView().controlSize(.mini)
+                    .frame(width: 12, height: 12)
+            } else {
+                Button(action: { viewModel.refreshUsageFromClaude() }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12, height: 12)
+                }
+                .buttonStyle(.plain)
+                .disabled(!viewModel.isConnected || viewModel.authState == .loggedOut)
+                .help("Claude Code에 짧은 메시지를 보내 지금 사용량을 받아와요 (사용량이 아주 조금 늘어요)")
+            }
+        }
+    }
+
+    private func usageRefreshNote(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 9))
+            Text(text)
+                .font(.system(size: 9))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+        }
+        .foregroundColor(.orange)
     }
 
     /// Opens claude.ai's official usage page (Settings > Usage): the way to
@@ -470,11 +605,11 @@ struct CollectionPopoverView: View {
             .font(.system(size: 9))
             .foregroundColor(.secondary)
             .help("""
-            사용량은 Claude Code가 상태 표시줄로 알려주는 공식 값이에요. \
-            Anthropic 약관상 다른 앱이 Claude 로그인을 쓸 수 없어서, Clawd는 \
-            로그인 정보를 읽지 않고 이 값만 보여줘요. 그래서 Claude Code를 \
-            쓸 때 갱신되고, claude.ai나 앱에서만 쓴 사용량은 다음 Claude Code \
-            응답 때 반영돼요.
+            사용량은 Claude Code가 알려주는 공식 값이에요. Anthropic 약관상 \
+            다른 앱이 Claude 로그인을 쓸 수 없어서, Clawd는 로그인 정보를 읽지 \
+            않아요. Claude Code를 쓰는 동안 자동으로 갱신되고, 새로고침 버튼을 \
+            누르면 Claude Code에 짧은 메시지를 보내 바로 받아와요. 로그인만 \
+            해서는 갱신되지 않아요.
             """)
     }
 
@@ -516,6 +651,12 @@ struct CollectionPopoverView: View {
                 Text("사용량")
                     .font(.system(size: 11, weight: .semibold))
                 Spacer()
+                if viewModel.isConnected {
+                    usageRefreshButton
+                }
+                if viewModel.usageStatus == .stale || !viewModel.isConnected {
+                    usagePageLink
+                }
             }
             if !u.fiveHourResetSinceUpdate, !u.weeklyResetSinceUpdate,
                let pace = UsagePace.summary(u) {
@@ -536,7 +677,7 @@ struct CollectionPopoverView: View {
                     .font(.system(size: 10, weight: .medium))
                 Spacer()
                 if resetSinceUpdate {
-                    Text("초기화됨, 다음 Claude Code 응답 때 갱신")
+                    Text("초기화됨, 새로고침으로 갱신")
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
                 } else if let reset = UsagePace.resetLabel(resetsAt) {
@@ -575,10 +716,10 @@ struct CollectionPopoverView: View {
         default:      when = "\(minutes / 1440)일 전"
         }
         if !u.isFromClaudeCode {
-            return "\(when) 이전 버전에서 받은 값. Claude Code를 쓰면 갱신돼요"
+            return "\(when) 이전 버전에서 받은 값. 새로고침해 주세요"
         }
         if viewModel.usageStatus == .stale {
-            return "\(when) Claude Code 기준. Claude Code를 쓰면 갱신돼요"
+            return "\(when) 기준. 새로고침으로 지금 값을 받을 수 있어요"
         }
         return "\(when) Claude Code 기준"
     }

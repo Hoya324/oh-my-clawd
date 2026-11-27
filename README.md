@@ -100,7 +100,9 @@ Your 5-hour usage sits right next to Clawd (`[Clawd] 42%`). Pick `끔 / 5h / 5h+
 - The popover shows your plan (Max, Pro), current session and weekly usage with reset times, per-model weekly limits when your account has them, and a one-line pace check ("on track until Sunday's reset").
 - Values are the **official usage Claude Code passes to the status line** (`rate_limits`), so the HUD must be on and numbers update while you use Claude Code. Pro and Max only.
 - Limits are account-wide, so claude.ai, desktop and mobile usage count too; they show up with the next Claude Code reply.
-- Old values are dimmed in the menu bar and labelled "n min ago"; a window whose reset time has passed shows as reset.
+- **Refresh button** (↻ next to usage): sends Claude Code one tiny message and reads the official `rate_limit_event` from `claude -p`, so you get current numbers right away. Runs only when pressed and costs a sliver of usage.
+- The popover says how old the numbers are ("n min ago"); a window whose reset time has passed is dimmed in the menu bar and shown as reset.
+- **Sign-in help**: when Claude Code is signed out (`claude auth status`), the popover shows a **로그인** button. It opens `claude auth login` in Terminal; sign in in the browser and Clawd notices on its own. Signing in alone does not refresh usage; refresh or use Claude Code.
 - Not using Claude Code, or need the exact number now? **claude.ai에서 보기** in the usage card opens claude.ai's official Settings > Usage page.
 - A status line left over from an older oh-my-clawd HUD is switched to the bundled HUD automatically.
 

@@ -33,9 +33,9 @@ enum StatusBarUsage {
         return .labelColor
     }
 
-    /// Menu bar text. Values that are old (no Claude Code reply for a while)
-    /// or whose window has reset since are drawn dimmed, so a stale number
-    /// never looks live.
+    /// Menu bar text. Only a window that has reset since the last report is
+    /// dimmed (its number no longer applies). An old but still valid number
+    /// keeps its color; the tooltip says how old it is.
     static func title(_ usage: UsageSnapshot?, mode: UsageDisplayMode,
                       stale: Bool = false) -> NSAttributedString? {
         guard mode != .off, let usage = usage else { return nil }
@@ -48,7 +48,7 @@ enum StatusBarUsage {
         func part(_ percent: Double?, resetSince: Bool) -> (String, NSColor)? {
             if resetSince { return ("0%", .tertiaryLabelColor) }
             guard let p = percent else { return nil }
-            return ("\(Int(p.rounded()))%", stale ? .secondaryLabelColor : color(for: p))
+            return ("\(Int(p.rounded()))%", color(for: p))
         }
 
         let five = part(usage.fiveHourPercent, resetSince: usage.fiveHourResetSinceUpdate)
@@ -72,12 +72,12 @@ enum StatusBarUsage {
         }
         var lines: [String] = []
         if u.fiveHourResetSinceUpdate {
-            lines.append("5시간: 초기화됨 (다음 Claude Code 응답 때 갱신)")
+            lines.append("5시간: 초기화됨 (팝오버의 새로고침으로 갱신)")
         } else if let p = u.fiveHourPercent {
             lines.append("5시간 \(Int(p.rounded()))%" + reset(u.fiveHourResetsAt))
         }
         if u.weeklyResetSinceUpdate {
-            lines.append("주간: 초기화됨 (다음 Claude Code 응답 때 갱신)")
+            lines.append("주간: 초기화됨 (팝오버의 새로고침으로 갱신)")
         } else if let p = u.weeklyPercent {
             lines.append("주간 \(Int(p.rounded()))%" + reset(u.weeklyResetsAt))
         }
@@ -85,9 +85,9 @@ enum StatusBarUsage {
             lines.append("주간 \(m.label) \(Int(m.percent.rounded()))%" + reset(m.resetsAt))
         }
         if !u.isFromClaudeCode {
-            lines.append("이전 버전에서 받은 값이에요. Claude Code를 쓰면 갱신돼요")
+            lines.append("이전 버전에서 받은 값이에요. 팝오버에서 새로고침해 주세요")
         } else if status == .stale {
-            lines.append("\(Int(u.age / 60))분 전 Claude Code 기준 값이에요")
+            lines.append("\(Int(u.age / 60))분 전 값이에요. 팝오버에서 새로고침할 수 있어요")
         } else if let pace = UsagePace.summary(u) {
             lines.append(pace)
         }

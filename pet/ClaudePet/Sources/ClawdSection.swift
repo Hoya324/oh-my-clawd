@@ -78,6 +78,20 @@ struct ClawdSection: View {
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    if viewModel.chatError?.hasPrefix("Claude 로그인") == true {
+                        Button(action: { viewModel.beginLogin() }) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "person.crop.circle.badge.checkmark")
+                                    .font(.system(size: 9))
+                                Text(viewModel.authState == .loggingIn ? "브라우저에서 로그인 중…" : "Claude Code 로그인")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .foregroundColor(.cyan)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.authState == .loggingIn)
+                        .padding(.leading, 14)
+                    }
                     if viewModel.chatError != nil,
                        let failed = viewModel.lastFailedInput {
                         Button(action: retryLastFailed) {
