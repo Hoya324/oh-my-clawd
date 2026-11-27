@@ -91,22 +91,23 @@ A Tamagotchi-style 32x32 pixel art character that lives in your macOS menu bar.
 | Stressed | <img src="docs/assets/clawd/stressed.gif" width="32"> | Shaking, alert | Rate limit >= 80% |
 | Tired | <img src="docs/assets/clawd/tired.gif" width="32"> | Droopy eyes | Session >= 45 min |
 | Collab | <img src="docs/assets/clawd/collab.gif" width="32"> | Multi-agent anim | 2+ agents |
-| Chatting | 💬 | Speech bubble | Claude desktop app in front, or usage rising, with no Claude Code session |
+| Chatting | 💬 | Speech bubble | Claude desktop app in front, with no Claude Code session |
 
 ### Usage in the menu bar
 
 Your 5-hour usage sits right next to Clawd (`[Clawd] 42%`). Pick `끔 / 5h / 5h+주` (off / 5h / 5h + weekly) under **메뉴바 사용량** in the popover; hover for reset times. Orange at 70%+, red at 90%+.
 
 - The popover shows your plan (Max, Pro), current session and weekly usage with reset times, per-model weekly limits when your account has them, and a one-line pace check ("on track until Sunday's reset").
-- The app fetches usage itself, so it shows even with no HUD or terminal session.
-- Limits are account-wide: claude.ai, the desktop app, mobile and Claude Code all count.
-- Requires a Claude Code login on this Mac.
-- When the token has expired and Claude Code is not running, the app refreshes it and saves the result back to Claude Code's own keychain item, so Claude Code stays signed in. Turn off with `defaults write com.hoya324.oh-my-clawd autoRefreshToken -bool false`.
+- Values are the **official usage Claude Code passes to the status line** (`rate_limits`), so the HUD must be on and numbers update while you use Claude Code. Pro and Max only.
+- Limits are account-wide, so claude.ai, desktop and mobile usage count too; they show up with the next Claude Code reply.
+- Old values are dimmed in the menu bar and labelled "n min ago"; a window whose reset time has passed shows as reset.
+
+> **Why not fetch usage directly?** Anthropic's terms reserve subscription OAuth for Claude Code and Claude.ai, so a third-party app must not call the API with that token or refresh it. Clawd never reads Claude Code's login; it only uses what Claude Code reports.
 - Alerts fire once per 5-hour window at 80% and 95%.
 
 ### Chat detection
 
-Clawd reacts even without a Claude Code session: a speech-bubble "chatting" state while the Claude desktop app is in front, and a few awake minutes whenever account usage goes up (web, mobile, remote agents). Water/stretch reminders count chat activity too. No conversation content, app files or browser data are read.
+Clawd reacts even without a Claude Code session: a speech-bubble "chatting" state while the Claude desktop app is in front. Water/stretch reminders count chat activity too. No conversation content, app files or browser data are read.
 
 ### Motions
 
@@ -178,7 +179,7 @@ Mix and match hats + glasses + pants to create your own unique style.
 
 ## Clawd Companion
 
-Clawd isn't just decoration — it's a lightweight daily assistant powered by Claude Haiku. Type naturally, and it parses time, saves memos, toggles reminders, or just chats back.
+Clawd isn't just decoration — it's a lightweight daily assistant that runs through Claude Code (`claude -p`, Haiku). Type naturally, and it parses time, saves memos, toggles reminders, or just chats back.
 
 <p align="center">
   <img src="docs/assets/companion/popover-ai-mode.png" width="300" alt="Clawd Companion in AI mode" />
@@ -230,8 +231,9 @@ Use AI mode for natural time parsing (`"3시에 ..."`) and reminders. Use memo m
 
 ### How does it run?
 
-- **Direct Anthropic API** via your Claude Code OAuth token (read from the macOS keychain). 0.5–2s round-trip, no API-plan billing — it counts against your Claude subscription rate limit just like `claude -p`.
-- **Fallback**: spawns the local `claude` CLI when the keychain path fails.
+- **Runs through the Claude Code CLI** (`claude -p`). Login and billing stay with Claude Code; Clawd never handles tokens.
+- If `claude` is missing or signed out, the popover says why and how to fix it; memo mode keeps working meanwhile.
+- Relative times ("in 3 minutes") are computed by the app; a time that resolves to the past is not used, and Clawd tells you.
 - **Web questions** (weather, news, facts) work through Claude's built-in WebFetch / WebSearch. No extra config.
 
 ## Updates
@@ -244,7 +246,7 @@ Click the `최신` label to manually re-check.
 
 - **macOS 13.0+**
 - **Node.js >= 18** for the HUD and Claude Code session tracking (the app and usage display work without it)
-- **Claude Code** with OAuth login (for usage data)
+- **Claude Code** signed in with Pro or Max (usage display and Clawd chat)
 
 ## Uninstall
 

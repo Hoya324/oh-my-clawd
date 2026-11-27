@@ -23,7 +23,6 @@ class ClawdViewModel: ObservableObject {
     // Usage (UsageService: works for every Claude surface)
     @Published var usage: UsageSnapshot?
     @Published var usageStatus: UsageStatus = .loading
-    @Published var plan: String?
     @Published var usageDisplayMode: UsageDisplayMode = UsageDisplayMode.load()
     @Published var chatSource: ChatActivityMonitor.Source = .none
     @Published var aggregatorStatus: RuntimeInstaller.AggregatorStatus = .unknown
@@ -183,11 +182,11 @@ class ClawdViewModel: ObservableObject {
     private static func errorMessage(for error: ClawdChatError) -> String {
         switch error {
         case .cliNotFound:
-            return "Claude 연결이 없어요. Claude Code에 로그인되어 있는지 확인해주세요."
+            return "Claude Code(claude)를 찾지 못했어요. 설치하면 Clawd와 대화할 수 있어요. 그동안은 AI 칩을 눌러 메모 모드로 기록할 수 있어요."
         case .timeout:
             return "응답이 오지 않았어요. 다시 한번 보내볼까요?"
         case .processFailed(let msg):
-            return "오류가 났어요: \(msg)"
+            return msg.hasPrefix("Claude 로그인") ? msg : "오류가 났어요: \(msg)"
         case .parseFailed:
             return "응답을 이해하지 못했어요. 다시 시도해주세요."
         }
@@ -238,6 +237,7 @@ class ClawdViewModel: ObservableObject {
             hudError = "settings.json 저장 실패"
         }
         isHudEnabled = HudSettings.isEnabled()
+        onRefreshUsage?()   // usage availability depends on the HUD
     }
 
     func checkForUpdates() {
@@ -413,36 +413,83 @@ struct CollectionPopoverView: View {
             switch (viewModel.usage, viewModel.usageStatus) {
             case (.some(let u), _):
                 usageHeader(u)
-                usageRow(label: "현재 세션", percent: u.fiveHourPercent, resetsAt: u.fiveHourResetsAt)
-                usageRow(label: "이번 주", percent: u.weeklyPercent, resetsAt: u.weeklyResetsAt)
+                usageRow(label: "현재 세션", percent: u.fiveHourPercent, resetsAt: u.fiveHourResetsAt,
+                         resetSinceUpdate: u.fiveHourResetSinceUpdate)
+                usageRow(label: "이번 주", percent: u.weeklyPercent, resetsAt: u.weeklyResetsAt,
+                         resetSinceUpdate: u.weeklyResetSinceUpdate)
                 ForEach(u.modelLimits, id: \.model) { m in
-                    usageRow(label: "이번 주 (\(m.label))", percent: m.percent, resetsAt: m.resetsAt)
+                    usageRow(label: "이번 주 (\(m.label))", percent: m.percent, resetsAt: m.resetsAt,
+                             resetSinceUpdate: m.resetsAt.map { $0 <= Date() } ?? false)
                 }
-                HStack {
+                HStack(spacing: 4) {
                     Text(usageFootnote(u))
                         .font(.system(size: 9))
                         .foregroundColor(.secondary.opacity(0.8))
+                        .fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Button(action: { viewModel.refreshUsage() }) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 9))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
-                    .help("사용량 새로고침")
+                    usageInfoButton
                 }
-            case (.none, .loading):
-                usagePlaceholder("사용량 불러오는 중…")
-            case (.none, .noCredentials):
-                usagePlaceholder("이 Mac에서 Claude Code에 로그인하면 사용량이 보여요")
-            case (.none, .tokenExpired):
-                usagePlaceholder("로그인 갱신을 기다리는 중이에요. Claude Code를 쓰면 바로 갱신돼요")
+            case (.none, .hudOff):
+                usageGuide(
+                    title: "사용량을 보려면 HUD를 켜 주세요",
+                    detail: "Claude Code가 상태 표시줄(HUD)로 알려주는 공식 사용량을 받아와요. 켠 뒤 Claude Code에서 메시지를 한 번 보내면 표시돼요.",
+                    action: ("HUD 켜기", { viewModel.toggleHud() })
+                )
+            case (.none, .waitingForData):
+                usageGuide(
+                    title: "Claude Code를 한 번 쓰면 사용량이 보여요",
+                    detail: "Claude Code는 세션의 첫 응답 뒤에 사용량을 알려줘요. 열려 있는 세션에서 메시지를 한 번 보내 주세요. Pro, Max 구독에서만 제공돼요.",
+                    action: nil
+                )
             case (.none, _):
-                usagePlaceholder("사용량을 불러오지 못했어요")
+                usagePlaceholder("사용량 확인 중…")
             }
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+    }
+
+    /// "?" with the reason usage is not live, for anyone who wonders.
+    private var usageInfoButton: some View {
+        Image(systemName: "questionmark.circle")
+            .font(.system(size: 9))
+            .foregroundColor(.secondary)
+            .help("""
+            사용량은 Claude Code가 상태 표시줄로 알려주는 공식 값이에요. \
+            Anthropic 약관상 다른 앱이 Claude 로그인을 쓸 수 없어서, Clawd는 \
+            로그인 정보를 읽지 않고 이 값만 보여줘요. 그래서 Claude Code를 \
+            쓸 때 갱신되고, claude.ai나 앱에서만 쓴 사용량은 다음 Claude Code \
+            응답 때 반영돼요.
+            """)
+    }
+
+    private func usageGuide(title: String, detail: String,
+                            action: (label: String, run: () -> Void)?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                Spacer()
+                usageInfoButton
+            }
+            Text(detail)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let action = action {
+                Button(action: action.run) {
+                    Text(action.label)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func usageHeader(_ u: UsageSnapshot) -> some View {
@@ -450,14 +497,10 @@ struct CollectionPopoverView: View {
             HStack(spacing: 6) {
                 Text("사용량")
                     .font(.system(size: 11, weight: .semibold))
-                if let plan = viewModel.plan {
-                    Text(plan)
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                }
                 Spacer()
             }
-            if let pace = UsagePace.summary(u) {
+            if !u.fiveHourResetSinceUpdate, !u.weeklyResetSinceUpdate,
+               let pace = UsagePace.summary(u) {
                 Text(pace)
                     .font(.system(size: 10))
                     .foregroundColor(.primary.opacity(0.85))
@@ -466,14 +509,19 @@ struct CollectionPopoverView: View {
         }
     }
 
-    private func usageRow(label: String, percent: Double?, resetsAt: Date?) -> some View {
-        let pct = percent.map { Int($0.rounded()) }
+    private func usageRow(label: String, percent: Double?, resetsAt: Date?,
+                          resetSinceUpdate: Bool = false) -> some View {
+        let pct = resetSinceUpdate ? nil : percent.map { Int($0.rounded()) }
         return VStack(spacing: 2) {
             HStack {
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
                 Spacer()
-                if let reset = UsagePace.resetLabel(resetsAt) {
+                if resetSinceUpdate {
+                    Text("초기화됨, 다음 Claude Code 응답 때 갱신")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                } else if let reset = UsagePace.resetLabel(resetsAt) {
                     Text(reset)
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
@@ -483,7 +531,7 @@ struct CollectionPopoverView: View {
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundColor(pct.map(rateLimitColor) ?? .secondary)
             }
-            ProgressView(value: min(100, max(0, percent ?? 0)), total: 100)
+            ProgressView(value: min(100, max(0, resetSinceUpdate ? 0 : (percent ?? 0))), total: 100)
                 .tint(pct.map(rateLimitColor) ?? .secondary)
                 .scaleEffect(x: 1, y: 0.7, anchor: .center)
         }
@@ -500,10 +548,18 @@ struct CollectionPopoverView: View {
     }
 
     private func usageFootnote(_ u: UsageSnapshot) -> String {
-        let age = Int(Date().timeIntervalSince(u.fetchedAt))
-        let when = age < 60 ? "방금" : "\(age / 60)분 전"
-        let stale = viewModel.usageStatus == .tokenExpired ? " (로그인 만료, 마지막 값)" : ""
-        return "\(when) 갱신\(stale)"
+        let minutes = Int(u.age / 60)
+        let when: String
+        switch minutes {
+        case ..<1:    when = "방금"
+        case ..<60:   when = "\(minutes)분 전"
+        case ..<1440: when = "\(minutes / 60)시간 전"
+        default:      when = "\(minutes / 1440)일 전"
+        }
+        if viewModel.usageStatus == .stale {
+            return "\(when) Claude Code 기준. Claude Code를 쓰면 갱신돼요"
+        }
+        return "\(when) Claude Code 기준"
     }
 
     private func rateLimitColor(_ percent: Int) -> Color {
@@ -668,17 +724,27 @@ struct CollectionPopoverView: View {
                 Text("메뉴바 사용량")
                     .font(.system(size: 11, weight: .medium))
                 Spacer()
-                Picker("", selection: Binding(
-                    get: { viewModel.usageDisplayMode },
-                    set: { viewModel.setUsageDisplayMode($0) }
-                )) {
+                // Plain buttons instead of a segmented Picker: the AppKit
+                // segmented control re-measured itself on every refresh and
+                // made the row grow and shrink.
+                HStack(spacing: 2) {
                     ForEach(UsageDisplayMode.allCases, id: \.self) { mode in
-                        Text(mode.label).tag(mode)
+                        let selected = viewModel.usageDisplayMode == mode
+                        Button(action: { viewModel.setUsageDisplayMode(mode) }) {
+                            Text(mode.label)
+                                .font(.system(size: 10, weight: selected ? .bold : .regular))
+                                .foregroundColor(selected ? .white : .secondary)
+                                .frame(width: 38, height: 18)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(selected ? Color.accentColor : Color.secondary.opacity(0.1))
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 140)
+                .fixedSize()
             }
             updateButton
             Button("Quit oh-my-clawd") {

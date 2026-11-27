@@ -164,7 +164,7 @@ cd oh-my-clawd</code></pre>
           </tr>
           <tr>
             <td data-i18n="state.chatting">Chatting with Claude</td>
-            <td data-i18n="state.chatting.trigger">Claude app in front or usage rising, no Claude Code session</td>
+            <td data-i18n="state.chatting.trigger">Claude desktop app in front, no Claude Code session</td>
             <td>Speech bubble with typing dots</td>
           </tr>
         </tbody>
@@ -205,12 +205,13 @@ cd oh-my-clawd</code></pre>
       <h2 id="usage">Usage &amp; Chat Detection</h2>
       <p>The menu bar shows your 5-hour usage next to Clawd (<code>42%</code>). Choose <strong>off / 5h / 5h + weekly</strong> under <em>메뉴바 사용량</em> in the popover. The popover shows your plan, the current session and weekly limits with their reset times, per-model weekly limits when your account has them, and a one-line pace check ("on track until Sunday's reset" or "at this pace you hit the limit around 3 PM").</p>
       <ul>
-        <li>The app fetches usage itself, so it works without the HUD or a terminal session.</li>
-        <li>Limits are account-wide: claude.ai, the desktop app, mobile and Claude Code all count.</li>
-        <li>Needs a Claude Code login on this Mac. When the token has expired and Claude Code is not running, the app refreshes it and saves it back to Claude Code's keychain item, so Claude Code stays signed in. Disable with <code>defaults write com.hoya324.oh-my-clawd autoRefreshToken -bool false</code>.</li>
+        <li>Values are the official usage Claude Code passes to the status line (<code>rate_limits</code>), so the HUD must be on and they update while you use Claude Code. Pro and Max only.</li>
+        <li>Limits are account-wide: claude.ai, desktop and mobile usage count too and show up with the next Claude Code reply.</li>
+        <li>Old values are dimmed and labelled with their age; a window past its reset time shows as reset.</li>
+        <li>Anthropic's terms reserve subscription OAuth for Claude Code and Claude.ai, so Clawd never reads Claude Code's login or calls the API with it.</li>
         <li>Alerts fire once per 5-hour window at 80% and 95%.</li>
       </ul>
-      <p>Without a Claude Code session Clawd still reacts: it switches to a <strong>chatting</strong> state while the Claude desktop app is in front, and stays awake for a few minutes whenever usage goes up (web, mobile, remote agents). No conversation content, app files or browser data are read.</p>
+      <p>Without a Claude Code session Clawd still reacts: it switches to a <strong>chatting</strong> state while the Claude desktop app is in front. No conversation content, app files or browser data are read.</p>
 
       <h2 id="motions">Motions</h2>
       <p>Each state has its own random motions, and every click gets a different reaction. Accessories move with the body.</p>
@@ -343,7 +344,7 @@ cd oh-my-clawd</code></pre>
 
       <!-- Companion -->
       <h2 id="companion">Companion</h2>
-      <p>Clawd doubles as a lightweight daily assistant powered by Claude Haiku. Type naturally in the popover and Clawd parses time, saves memos, toggles reminders, or just chats back.</p>
+      <p>Clawd doubles as a lightweight daily assistant that runs through Claude Code (<code>claude -p</code>, Haiku). Type naturally in the popover and Clawd parses time, saves memos, toggles reminders, or just chats back.</p>
       <p style="text-align:center;">
         <img src="assets/companion/popover-ai-mode.png" alt="Clawd Companion in AI mode" style="max-width:300px;" />
       </p>
@@ -371,7 +372,7 @@ cd oh-my-clawd</code></pre>
       </ul>
 
       <h3 id="companion-runtime">How it runs</h3>
-      <p>Clawd calls the Anthropic API directly with your Claude Code OAuth token (read from the macOS keychain). Round-trip is 0.5–2 seconds and it counts against your <strong>Claude subscription</strong> rate limit — no separate API-plan billing. A local <code>claude</code> CLI subprocess is used as a fallback.</p>
+      <p>Clawd runs your message through the local Claude Code CLI (<code>claude -p</code>). Login and billing stay with Claude Code; Clawd never handles tokens. If <code>claude</code> is missing or signed out, the popover explains how to fix it and memo mode keeps working. Relative times ("in 3 minutes") are computed by the app, and a time that resolves to the past is not used.</p>
 
       <!-- Update -->
       <h2 id="update" data-i18n="docs.update.title">Update</h2>

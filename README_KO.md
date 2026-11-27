@@ -92,17 +92,18 @@ Claude Code의 공식 마스코트인 **Clawd**(#D97757)가 Claude Code 활동�
 | Stressed | <img src="docs/assets/clawd/stressed.gif" width="32"> | 레이트 리밋 경고! | 요청 한도 80% 이상 |
 | Tired | <img src="docs/assets/clawd/tired.gif" width="32"> | 피곤해요... | 45분 이상 세션 |
 | Collab | <img src="docs/assets/clawd/collab.gif" width="32"> | 함께 일하는 중! | 에이전트 2개 이상 |
-| Chatting | 💬 | Claude랑 대화 중 | Claude Code 세션 없이 Claude 앱 사용 중이거나 사용량이 오르는 중 |
+| Chatting | 💬 | Claude랑 대화 중 | Claude Code 세션 없이 Claude 데스크톱 앱 사용 중 |
 
 ### 메뉴바 사용량 표시
 
 Clawd 옆에 5시간 사용률이 바로 보여요 (`[Clawd] 42%`). 팝오버 하단의 **메뉴바 사용량**에서 `끔 / 5h / 5h+주`를 고를 수 있고, 마우스를 올리면 초기화까지 남은 시간이 나옵니다. 70% 이상은 주황, 90% 이상은 빨강.
 
-- 팝오버에는 플랜(Max, Pro), 현재 세션과 이번 주 사용률, 초기화 시각(`오후 7:50에 초기화`), 계정에 있으면 모델별 주간 한도, 그리고 사용 속도 한 줄 요약(`순조로워요. 일요일에 초기화될 때까지 여유 있게 쓸 수 있어요.`)이 나와요.
-- 앱이 사용량을 직접 조회하므로 HUD나 터미널 세션이 없어도 표시됩니다.
-- 한도는 계정 단위라서 claude.ai, 데스크톱 앱, 모바일, Claude Code 사용량이 모두 합쳐진 값이에요.
-- 조회에는 이 Mac의 Claude Code 로그인 정보가 필요합니다.
-- 토큰이 만료되면 Claude Code가 실행 중이 아닐 때만 앱이 대신 갱신하고, 결과를 Claude Code와 같은 키체인 항목에 저장해요. 그래서 Claude Code 로그인이 풀리지 않아요. 끄려면 `defaults write com.hoya324.oh-my-clawd autoRefreshToken -bool false`.
+- 팝오버에는 현재 세션과 이번 주 사용률, 초기화 시각(`오후 7:50에 초기화`), 사용 속도 한 줄 요약(`순조로워요. 일요일에 초기화될 때까지 여유 있게 쓸 수 있어요.`)이 나와요.
+- 값은 **Claude Code가 상태 표시줄(HUD)로 공식 제공하는 사용량**(`rate_limits`)이에요. 그래서 HUD가 켜져 있어야 하고, Claude Code를 쓸 때 갱신돼요. Pro, Max 구독에서만 제공돼요.
+- 한도는 계정 단위라서 claude.ai, 데스크톱 앱, 모바일 사용량도 포함돼요. 다만 그 사용분은 다음 Claude Code 응답 때 반영돼요.
+- 오래된 값은 메뉴바에서 흐리게 보이고, 팝오버에 "n분 전 Claude Code 기준"으로 표시돼요. 초기화 시각이 지난 창은 "초기화됨"으로 바뀌어요.
+
+> **왜 직접 조회하지 않나요?** Anthropic 약관상 구독 로그인(OAuth)은 Claude Code와 Claude.ai 전용이라, 다른 앱이 그 토큰으로 API를 부르거나 갱신하면 안 돼요. Clawd는 Claude Code 로그인 정보를 읽지 않고, Claude Code가 공식으로 넘겨주는 값만 써요.
 - 80%, 95%를 넘을 때 5시간 창마다 한 번씩만 알림을 보냅니다.
 
 ### Claude 채팅 감지
@@ -110,7 +111,6 @@ Clawd 옆에 5시간 사용률이 바로 보여요 (`[Clawd] 42%`). 팝오버 �
 Claude Code 세션이 없어도 Clawd가 반응합니다.
 
 - **Claude 데스크톱 앱이 앞에 있을 때** 말풍선을 띄운 "대화 중" 상태가 됩니다.
-- **사용량이 오르면** (웹, 모바일, 원격 작업 등 어디서든) 몇 분간 깨어 있어요.
 - 물/스트레칭 리마인더도 채팅 중일 때 동작합니다.
 - 대화 내용이나 앱 내부 파일, 브라우저 데이터는 읽지 않습니다. 그래서 어떤 대화인지, 응답을 생성 중인지는 알 수 없어요.
 
@@ -195,7 +195,7 @@ Claude Code 사용 실적에 따라 Clawd에게 착용시킬 액세서리를 해
 
 ## Clawd Companion
 
-Clawd는 단순한 장식이 아니라, Claude Haiku 기반의 가벼운 데일리 어시스턴트입니다. 자연어로 입력하면 시간을 해석해 메모로 저장하거나, 리마인더를 켜고 끄거나, 그냥 대화도 해줘요.
+Clawd는 단순한 장식이 아니라, Claude Code(`claude -p`, Haiku 모델)로 동작하는 가벼운 데일리 어시스턴트입니다. 자연어로 입력하면 시간을 해석해 메모로 저장하거나, 리마인더를 켜고 끄거나, 그냥 대화도 해줘요.
 
 <p align="center">
   <img src="docs/assets/companion/popover-ai-mode.png" width="300" alt="AI 모드 Clawd 팝오버" />
@@ -248,8 +248,9 @@ Clawd는 단순한 장식이 아니라, Claude Haiku 기반의 가벼운 데일�
 
 ### 동작 방식
 
-- **Anthropic API 직접 호출**. Claude Code OAuth 토큰을 macOS 키체인에서 읽어서 씁니다. 왕복 0.5~2초, API 플랜 과금 없음 — `claude -p`와 동일하게 Claude 구독 rate limit에서 차감됩니다.
-- **Fallback**: 키체인 경로 실패 시 로컬 `claude` CLI를 subprocess로 실행.
+- **Claude Code CLI로 실행**: 이 Mac에 설치된 `claude`를 `claude -p`로 실행해요. 로그인과 과금은 Claude Code가 그대로 처리하고, Clawd는 토큰을 직접 다루지 않아요.
+- `claude`가 없거나 로그인이 풀려 있으면 팝오버에 원인과 해결 방법이 나와요. 그동안은 메모 모드로 기록할 수 있어요.
+- "3분 뒤" 같은 상대 시간은 앱이 직접 계산하고, 지난 시각으로 해석된 메모는 시간 없이 저장한 뒤 알려줘요.
 - **웹 질문** (날씨, 기사, 사실 질의) 은 Claude 내장 WebFetch / WebSearch로 자동 처리. 별도 설정 없음.
 
 ## 업데이트
@@ -264,7 +265,7 @@ Clawd는 단순한 장식이 아니라, Claude Haiku 기반의 가벼운 데일�
 
 - **macOS 13.0+**
 - **Node.js >= 18**: HUD와 Claude Code 세션 추적용 (없어도 앱과 사용량 표시는 동작)
-- **Claude Code** OAuth 로그인: 사용량 조회용
+- **Claude Code** (Pro 또는 Max 로그인): 사용량 표시와 Clawd 대화용
 
 ## 제거
 

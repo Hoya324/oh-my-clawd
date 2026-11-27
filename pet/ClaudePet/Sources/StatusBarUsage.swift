@@ -33,7 +33,11 @@ enum StatusBarUsage {
         return .labelColor
     }
 
-    static func title(_ usage: UsageSnapshot?, mode: UsageDisplayMode) -> NSAttributedString? {
+    /// Menu bar text. Values that are old (no Claude Code reply for a while)
+    /// or whose window has reset since are drawn dimmed, so a stale number
+    /// never looks live.
+    static func title(_ usage: UsageSnapshot?, mode: UsageDisplayMode,
+                      stale: Bool = false) -> NSAttributedString? {
         guard mode != .off, let usage = usage else { return nil }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
         let out = NSMutableAttributedString()
@@ -41,13 +45,19 @@ enum StatusBarUsage {
         func append(_ text: String, _ color: NSColor) {
             out.append(NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color]))
         }
+        func part(_ percent: Double?, resetSince: Bool) -> (String, NSColor)? {
+            if resetSince { return ("0%", .tertiaryLabelColor) }
+            guard let p = percent else { return nil }
+            return ("\(Int(p.rounded()))%", stale ? .secondaryLabelColor : color(for: p))
+        }
 
-        guard let five = usage.fiveHourPercent ?? usage.weeklyPercent else { return nil }
-        append(" \(Int(five.rounded()))%", color(for: five))
-
-        if mode == .both, usage.fiveHourPercent != nil, let week = usage.weeklyPercent {
+        let five = part(usage.fiveHourPercent, resetSince: usage.fiveHourResetSinceUpdate)
+        let week = part(usage.weeklyPercent, resetSince: usage.weeklyResetSinceUpdate)
+        guard let first = five ?? week else { return nil }
+        append(" " + first.0, first.1)
+        if mode == .both, five != nil, let w = week {
             append(" / ", .secondaryLabelColor)
-            append("\(Int(week.rounded()))%", color(for: week))
+            append(w.0, w.1)
         }
         return out
     }
@@ -55,22 +65,28 @@ enum StatusBarUsage {
     static func tooltip(_ usage: UsageSnapshot?, status: UsageStatus) -> String {
         guard let u = usage else {
             switch status {
-            case .noCredentials: return "Claude Code 로그인 시 사용량이 표시돼요"
-            case .tokenExpired:  return "로그인 만료: Claude Code를 실행하면 갱신돼요"
-            default:             return "oh-my-clawd"
+            case .hudOff:         return "사용량을 보려면 Clawd 팝오버에서 HUD를 켜 주세요"
+            case .waitingForData: return "Claude Code에서 메시지를 한 번 보내면 사용량이 표시돼요 (Pro, Max)"
+            default:              return "oh-my-clawd"
             }
         }
         var lines: [String] = []
-        if let p = u.fiveHourPercent {
+        if u.fiveHourResetSinceUpdate {
+            lines.append("5시간: 초기화됨 (다음 Claude Code 응답 때 갱신)")
+        } else if let p = u.fiveHourPercent {
             lines.append("5시간 \(Int(p.rounded()))%" + reset(u.fiveHourResetsAt))
         }
-        if let p = u.weeklyPercent {
+        if u.weeklyResetSinceUpdate {
+            lines.append("주간: 초기화됨 (다음 Claude Code 응답 때 갱신)")
+        } else if let p = u.weeklyPercent {
             lines.append("주간 \(Int(p.rounded()))%" + reset(u.weeklyResetsAt))
         }
         for m in u.modelLimits {
             lines.append("주간 \(m.label) \(Int(m.percent.rounded()))%" + reset(m.resetsAt))
         }
-        if let pace = UsagePace.summary(u) {
+        if status == .stale {
+            lines.append("\(Int(u.age / 60))분 전 Claude Code 기준 값이에요")
+        } else if let pace = UsagePace.summary(u) {
             lines.append(pace)
         }
         return lines.joined(separator: "\n")

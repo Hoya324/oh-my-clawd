@@ -87,15 +87,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ClawdChat.warmUpConnection { [weak self] conn in
             guard let vm = self?.menuController.viewModel else { return }
             switch conn {
-            case .api:
-                vm.connectionLabel = "API 연결됨"
-                vm.isConnected = true
             case .cli(let path):
-                vm.connectionLabel = "CLI 연결됨"
+                vm.connectionLabel = "Claude Code 연결됨"
                 vm.claudeCliPath = path
                 vm.isConnected = true
             case .none:
-                vm.connectionLabel = "연결 없음"
+                vm.connectionLabel = "Claude Code 없음"
                 vm.isConnected = false
             }
         }
@@ -128,7 +125,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateStatusTitle() {
         guard let button = statusItem.button else { return }
         let mode = menuController?.viewModel.usageDisplayMode ?? UsageDisplayMode.load()
-        if let title = StatusBarUsage.title(usageService.snapshot, mode: mode) {
+        if let title = StatusBarUsage.title(usageService.snapshot, mode: mode,
+                                            stale: usageService.status == .stale) {
             button.attributedTitle = title
         } else {
             button.attributedTitle = NSAttributedString(string: "")
@@ -146,7 +144,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleUsage(_ snapshot: UsageSnapshot?, status: UsageStatus) {
         menuController.viewModel.applyUsage(snapshot, status: status)
-        menuController.viewModel.plan = usageService.plan
         chatMonitor.observe(usage: snapshot)
         if let snapshot = snapshot {
             notificationManager.checkAndNotify(rateLimit: snapshot.rateLimit)

@@ -136,15 +136,27 @@ final class RuntimeInstaller {
 
     /// GUI apps don't inherit the terminal PATH, so probe common install
     /// locations first and then ask the user's login shell.
+    /// The login shell is the last resort and its answer is cached: running
+    /// the user's shell init from the app can touch mounted volumes and make
+    /// macOS show a "wants to access files on a network volume" prompt.
     static func resolveNodePath() -> String? {
         let fm = FileManager.default
         let home = Paths.home
+        let cacheFile = Paths.petDir + "/node-path.txt"
+        if let cached = (try? String(contentsOfFile: cacheFile, encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !cached.isEmpty, fm.isExecutableFile(atPath: cached) {
+            return cached
+        }
         var candidates = [
             "/opt/homebrew/bin/node",
             "/usr/local/bin/node",
+            "/opt/homebrew/opt/node/bin/node",
             home + "/.volta/bin/node",
             home + "/.local/bin/node",
             home + "/.bun/bin/node",
+            home + "/.asdf/shims/node",
+            home + "/.local/share/mise/shims/node",
         ]
         // nvm: newest installed version first
         let nvm = home + "/.nvm/versions/node"
@@ -159,7 +171,10 @@ final class RuntimeInstaller {
             let r = run(shell, ["-ilc", "command -v node"], timeout: 8)
             let path = r.output.split(separator: "\n").last.map(String.init)?
                 .trimmingCharacters(in: .whitespaces) ?? ""
-            if r.status == 0, !path.isEmpty, fm.isExecutableFile(atPath: path) { return path }
+            if r.status == 0, !path.isEmpty, fm.isExecutableFile(atPath: path) {
+                try? path.write(toFile: cacheFile, atomically: true, encoding: .utf8)
+                return path
+            }
         }
         return nil
     }

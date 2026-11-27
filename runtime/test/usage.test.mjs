@@ -4,72 +4,48 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { getUsage, readUsageCache, parseUsageResponse, USAGE_TTL_MS, USAGE_RATE_LIMIT_BACKOFF_MS } from '../lib/usage.mjs';
+import { usageFromStatusline, recordStatuslineUsage, readUsageCache, currentUsage } from '../lib/usage.mjs';
 
-const BODY = {
-  five_hour: { utilization: 42.4, resets_at: '2026-11-27T12:00:00Z' },
-  seven_day: { utilization: 63, resets_at: '2026-11-30T00:00:00Z' },
-};
+const NOW = Date.parse('2026-11-27T09:50:00Z');
+const stdinWith = (five, week) => ({
+  rate_limits: {
+    ...(five ? { five_hour: { used_percentage: five[0], resets_at: five[1] } } : {}),
+    ...(week ? { seven_day: { used_percentage: week[0], resets_at: week[1] } } : {}),
+  },
+});
+const FIVE_RESET = Date.parse('2026-11-27T10:50:00Z') / 1000;
+const WEEK_RESET = Date.parse('2026-11-29T16:00:00Z') / 1000;
 
 beforeEach(() => {
   process.env.OH_MY_CLAWD_HOME = mkdtempSync(join(tmpdir(), 'omc-usage-'));
 });
 
-test('parseUsageResponse clamps and normalizes dates', () => {
-  const d = parseUsageResponse({ five_hour: { utilization: 140, resets_at: 'bad' }, seven_day: { utilization: -3 } });
-  assert.equal(d.fiveHourPercent, 100);
-  assert.equal(d.weeklyPercent, 0);
-  assert.equal(d.fiveHourResetsAt, null);
-  assert.equal(parseUsageResponse({}), null);
+test('usageFromStatusline reads rate_limits (epoch seconds → ISO)', () => {
+  const d = usageFromStatusline(stdinWith([56, FIVE_RESET], [57.4, WEEK_RESET]));
+  assert.equal(d.fiveHourPercent, 56);
+  assert.equal(d.weeklyPercent, 57.4);
+  assert.equal(d.fiveHourResetsAt, '2026-11-27T10:50:00.000Z');
+  assert.equal(usageFromStatusline({}), null);                    // API-key users / early session
+  assert.equal(usageFromStatusline({ rate_limits: {} }), null);
+  assert.equal(usageFromStatusline(stdinWith([140, FIVE_RESET])).fiveHourPercent, 100);
 });
 
-test('parseUsageResponse keeps per-model weekly limits when present', () => {
-  const d = parseUsageResponse({ ...BODY, seven_day_opus: { utilization: 12, resets_at: '2026-11-30T00:00:00Z' }, seven_day_sonnet: null });
-  assert.deepEqual(d.models, [{ model: 'opus', percent: 12, resetsAt: '2026-11-30T00:00:00.000Z' }]);
-  assert.deepEqual(parseUsageResponse(BODY).models, []);
+test('records to the shared cache and serves the last value without new data', () => {
+  recordStatuslineUsage(stdinWith([56, FIVE_RESET], [57, WEEK_RESET]), { now: NOW, sessionId: 's1' });
+  const c = readUsageCache();
+  assert.equal(c.source, 'statusline');
+  assert.equal(c.data.weeklyPercent, 57);
+  // A later run without rate_limits must not wipe the cache.
+  assert.equal(currentUsage({}, { now: NOW + 1000 }).fiveHourPercent, 56);
+  assert.equal(readUsageCache().timestamp, NOW);
 });
 
-test('fetches, caches, and serves from cache within TTL', async () => {
-  let calls = 0;
-  const deps = {
-    now: 1_000_000,
-    readCreds: () => ({ accessToken: 't', expiresAt: 2_000_000 }),
-    fetchUsage: async () => { calls++; return { status: 200, body: BODY }; },
-  };
-  const first = await getUsage(deps);
-  assert.equal(first.fiveHourPercent, 42.4);
-  assert.equal(first.fiveHourResetsAt, '2026-11-27T12:00:00.000Z');
-  await getUsage({ ...deps, now: deps.now + USAGE_TTL_MS - 1 });
-  assert.equal(calls, 1);
-  await getUsage({ ...deps, now: deps.now + USAGE_TTL_MS + 1 });
-  assert.equal(calls, 2);
-});
-
-test('expired token: never refreshes, keeps last good data', async () => {
-  let fetched = false;
-  await getUsage({
-    now: 1_000,
-    readCreds: () => ({ accessToken: 't', expiresAt: 5_000 }),
-    fetchUsage: async () => ({ status: 200, body: BODY }),
-  });
-  const r = await getUsage({
-    now: 1_000 + USAGE_TTL_MS + 10,
-    readCreds: () => ({ accessToken: 't', expiresAt: 5_000 }),
-    fetchUsage: async () => { fetched = true; return { status: 200, body: BODY }; },
-  });
-  assert.equal(fetched, false);
-  assert.equal(r.fiveHourPercent, 42.4);
-});
-
-test('429 backs off and keeps last value', async () => {
-  const creds = () => ({ accessToken: 't' });
-  await getUsage({ now: 0, readCreds: creds, fetchUsage: async () => ({ status: 200, body: BODY }) });
-  let calls = 0;
-  const limited = async () => { calls++; return { status: 429, body: null }; };
-  const t1 = USAGE_TTL_MS + 1;
-  const r = await getUsage({ now: t1, readCreds: creds, fetchUsage: limited });
-  assert.equal(r.weeklyPercent, 63);
-  assert.equal(readUsageCache().error, true);
-  await getUsage({ now: t1 + USAGE_RATE_LIMIT_BACKOFF_MS - 1, readCreds: creds, fetchUsage: limited });
-  assert.equal(calls, 1);
+test('a window missing from an update keeps its previous value until it resets', () => {
+  recordStatuslineUsage(stdinWith([56, FIVE_RESET], [57, WEEK_RESET]), { now: NOW });
+  const d = recordStatuslineUsage(stdinWith(null, [58, WEEK_RESET]), { now: NOW + 60_000 });
+  assert.equal(d.fiveHourPercent, 56);
+  assert.equal(d.weeklyPercent, 58);
+  // After the 5h reset time, the old 5h value is not carried over.
+  const later = recordStatuslineUsage(stdinWith(null, [59, WEEK_RESET]), { now: FIVE_RESET * 1000 + 1 });
+  assert.equal(later.fiveHourPercent, null);
 });

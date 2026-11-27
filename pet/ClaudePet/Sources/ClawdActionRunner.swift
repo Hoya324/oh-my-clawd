@@ -11,6 +11,7 @@ final class ClawdActionRunner {
     @discardableResult
     func apply(userText: String, response: ClawdResponse) -> [String] {
         var summary: [String] = []
+        var timeDropped = false
         memory.update { file in
             let ts = Date().timeIntervalSince1970 * 1000
             file.chatLog.append(ChatTurn(role: .user, text: userText, ts: ts))
@@ -21,16 +22,20 @@ final class ClawdActionRunner {
                     guard let text = Self.cleanText(action.text) else {
                         summary.append("add_memo: missing text"); continue
                     }
+                    let due = Self.resolveDueAt(action)
+                    if (action.dueAt != nil || action.dueInMinutes != nil) && due == nil {
+                        timeDropped = true
+                    }
                     // Skip exact duplicates of an open memo (the model
                     // sometimes repeats the action on a retry).
-                    if file.memos.contains(where: { !$0.done && $0.text == text && $0.dueAt == Self.validDueAt(action.dueAt) }) {
+                    if file.memos.contains(where: { !$0.done && $0.text == text && $0.dueAt == due }) {
                         summary.append("add_memo: duplicate"); continue
                     }
                     let memo = ClawdMemo(
                         id: ClawdMemoryStore.newMemoId(),
                         text: text,
                         createdAt: ClawdMemoryStore.isoNow(),
-                        dueAt: Self.validDueAt(action.dueAt),
+                        dueAt: due,
                         tags: Self.cleanTags(action.tags),
                         done: false,
                         completedAt: nil
@@ -74,7 +79,11 @@ final class ClawdActionRunner {
                 }
             }
 
-            let reply = response.reply.trimmingCharacters(in: .whitespacesAndNewlines)
+            var reply = response.reply.trimmingCharacters(in: .whitespacesAndNewlines)
+            if timeDropped {
+                // The model's reply may promise a time we refused to store.
+                reply += (reply.isEmpty ? "" : " ") + "(시간을 확실히 알 수 없어서 시간 없이 메모했어요. \"오후 3시\"처럼 다시 알려주세요.)"
+            }
             file.chatLog.append(ChatTurn(role: .clawd, text: String(reply.prefix(Self.maxReplyLength)), ts: ts))
         }
         return summary
@@ -145,14 +154,30 @@ final class ClawdActionRunner {
             .map { $0 }
     }
 
-    /// Only keep a dueAt that parses and is not absurdly far away; an
-    /// unparsable value used to be stored and then silently never fire.
-    static func validDueAt(_ raw: String?) -> String? {
+    /// Relative minutes win (the app computes them, no timezone guesswork);
+    /// otherwise an absolute dueAt that parses. Anything in the past or
+    /// absurdly far away is rejected: a past time would fire instantly,
+    /// which is how a timezone mistake used to look.
+    static func resolveDueAt(_ action: ClawdAction, now: Date = Date()) -> String? {
+        if let minutes = action.dueInMinutes, (1...(400 * 24 * 60)).contains(minutes) {
+            return localIso(now.addingTimeInterval(TimeInterval(minutes * 60)))
+        }
+        return validDueAt(action.dueAt, now: now)
+    }
+
+    static func validDueAt(_ raw: String?, now: Date = Date()) -> String? {
         guard let raw = raw, let date = ClawdMemoryStore.parseIso(raw) else { return nil }
-        let now = Date()
-        guard date > now.addingTimeInterval(-24 * 3600),
+        guard date > now.addingTimeInterval(-60),
               date < now.addingTimeInterval(400 * 24 * 3600) else { return nil }
-        return raw
+        return localIso(date)
+    }
+
+    /// ISO8601 in the user's timezone ("2026-11-27T18:55:00+09:00").
+    static func localIso(_ date: Date) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        f.timeZone = .current
+        return f.string(from: date)
     }
 
     /// "9:5", "09:05", "21:00" → "HH:mm"; anything else → nil.

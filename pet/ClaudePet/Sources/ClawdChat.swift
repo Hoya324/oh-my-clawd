@@ -22,17 +22,20 @@ struct ClawdAction: Codable {
     let enabled: Bool?
     let intervalMin: Int?
     let timeOfDay: String?
+    /// Relative due time ("3분 뒤"); the app turns it into an absolute time.
+    let dueInMinutes: Int?
 
     var typed: ClawdActionType {
         ClawdActionType(rawValue: type) ?? .unknown
     }
 
     enum CodingKeys: String, CodingKey {
-        case type, text, dueAt, tags, id, kind, enabled, intervalMin, timeOfDay
+        case type, text, dueAt, tags, id, kind, enabled, intervalMin, timeOfDay, dueInMinutes
     }
 
     init(type: String, text: String?, dueAt: String?, tags: [String]?, id: String?,
-         kind: String?, enabled: Bool?, intervalMin: Int?, timeOfDay: String?) {
+         kind: String?, enabled: Bool?, intervalMin: Int?, timeOfDay: String?,
+         dueInMinutes: Int? = nil) {
         self.type = type
         self.text = text
         self.dueAt = dueAt
@@ -42,6 +45,7 @@ struct ClawdAction: Codable {
         self.enabled = enabled
         self.intervalMin = intervalMin
         self.timeOfDay = timeOfDay
+        self.dueInMinutes = dueInMinutes
     }
 
     /// The model is not a schema validator: accept the shapes it actually
@@ -83,6 +87,15 @@ struct ClawdAction: Codable {
         } else {
             intervalMin = nil
         }
+
+        dueInMinutes = Self.integer(c, .dueInMinutes)
+    }
+
+    private static func integer(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> Int? {
+        if let n = try? c.decode(Int.self, forKey: key) { return n }
+        if let d = try? c.decode(Double.self, forKey: key) { return Int(d.rounded()) }
+        if let s = try? c.decode(String.self, forKey: key) { return Int(s.trimmingCharacters(in: .whitespaces)) }
+        return nil
     }
 
     private static func string(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> String? {
@@ -129,34 +142,21 @@ final class ClawdChat {
     static let modelId = "claude-haiku-4-5"
     private let timeoutSeconds: TimeInterval = 30
     private let memory: ClawdMemoryStore
-    private let apiClient: ClawdAPIClient
 
     init(memory: ClawdMemoryStore) {
         self.memory = memory
-        self.apiClient = ClawdAPIClient(memory: memory)
     }
 
-    /// Dispatch order:
-    /// 1) Direct Anthropic API call using the OAuth token from keychain
-    ///    — ~0.5-2s, works on any Mac where Claude Code is signed in.
-    /// 2) Fallback: spawn `claude -p` subprocess (~3-8s cold start).
-    /// 3) Final failure bubbles up to the caller, which saves as raw memo.
+    /// Runs the request through the Claude Code CLI (`claude -p`), i.e.
+    /// Claude Code itself with the user's own login. Clawd never uses Claude
+    /// Code's OAuth token directly: Anthropic's terms reserve it for Claude
+    /// Code and Claude.ai. Failures bubble up; the UI explains what to do.
     func send(userText: String,
               completion: @escaping (Result<ClawdResponse, ClawdChatError>) -> Void) {
-        apiClient.send(userText: userText) { [weak self] result in
-            switch result {
-            case .success:
-                completion(result)
-            case .failure(let err):
-                // Any API failure → try the CLI subprocess. Credential errors,
-                // expired tokens, and network hiccups all fall through.
-                NSLog("[Clawd] API path failed: \(err); trying CLI fallback")
-                guard let self = self else { return }
-                DispatchQueue.global(qos: .userInitiated).async {
-                    let fallback = self.runBlocking(userText: userText)
-                    DispatchQueue.main.async { completion(fallback) }
-                }
-            }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let result = self.runBlocking(userText: userText)
+            DispatchQueue.main.async { completion(result) }
         }
     }
 
@@ -224,10 +224,32 @@ final class ClawdChat {
         let errStr = String(data: errData, encoding: .utf8) ?? ""
 
         guard task.terminationStatus == 0 else {
-            return .failure(.processFailed("exit \(task.terminationStatus): \(errStr.prefix(200))"))
+            return .failure(.processFailed(Self.cliErrorDetail(status: task.terminationStatus,
+                                                               stdout: outStr, stderr: errStr)))
         }
 
         return Self.extractResponse(from: outStr)
+    }
+
+    /// With --output-format json, `claude -p` reports failures on stdout
+    /// ({"is_error":true,"result":"…"}) and leaves stderr empty, which used
+    /// to surface as a bare "exit 1:".
+    static func cliErrorDetail(status: Int32, stdout: String, stderr: String) -> String {
+        var detail = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+        if detail.isEmpty,
+           let data = stdout.data(using: .utf8),
+           let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+           let result = obj["result"] as? String {
+            detail = result
+        }
+        if detail.isEmpty {
+            detail = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let lower = detail.lowercased()
+        if lower.contains("login") || lower.contains("api key") || lower.contains("authenticat") || lower.contains("401") {
+            return "Claude 로그인 정보를 찾지 못했어요. 터미널에서 claude를 실행해 로그인 상태를 확인해 주세요."
+        }
+        return "exit \(status): \(detail.prefix(200))"
     }
 
     private static let cachePath = NSHomeDirectory() + "/.claude/pet/clawd-cli-path.txt"
@@ -236,7 +258,6 @@ final class ClawdChat {
 
     /// The transport Clawd will use for the next request.
     enum Connection {
-        case api          // OAuth token available in keychain (fastest)
         case cli(String)  // claude CLI binary path
         case none         // nothing found
     }
@@ -245,10 +266,6 @@ final class ClawdChat {
     /// connection in the background without blocking the UI.
     static func warmUpConnection(completion: ((Connection) -> Void)? = nil) {
         DispatchQueue.global(qos: .utility).async {
-            if ClawdAPIClient.readOAuthToken() != nil {
-                DispatchQueue.main.async { completion?(.api) }
-                return
-            }
             if let p = resolveClaudePath() {
                 DispatchQueue.main.async { completion?(.cli(p)) }
                 return
@@ -357,10 +374,19 @@ final class ClawdChat {
 
     private static func buildSystemPrompt(file: ClawdMemoryFile) -> String {
         let now = Date()
-        let tz = TimeZone.current.identifier
+        let tz = TimeZone.current
+        // Local wall-clock time WITH its offset. Giving the model a UTC
+        // timestamp ("…09:52Z") next to "Asia/Seoul" made it add minutes to
+        // the UTC clock and then stamp "+09:00" on it: 9 hours early.
         let isoFmt = ISO8601DateFormatter()
         isoFmt.formatOptions = [.withInternetDateTime]
+        isoFmt.timeZone = tz
         let nowIso = isoFmt.string(from: now)
+        let human = DateFormatter()
+        human.locale = Locale(identifier: "ko_KR")
+        human.timeZone = tz
+        human.dateFormat = "yyyy년 M월 d일 EEEE a h:mm"
+        let nowHuman = human.string(from: now)
 
         let remindersJson = (try? JSONEncoder().encode(file.reminders))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
@@ -380,24 +406,33 @@ final class ClawdChat {
 
         You MUST respond with a single JSON object, no prose, no code fences:
         {"actions": Action[], "reply": string}
+        Each action is a flat object with a "type" field, e.g.
+        {"type": "add_memo", "text": "회의", "dueInMinutes": 30, "tags": []}
 
-        Supported actions (ignore unknown fields, emit none if not needed):
-          - add_memo      { "text": string, "dueAt": ISO8601 | null, "tags": string[] }
-          - complete_memo { "id": string }
-          - delete_memo   { "id": string }
-          - set_reminder  { "kind": "water"|"stretch"|"diary",
-                            "enabled": bool?,
-                            "intervalMin": number?,
-                            "timeOfDay": "HH:mm"? }
+        Supported actions (emit none if not needed):
+          - add_memo      { "type": "add_memo", "text": string,
+                            "dueInMinutes": number | null,
+                            "dueAt": ISO8601 with offset | null, "tags": string[] }
+          - complete_memo { "type": "complete_memo", "id": string }
+          - delete_memo   { "type": "delete_memo", "id": string }
+          - set_reminder  { "type": "set_reminder", "kind": "water"|"stretch"|"diary",
+                            "enabled": bool?, "intervalMin": number?, "timeOfDay": "HH:mm"? }
+
+        Times:
+          - Relative times ("3분 뒤", "1시간 후", "30 minutes later"): set dueInMinutes \
+            to the number of minutes from now and leave dueAt null. The app computes the time.
+          - Clock times ("3시", "내일 오전 10시"): set dueAt to an absolute ISO8601 time \
+            WITH the local offset shown below. "3시" means the next 3 o'clock that is in \
+            the future (15:00 if it is already past 3 AM).
+          - Never return a time in the past. If unclear, leave both null and ask in `reply`.
 
         If the user asks a general question (weather, news, facts), you may \
         use your web tools and put the answer in `reply` with actions: []. \
         Do not create memos the user did not ask for. Keep `reply` to 1–2 \
-        warm sentences.
+        warm sentences. Do not state the exact clock time in `reply`; the app shows it.
 
-        Current time: \(nowIso) (\(tz)).
-        Resolve relative times ("3시", "내일 오전 10시", "30분 뒤") to absolute ISO8601 \
-        in the user's timezone. If ambiguous, leave dueAt null and ask in `reply`.
+        Now (local): \(nowHuman)
+        Now (ISO8601, local offset): \(nowIso)  [\(tz.identifier)]
 
         Current reminders: \(remindersJson)
         Open memos (newest last, up to 10): \(memosJson)
@@ -435,7 +470,7 @@ final class ClawdChat {
     }
 
     private static func parseLenient(_ text: String) -> ClawdResponse? {
-        ClawdAPIClient.parseLenient(text)
+        ClawdResponseParser.parseLenient(text)
     }
 
     private static func stripFences(_ s: String) -> String {

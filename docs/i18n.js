@@ -32,7 +32,7 @@ const translations = {
     'features.update.title': 'Auto Updates',
     'features.update.desc': 'One-click in-app updates. Every download is checked (SHA-256, Developer ID signature, Gatekeeper) before it replaces the app.',
     'features.usage.title': 'Live Usage',
-    'features.usage.desc': 'Your 5-hour and weekly usage right next to Clawd in the menu bar, with reset times and a pace check. Covers claude.ai, the desktop app, mobile and Claude Code.',
+    'features.usage.desc': 'Your 5-hour and weekly usage right next to Clawd in the menu bar, with reset times and a pace check, from the official data Claude Code reports to the status line.',
 
     // Collection
     'collection.title': 'Accessory Collection',
@@ -147,7 +147,7 @@ const translations = {
     'state.tired.trigger': 'Session >= 45 min',
     'state.collab.trigger': '2+ agents',
     'state.chatting': 'Chatting with Claude',
-    'state.chatting.trigger': 'Claude app in front or usage rising, no Claude Code session',
+    'state.chatting.trigger': 'Claude desktop app in front, no Claude Code session',
 
     // Activity levels (replaces muscles)
     'effect.normal': 'Normal',
@@ -186,7 +186,7 @@ const translations = {
     'features.update.title': '\uC790\uB3D9 \uC5C5\uB370\uC774\uD2B8',
     'features.update.desc': '\uc571\uc5d0\uc11c \ud55c \ubc88 \ud074\ub9ad\uc73c\ub85c \uc5c5\ub370\uc774\ud2b8\ud569\ub2c8\ub2e4. \ub0b4\ub824\ubc1b\uc740 \ud30c\uc77c\uc740 SHA-256, \uac1c\ubc1c\uc790 \uc11c\uba85, Gatekeeper\ub97c \ud655\uc778\ud55c \ub4a4\uc5d0\ub9cc \uc124\uce58\ub3fc\uc694.',
     'features.usage.title': '\uc2e4\uc2dc\uac04 \uc0ac\uc6a9\ub7c9',
-    'features.usage.desc': '\uba54\ub274\ubc14 Clawd \uc606\uc5d0 5\uc2dc\uac04, \uc8fc\uac04 \uc0ac\uc6a9\ub7c9\uacfc \ucd08\uae30\ud654 \uc2dc\uac01, \uc0ac\uc6a9 \uc18d\ub3c4\ub97c \ubcf4\uc5ec\uc90d\ub2c8\ub2e4. claude.ai, \ub370\uc2a4\ud06c\ud1b1 \uc571, \ubaa8\ubc14\uc77c, Claude Code \uc0ac\uc6a9\ub7c9\uc774 \ubaa8\ub450 \ud3ec\ud568\ub3fc\uc694.',
+    'features.usage.desc': '\uba54\ub274\ubc14 Clawd \uc606\uc5d0 5\uc2dc\uac04, \uc8fc\uac04 \uc0ac\uc6a9\ub7c9\uacfc \ucd08\uae30\ud654 \uc2dc\uac01, \uc0ac\uc6a9 \uc18d\ub3c4\ub97c \ubcf4\uc5ec\uc90d\ub2c8\ub2e4. Claude Code\uac00 \uc0c1\ud0dc \ud45c\uc2dc\uc904\ub85c \uacf5\uc2dd \uc81c\uacf5\ud558\ub294 \uac12\uc744 \uc368\uc694.',
 
     // Collection
     'collection.title': '\uC561\uC138\uC11C\uB9AC \uCEEC\uB809\uC158',
@@ -301,7 +301,7 @@ const translations = {
     'state.tired.trigger': '\uC138\uC158 >= 45\uBD84',
     'state.collab.trigger': '\uC5D0\uC774\uC804\uD2B8 2\uAC1C \uC774\uC0C1',
     'state.chatting': 'Claude\ub791 \ub300\ud654 \uc911',
-    'state.chatting.trigger': 'Claude Code \uc138\uc158 \uc5c6\uc774 Claude \uc571 \uc0ac\uc6a9 \uc911\uc774\uac70\ub098 \uc0ac\uc6a9\ub7c9 \uc99d\uac00',
+    'state.chatting.trigger': 'Claude Code \uc138\uc158 \uc5c6\uc774 Claude \ub370\uc2a4\ud06c\ud1b1 \uc571 \uc0ac\uc6a9 \uc911',
 
     // Activity levels
     'effect.normal': '\uBCF4\uD1B5',

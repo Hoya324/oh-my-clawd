@@ -21,7 +21,7 @@ jobs:
 
   app:
     name: Build app (macOS)
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build universal app (unsigned)

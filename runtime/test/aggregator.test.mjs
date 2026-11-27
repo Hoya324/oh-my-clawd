@@ -8,6 +8,7 @@ import {
   dedupeSessions, isLiveSession, isInteractive, inspectProcesses, matchStates,
   buildSessionDetails, groupProjects, defaultProgress, migrateProgress,
   updateStats, checkRateLimitHit, checkUnlocks, loadUnlockConditions, createAggregator,
+  rateLimitFromCache,
 } from '../pet-aggregator.mjs';
 
 const NOW = Date.parse('2026-11-27T08:00:00Z');
@@ -159,4 +160,14 @@ test('end-to-end tick writes state, progress and migrates selection once', () =>
   assert.equal(progress.selectedHat, undefined);
   assert.ok(existsSync(join(claude, 'pet', 'selection.json')));
   assert.equal(JSON.parse(readFileSync(join(claude, 'pet', 'selection.json'), 'utf8')).selectedHat, 'cap');
+});
+
+test('rateLimitFromCache keeps values until their window resets', () => {
+  const cache = { timestamp: NOW - 3 * 60 * 60_000, data: {
+    fiveHourPercent: 56, fiveHourResetsAt: new Date(NOW + 60_000).toISOString(),
+    weeklyPercent: 57, weeklyResetsAt: new Date(NOW - 1).toISOString() } };
+  const r = rateLimitFromCache(cache, NOW);
+  assert.equal(r.fiveHourPercent, 56);     // old cache, window still open
+  assert.equal(r.weeklyPercent, null);     // window already reset
+  assert.equal(rateLimitFromCache(null, NOW).fiveHourPercent, null);
 });

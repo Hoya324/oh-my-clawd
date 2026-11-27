@@ -28,7 +28,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 export const POLL_INTERVAL_MS = 3000;
 export const STATE_FRESH_MS = 15 * 60_000;      // HUD state older than this = idle session
 const HEARTBEAT_MS = 15_000;                     // rewrite pet-state at least this often
-const USAGE_MAX_AGE_MS = 10 * 60_000;            // ignore usage cache older than this
 const SESSION_FILE_TTL_MS = 7 * 24 * 60 * 60_000;
 const TRACKING_TTL_MS = 7 * 24 * 60 * 60_000;
 const PROCESS_START_SLACK_MS = 2 * 60_000;
@@ -417,14 +416,19 @@ export function pickDominantModel(models) {
     .sort((a, b) => b[1] - a[1] || modelPriority(b[0]) - modelPriority(a[0]))[0][0];
 }
 
+/**
+ * Usage comes from Claude Code's statusline (see lib/usage.mjs), so it only
+ * changes while Claude Code is used. A value stays meaningful until its
+ * window resets, however old the cache is; after that it is dropped.
+ */
 export function rateLimitFromCache(cache, now = Date.now()) {
-  const empty = { fiveHourPercent: null, weeklyPercent: null, fiveHourResetsAt: null, weeklyResetsAt: null };
-  if (!cache?.data || now - cache.timestamp > USAGE_MAX_AGE_MS) return empty;
+  const d = cache?.data;
+  const live = (iso) => iso != null && Date.parse(iso) > now;
   return {
-    fiveHourPercent: cache.data.fiveHourPercent ?? null,
-    weeklyPercent: cache.data.weeklyPercent ?? null,
-    fiveHourResetsAt: cache.data.fiveHourResetsAt ?? null,
-    weeklyResetsAt: cache.data.weeklyResetsAt ?? null,
+    fiveHourPercent: d && live(d.fiveHourResetsAt) ? d.fiveHourPercent ?? null : null,
+    weeklyPercent: d && live(d.weeklyResetsAt) ? d.weeklyPercent ?? null : null,
+    fiveHourResetsAt: d && live(d.fiveHourResetsAt) ? d.fiveHourResetsAt : null,
+    weeklyResetsAt: d && live(d.weeklyResetsAt) ? d.weeklyResetsAt : null,
   };
 }
 

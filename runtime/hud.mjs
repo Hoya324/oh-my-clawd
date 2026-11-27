@@ -5,7 +5,8 @@
  *   [HUD] | 5h:14%(3h51m) | wk:62%(3d5h) | session:29m | ctx:39% | 🔧53 | agents:2 | opus-4-6
  *
  * Data sources:
- *   - 5h / weekly usage: shared usage cache (lib/usage.mjs), never refreshes tokens
+ *   - 5h / weekly usage: `rate_limits` that Claude Code passes on stdin
+ *     (never Claude Code's OAuth token; see lib/usage.mjs)
  *   - session / tools / agents / tokens: transcript parsing
  *   - context window: stdin JSON from Claude Code
  *
@@ -18,7 +19,7 @@ import { createHash } from 'node:crypto';
 
 import { paths } from './lib/paths.mjs';
 import { readJsonSync, writeJsonAtomicSync } from './lib/fsutil.mjs';
-import { getUsage } from './lib/usage.mjs';
+import { currentUsage } from './lib/usage.mjs';
 
 // ============================================================================
 // ANSI
@@ -313,9 +314,10 @@ export function render({ stdin, transcript, usage, sessionStart, now = Date.now(
 
 export async function main() {
   try {
-    const [stdin, usage] = await Promise.all([readStdin(), getUsage({ source: 'hud' })]);
+    const stdin = await readStdin();
     const now = Date.now();
     const sessionId = sessionIdFrom(stdin);
+    const usage = currentUsage(stdin, { now, sessionId });
     const statePath = paths.sessionState(sessionId);
     const prev = readJsonSync(statePath);
 
