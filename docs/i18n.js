@@ -19,7 +19,7 @@ const translations = {
     'hero.cta.download': 'Download DMG',
     'hero.cta.docs': 'Read Docs',
     'hero.stat.accessories': '14 Accessories',
-    'hero.stat.states': '8 States',
+    'hero.stat.states': '9 States',
     'hero.stat.effects': '3 Effects',
     'hero.stat.hud': 'HUD',
 
@@ -28,9 +28,11 @@ const translations = {
     'features.hud.title': 'HUD Status Line',
     'features.hud.desc': 'Real-time rate limits, session duration, context usage, tool calls, and active model info displayed in your terminal.',
     'features.pet.title': 'Clawd System',
-    'features.pet.desc': 'One Clawd character with 8 states, 3 activity levels, and 14 collectible accessories (hats, glasses, pants). Mix and match to create 100+ unique combinations!',
+    'features.pet.desc': 'One Clawd character with 9 states, 3 activity levels, 15+ motions and 14 collectible accessories (hats, glasses, pants). Mix and match to create 100+ unique combinations!',
     'features.update.title': 'Auto Updates',
-    'features.update.desc': 'Check for updates directly from the app. Download the latest DMG from GitHub Releases with one click.',
+    'features.update.desc': 'One-click in-app updates. Every download is checked (SHA-256, Developer ID signature, Gatekeeper) before it replaces the app.',
+    'features.usage.title': 'Live Usage',
+    'features.usage.desc': 'Your 5-hour and weekly usage right next to Clawd in the menu bar, with reset times and a pace check. Covers claude.ai, the desktop app, mobile and Claude Code.',
 
     // Collection
     'collection.title': 'Accessory Collection',
@@ -78,7 +80,7 @@ const translations = {
     'docs.collection.desc': '14 collectible accessories (5 hats, 4 glasses, 5 pants), each with unique unlock conditions.',
     'docs.config.title': 'Configuration',
     'docs.update.title': 'Update',
-    'docs.update.desc': 'Check for updates directly from the app popover, or download the latest DMG from GitHub Releases.',
+    'docs.update.desc': 'Check for updates directly from the app popover, or download the latest DMG from GitHub Releases. Downloads are verified before installing.',
 
     // Accessory names — hats
     'accessory.cap': 'Cap',
@@ -144,6 +146,8 @@ const translations = {
     'state.stressed.trigger': 'Rate limit >= 80%',
     'state.tired.trigger': 'Session >= 45 min',
     'state.collab.trigger': '2+ agents',
+    'state.chatting': 'Chatting with Claude',
+    'state.chatting.trigger': 'Claude app in front or usage rising, no Claude Code session',
 
     // Activity levels (replaces muscles)
     'effect.normal': 'Normal',
@@ -169,7 +173,7 @@ const translations = {
     'hero.cta.download': 'DMG \uB2E4\uC6B4\uB85C\uB4DC',
     'hero.cta.docs': '\uBB38\uC11C \uBCF4\uAE30',
     'hero.stat.accessories': '14\uC885 \uC561\uC138\uC11C\uB9AC',
-    'hero.stat.states': '8\uAC00\uC9C0 \uC0C1\uD0DC',
+    'hero.stat.states': '9\uac00\uc9c0 \uc0c1\ud0dc',
     'hero.stat.effects': '3\uB2E8\uACC4 \uD6A8\uACFC',
     'hero.stat.hud': 'HUD',
 
@@ -178,9 +182,11 @@ const translations = {
     'features.hud.title': 'HUD \uC0C1\uD0DC \uD45C\uC2DC\uC904',
     'features.hud.desc': 'Rate Limit, \uC138\uC158 \uC9C0\uC18D\uC2DC\uAC04, \uCEE8\uD14D\uC2A4\uD2B8 \uC0AC\uC6A9\uB7C9, \uB3C4\uAD6C \uD638\uCD9C, \uD65C\uC131 \uBAA8\uB378 \uC815\uBCF4\uB97C \uD130\uBBF8\uB110\uC5D0 \uC2E4\uC2DC\uAC04 \uD45C\uC2DC\uD569\uB2C8\uB2E4.',
     'features.pet.title': 'Clawd \uC2DC\uC2A4\uD15C',
-    'features.pet.desc': '8\uAC00\uC9C0 \uC0C1\uD0DC\uC640 3\uB2E8\uACC4 \uD65C\uB3D9 \uB808\uBCA8\uC744 \uAC00\uC9C4 Clawd \uCE90\uB9AD\uD130\uC5D0 14\uC885\uC758 \uC561\uC138\uC11C\uB9AC(\uBAA8\uC790, \uC548\uACBD, \uBC14\uC9C0)\uB97C \uC218\uC9D1\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC870\uD569\uD558\uBA74 100\uAC00\uC9C0 \uC774\uC0C1\uC758 \uC2A4\uD0C0\uC77C!',
+    'features.pet.desc': '9\uac00\uc9c0 \uc0c1\ud0dc, 3\ub2e8\uacc4 \ud65c\ub3d9 \ub808\ubca8, 15\uac00\uc9c0 \uc774\uc0c1\uc758 \ubaa8\uc158\uc744 \uac00\uc9c4 Clawd \uce90\ub9ad\ud130\uc5d0 14\uc885\uc758 \uc561\uc138\uc11c\ub9ac(\ubaa8\uc790, \uc548\uacbd, \ubc14\uc9c0)\ub97c \uc218\uc9d1\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uc870\ud569\ud558\uba74 100\uac00\uc9c0 \uc774\uc0c1\uc758 \uc2a4\ud0c0\uc77c!',
     'features.update.title': '\uC790\uB3D9 \uC5C5\uB370\uC774\uD2B8',
-    'features.update.desc': '\uC571\uC5D0\uC11C \uC9C1\uC811 \uC5C5\uB370\uC774\uD2B8\uB97C \uD655\uC778\uD558\uC138\uC694. \uD074\uB9AD \uD55C \uBC88\uC73C\uB85C GitHub Releases\uC5D0\uC11C \uCD5C\uC2E0 DMG\uB97C \uB2E4\uC6B4\uB85C\uB4DC\uD569\uB2C8\uB2E4.',
+    'features.update.desc': '\uc571\uc5d0\uc11c \ud55c \ubc88 \ud074\ub9ad\uc73c\ub85c \uc5c5\ub370\uc774\ud2b8\ud569\ub2c8\ub2e4. \ub0b4\ub824\ubc1b\uc740 \ud30c\uc77c\uc740 SHA-256, \uac1c\ubc1c\uc790 \uc11c\uba85, Gatekeeper\ub97c \ud655\uc778\ud55c \ub4a4\uc5d0\ub9cc \uc124\uce58\ub3fc\uc694.',
+    'features.usage.title': '\uc2e4\uc2dc\uac04 \uc0ac\uc6a9\ub7c9',
+    'features.usage.desc': '\uba54\ub274\ubc14 Clawd \uc606\uc5d0 5\uc2dc\uac04, \uc8fc\uac04 \uc0ac\uc6a9\ub7c9\uacfc \ucd08\uae30\ud654 \uc2dc\uac01, \uc0ac\uc6a9 \uc18d\ub3c4\ub97c \ubcf4\uc5ec\uc90d\ub2c8\ub2e4. claude.ai, \ub370\uc2a4\ud06c\ud1b1 \uc571, \ubaa8\ubc14\uc77c, Claude Code \uc0ac\uc6a9\ub7c9\uc774 \ubaa8\ub450 \ud3ec\ud568\ub3fc\uc694.',
 
     // Collection
     'collection.title': '\uC561\uC138\uC11C\uB9AC \uCEEC\uB809\uC158',
@@ -228,7 +234,7 @@ const translations = {
     'docs.collection.desc': '\uAC01\uAC01 \uACE0\uC720\uD55C \uC5B8\uB77D \uC870\uAC74\uC744 \uAC00\uC9C4 14\uC885\uC758 \uC561\uC138\uC11C\uB9AC (5\uBAA8\uC790, 4\uC548\uACBD, 5\uBC14\uC9C0).',
     'docs.config.title': '\uC124\uC815',
     'docs.update.title': '\uC5C5\uB370\uC774\uD2B8',
-    'docs.update.desc': '\uC571 \uD31D\uC624\uBC84\uC5D0\uC11C \uC9C1\uC811 \uC5C5\uB370\uC774\uD2B8\uB97C \uD655\uC778\uD558\uAC70\uB098, GitHub Releases\uC5D0\uC11C \uCD5C\uC2E0 DMG\uB97C \uB2E4\uC6B4\uB85C\uB4DC\uD558\uC138\uC694.',
+    'docs.update.desc': '\uc571 \ud31d\uc624\ubc84\uc5d0\uc11c \uc9c1\uc811 \uc5c5\ub370\uc774\ud2b8\ub97c \ud655\uc778\ud558\uac70\ub098, GitHub Releases\uc5d0\uc11c \ucd5c\uc2e0 DMG\ub97c \ub2e4\uc6b4\ub85c\ub4dc\ud558\uc138\uc694. \uc124\uce58 \uc804\uc5d0 \ub2e4\uc6b4\ub85c\ub4dc \ud30c\uc77c\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4.',
 
     // Accessory names — hats
     'accessory.cap': '\uCE98\uBAA8\uC790',
@@ -294,6 +300,8 @@ const translations = {
     'state.stressed.trigger': 'Rate Limit >= 80%',
     'state.tired.trigger': '\uC138\uC158 >= 45\uBD84',
     'state.collab.trigger': '\uC5D0\uC774\uC804\uD2B8 2\uAC1C \uC774\uC0C1',
+    'state.chatting': 'Claude\ub791 \ub300\ud654 \uc911',
+    'state.chatting.trigger': 'Claude Code \uc138\uc158 \uc5c6\uc774 Claude \uc571 \uc0ac\uc6a9 \uc911\uc774\uac70\ub098 \uc0ac\uc6a9\ub7c9 \uc99d\uac00',
 
     // Activity levels
     'effect.normal': '\uBCF4\uD1B5',

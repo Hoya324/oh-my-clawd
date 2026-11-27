@@ -24,64 +24,10 @@ VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_
 echo "Building $APP_NAME v$VERSION …"
 
 # ---------------------------------------------------------------------------
-# 2. Pre-flight checks
+# 2-4. Compile (universal) and assemble the .app bundle
 # ---------------------------------------------------------------------------
-command -v swiftc &>/dev/null || { echo -e "${RED}Error: Swift compiler not found${NC}"; exit 1; }
-
-# ---------------------------------------------------------------------------
-# 3. Compile the Swift app
-# ---------------------------------------------------------------------------
-echo "  Compiling Swift sources …"
-mkdir -p "$BUILD_DIR"
-
-swiftc -o "$BUILD_DIR/$APP_NAME" \
-  "$PET_DIR/Sources/main.swift" \
-  "$PET_DIR/Sources/AppDelegate.swift" \
-  "$PET_DIR/Sources/PetStateReader.swift" \
-  "$PET_DIR/Sources/PetStateMachine.swift" \
-  "$PET_DIR/Sources/AccessoryType.swift" \
-  "$PET_DIR/Sources/ProgressTracker.swift" \
-  "$PET_DIR/Sources/ClawdMemory.swift" \
-  "$PET_DIR/Sources/ReminderScheduler.swift" \
-  "$PET_DIR/Sources/ClawdAPIClient.swift" \
-  "$PET_DIR/Sources/ClawdChat.swift" \
-  "$PET_DIR/Sources/ClawdActionRunner.swift" \
-  "$PET_DIR/Sources/ClawdSection.swift" \
-  "$PET_DIR/Sources/NotificationManager.swift" \
-  "$PET_DIR/Sources/PixelArtRenderer.swift" \
-  "$PET_DIR/Sources/CollectionView.swift" \
-  "$PET_DIR/Sources/StatusMenuController.swift" \
-  "$PET_DIR/Sources/UpdateChecker.swift" \
-  "$PET_DIR/Sources/Sprites/ClaudeSprites.swift" \
-  "$PET_DIR/Sources/Sprites/ClaudeEffects.swift" \
-  "$PET_DIR/Sources/Sprites/AccessorySprites.swift" \
-  "$PET_DIR/Sources/PantsColorPalette.swift" \
-  "$PET_DIR/Sources/Sprites/PantsSprites.swift" \
-  "$PET_DIR/Sources/Sprites/InteractionSprites.swift" \
-  "$PET_DIR/Sources/Sprites/IdleMotionSprites.swift" \
-  -framework Cocoa \
-  -framework ServiceManagement \
-  -framework SwiftUI \
-  -framework UserNotifications \
-  -O 2>&1 || { echo -e "${RED}Build failed${NC}"; exit 1; }
-
-echo -e "  ${GREEN}Binary built${NC}"
-
-# ---------------------------------------------------------------------------
-# 4. Assemble the .app bundle
-# ---------------------------------------------------------------------------
+"$REPO_ROOT/scripts/build-app.sh" --out "$BUILD_DIR" || { echo -e "${RED}Build failed${NC}"; exit 1; }
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
-rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_BUNDLE/Contents/MacOS"
-mkdir -p "$APP_BUNDLE/Contents/Resources"
-
-cp "$BUILD_DIR/$APP_NAME"   "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
-cp "$INFO_PLIST"             "$APP_BUNDLE/Contents/"
-
-if [[ -f "$PET_DIR/AppIcon.icns" ]]; then
-  cp "$PET_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
-fi
-
 echo -e "  ${GREEN}App bundle created${NC}"
 
 # ---------------------------------------------------------------------------

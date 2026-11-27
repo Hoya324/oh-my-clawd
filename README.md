@@ -48,6 +48,8 @@
 
 Download the `.dmg` file from the [latest release page](https://github.com/Hoya324/oh-my-clawd/releases/latest/download/OhMyClawd.dmg) and install.
 
+The DMG is all you need. On first launch the app installs the HUD and aggregator scripts into `~/.claude/pet/runtime` and registers the aggregator LaunchAgent itself. Without Node.js the app and usage display still work; only Claude Code session tracking is off.
+
 ### Manual Install
 
 ```bash
@@ -75,7 +77,7 @@ Then **restart Claude Code**.
 A Tamagotchi-style 32x32 pixel art character that lives in your macOS menu bar.
 **Clawd** (#D97757), the official Claude Code mascot, reacts to your Claude Code activity in real time.
 
-> 8 States | 3 Activity Levels | 14 Accessories | Claude-powered Companion
+> 9 States | 3 Activity Levels | 14 Accessories | Claude-powered Companion
 
 ### Clawd States
 
@@ -89,6 +91,26 @@ A Tamagotchi-style 32x32 pixel art character that lives in your macOS menu bar.
 | Stressed | <img src="docs/assets/clawd/stressed.gif" width="32"> | Shaking, alert | Rate limit >= 80% |
 | Tired | <img src="docs/assets/clawd/tired.gif" width="32"> | Droopy eyes | Session >= 45 min |
 | Collab | <img src="docs/assets/clawd/collab.gif" width="32"> | Multi-agent anim | 2+ agents |
+| Chatting | 💬 | Speech bubble | Claude desktop app in front, or usage rising, with no Claude Code session |
+
+### Usage in the menu bar
+
+Your 5-hour usage sits right next to Clawd (`[Clawd] 42%`). Pick `끔 / 5h / 5h+주` (off / 5h / 5h + weekly) under **메뉴바 사용량** in the popover; hover for reset times. Orange at 70%+, red at 90%+.
+
+- The popover shows your plan (Max, Pro), current session and weekly usage with reset times, per-model weekly limits when your account has them, and a one-line pace check ("on track until Sunday's reset").
+- The app fetches usage itself, so it shows even with no HUD or terminal session.
+- Limits are account-wide: claude.ai, the desktop app, mobile and Claude Code all count.
+- Requires a Claude Code login on this Mac.
+- When the token has expired and Claude Code is not running, the app refreshes it and saves the result back to Claude Code's own keychain item, so Claude Code stays signed in. Turn off with `defaults write com.hoya324.oh-my-clawd autoRefreshToken -bool false`.
+- Alerts fire once per 5-hour window at 80% and 95%.
+
+### Chat detection
+
+Clawd reacts even without a Claude Code session: a speech-bubble "chatting" state while the Claude desktop app is in front, and a few awake minutes whenever account usage goes up (web, mobile, remote agents). Water/stretch reminders count chat activity too. No conversation content, app files or browser data are read.
+
+### Motions
+
+Random motions per state (hop, dance, look around, heart, nod, sparkle, shiver, surprised, sigh, snuggle) and a different reaction on each click. Clawd celebrates accessory unlocks and fresh 5-hour windows. Accessories move with the body.
 
 ### Activity Levels
 
@@ -221,21 +243,19 @@ Click the `최신` label to manually re-check.
 ## Requirements
 
 - **macOS 13.0+**
-- **Node.js >= 18**
-- **Claude Code** with OAuth login (for rate limit data)
+- **Node.js >= 18** for the HUD and Claude Code session tracking (the app and usage display work without it)
+- **Claude Code** with OAuth login (for usage data)
 
 ## Uninstall
 
 ```bash
-~/.oh-my-clawd/install.sh remove
+~/.oh-my-clawd/install.sh remove              # HUD only (restores your previous status line)
+~/.oh-my-clawd/pet/install.sh remove          # app + aggregator, keeps memos and progress
+~/.oh-my-clawd/pet/install.sh remove --purge  # also deletes ~/.claude/pet
 rm -rf ~/.oh-my-clawd
 ```
 
-If you installed the oh-my-clawd app separately:
-
-```bash
-~/.oh-my-clawd/pet/install.sh remove
-```
+Everything lives under `~/.claude/pet/`; nothing is written into your project folders.
 
 ## License
 

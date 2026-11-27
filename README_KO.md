@@ -48,14 +48,17 @@
 
 [최신 릴리스 페이지](https://github.com/Hoya324/oh-my-clawd/releases/latest/download/OhMyClawd.dmg)에서 `.dmg` 파일을 다운로드하여 설치합니다.
 
+DMG 하나로 끝나요. 앱이 처음 실행될 때 HUD와 세션 집계 스크립트를 `~/.claude/pet/runtime`에 설치하고, 집계 데몬(LaunchAgent)도 직접 등록합니다. Node.js가 없어도 앱과 사용량 표시는 동작하고, Claude Code 세션 추적만 꺼집니다.
+
 ### 수동 설치
 
 ```bash
 git clone https://github.com/Hoya324/oh-my-clawd.git ~/.oh-my-clawd
-~/.oh-my-clawd/install.sh
+~/.oh-my-clawd/install.sh        # HUD 상태 표시줄
+~/.oh-my-clawd/pet/install.sh    # 메뉴바 앱 (소스 빌드)
 ```
 
-설치 후 **Claude Code를 재시작**하세요.
+설치 후 **Claude Code를 재시작**하세요. 기존 상태 표시줄이 있었다면 백업해 두었다가 `install.sh remove` 때 되돌립니다.
 
 ## HUD 상태 표시줄
 
@@ -75,7 +78,7 @@ git clone https://github.com/Hoya324/oh-my-clawd.git ~/.oh-my-clawd
 macOS 메뉴바에 상주하는 다마고치 스타일의 32x32 픽셀아트 캐릭터입니다.
 Claude Code의 공식 마스코트인 **Clawd**(#D97757)가 Claude Code 활동에 실시간으로 반응합니다.
 
-> 8가지 상태 | 3단계 활동 레벨 | 14종 액세서리 | Claude 기반 Companion
+> 9가지 상태 | 3단계 활동 레벨 | 14종 액세서리 | Claude 기반 Companion
 
 ### Clawd 상태
 
@@ -89,6 +92,42 @@ Claude Code의 공식 마스코트인 **Clawd**(#D97757)가 Claude Code 활동�
 | Stressed | <img src="docs/assets/clawd/stressed.gif" width="32"> | 레이트 리밋 경고! | 요청 한도 80% 이상 |
 | Tired | <img src="docs/assets/clawd/tired.gif" width="32"> | 피곤해요... | 45분 이상 세션 |
 | Collab | <img src="docs/assets/clawd/collab.gif" width="32"> | 함께 일하는 중! | 에이전트 2개 이상 |
+| Chatting | 💬 | Claude랑 대화 중 | Claude Code 세션 없이 Claude 앱 사용 중이거나 사용량이 오르는 중 |
+
+### 메뉴바 사용량 표시
+
+Clawd 옆에 5시간 사용률이 바로 보여요 (`[Clawd] 42%`). 팝오버 하단의 **메뉴바 사용량**에서 `끔 / 5h / 5h+주`를 고를 수 있고, 마우스를 올리면 초기화까지 남은 시간이 나옵니다. 70% 이상은 주황, 90% 이상은 빨강.
+
+- 팝오버에는 플랜(Max, Pro), 현재 세션과 이번 주 사용률, 초기화 시각(`오후 7:50에 초기화`), 계정에 있으면 모델별 주간 한도, 그리고 사용 속도 한 줄 요약(`순조로워요. 일요일에 초기화될 때까지 여유 있게 쓸 수 있어요.`)이 나와요.
+- 앱이 사용량을 직접 조회하므로 HUD나 터미널 세션이 없어도 표시됩니다.
+- 한도는 계정 단위라서 claude.ai, 데스크톱 앱, 모바일, Claude Code 사용량이 모두 합쳐진 값이에요.
+- 조회에는 이 Mac의 Claude Code 로그인 정보가 필요합니다.
+- 토큰이 만료되면 Claude Code가 실행 중이 아닐 때만 앱이 대신 갱신하고, 결과를 Claude Code와 같은 키체인 항목에 저장해요. 그래서 Claude Code 로그인이 풀리지 않아요. 끄려면 `defaults write com.hoya324.oh-my-clawd autoRefreshToken -bool false`.
+- 80%, 95%를 넘을 때 5시간 창마다 한 번씩만 알림을 보냅니다.
+
+### Claude 채팅 감지
+
+Claude Code 세션이 없어도 Clawd가 반응합니다.
+
+- **Claude 데스크톱 앱이 앞에 있을 때** 말풍선을 띄운 "대화 중" 상태가 됩니다.
+- **사용량이 오르면** (웹, 모바일, 원격 작업 등 어디서든) 몇 분간 깨어 있어요.
+- 물/스트레칭 리마인더도 채팅 중일 때 동작합니다.
+- 대화 내용이나 앱 내부 파일, 브라우저 데이터는 읽지 않습니다. 그래서 어떤 대화인지, 응답을 생성 중인지는 알 수 없어요.
+
+### 모션
+
+상태별로 가끔 랜덤 모션을 보여주고, 클릭할 때마다 다른 반응을 합니다.
+
+| 모션 | 나오는 때 |
+|------|-----------|
+| 깡총, 춤, 두리번, 하트 | 기본, 협업, 채팅 중 / 클릭 반응 |
+| 고개 끄덕, 반짝 | 열심히 일하는 중 |
+| 덜덜 (땀방울), 깜짝 (!) | 사용량 경고. 80%를 넘는 순간에도 |
+| 한숨 | 컨텍스트 가득, 피곤 |
+| 뒤척임 | 자는 중 |
+| 축하 (점프 + 반짝이) | 액세서리 해금, 5시간 창 초기화 |
+
+액세서리는 모션 중에도 몸과 함께 움직입니다.
 
 ### 활동 레벨
 
@@ -215,28 +254,40 @@ Clawd는 단순한 장식이 아니라, Claude Haiku 기반의 가벼운 데일�
 
 ## 업데이트
 
-**앱 내 자동 설치.** 런치 후 몇 초 뒤 GitHub에 신버전을 확인합니다. 업데이트가 있으면 팝오버 하단에 `v<현재> → v<신규> 설치` 버튼이 표시됩니다. 클릭하면 Clawd가 DMG를 다운로드해서 자기 자신을 덮어쓰고 재시작합니다. 브라우저 필요 없음.
+**앱 내 자동 설치.** 런치 후 몇 초 뒤 GitHub에 신버전을 확인합니다. 업데이트가 있으면 팝오버 하단에 `v<현재> → v<신규> 설치` 버튼이 표시됩니다. 클릭하면 Clawd가 DMG를 다운로드해서 자기 자신을 교체하고 재시작합니다. 브라우저 필요 없음.
+
+설치 전에 릴리스의 SHA-256, Developer ID 서명(같은 팀), Gatekeeper 공증을 모두 확인하고, 새 앱을 옆에 복사해 검증한 뒤 교체합니다. 중간에 실패하면 기존 앱은 그대로 남아요.
 
 `최신` 라벨을 클릭하면 수동으로 다시 확인합니다.
 
 ## 요구사항
 
 - **macOS 13.0+**
-- **Node.js >= 18**
-- **Claude Code** OAuth 로그인 (요청 한도 데이터 조회용)
+- **Node.js >= 18**: HUD와 Claude Code 세션 추적용 (없어도 앱과 사용량 표시는 동작)
+- **Claude Code** OAuth 로그인: 사용량 조회용
 
 ## 제거
 
 ```bash
-~/.oh-my-clawd/install.sh remove
+~/.oh-my-clawd/install.sh remove        # HUD만 제거 (이전 상태 표시줄 복원)
+~/.oh-my-clawd/pet/install.sh remove    # 앱 + 집계 데몬 제거, 메모와 진행도는 보존
+~/.oh-my-clawd/pet/install.sh remove --purge   # ~/.claude/pet 데이터까지 삭제
 rm -rf ~/.oh-my-clawd
 ```
 
-oh-my-clawd 앱을 별도로 설치한 경우:
+### 데이터 위치
 
-```bash
-~/.oh-my-clawd/pet/install.sh remove
-```
+모든 파일은 `~/.claude/pet/` 아래에만 생기고, 프로젝트 폴더에는 아무것도 쓰지 않아요.
+
+| 파일 | 쓰는 쪽 | 내용 |
+|------|---------|------|
+| `pet-state.json` | 집계 데몬 | 현재 세션, 사용량 |
+| `progress.json` | 집계 데몬 | 누적 통계, 해금 |
+| `selection.json` | 앱 | 착용 중인 액세서리 |
+| `usage-cache.json` | 앱, HUD | 사용량 캐시 (공유) |
+| `sessions/<id>.json` | HUD | 세션별 상태 |
+| `clawd-memory.json` | 앱 | 메모, 리마인더, 대화 (일별 백업: `backups/`) |
+| `runtime/` | 앱, install.sh | HUD, 집계 스크립트 |
 
 ## 라이선스
 

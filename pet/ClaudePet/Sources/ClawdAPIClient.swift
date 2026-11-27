@@ -81,31 +81,14 @@ final class ClawdAPIClient {
 
     // MARK: - Keychain
 
-    /// Reads the Claude Code OAuth access token from the login keychain.
-    /// Uses `security find-generic-password -w` which prompts once for
-    /// permission (Always Allow persists the grant).
+    /// Reads the Claude Code OAuth access token (same lookup as the usage
+    /// service: user's keychain account first, unexpired token preferred).
+    /// An expired token returns nil so chat falls back to the `claude` CLI,
+    /// which refreshes it, instead of failing with 401.
     static func readOAuthToken() -> String? {
-        let proc = Process()
-        proc.launchPath = "/usr/bin/security"
-        proc.arguments = ["find-generic-password", "-s", keychainService, "-w"]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError = Pipe()
-        do { try proc.run() } catch { return nil }
-        proc.waitUntilExit()
-        guard proc.terminationStatus == 0 else { return nil }
-        let raw = String(
-            data: pipe.fileHandleForReading.readDataToEndOfFile(),
-            encoding: .utf8
-        )?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard let jsonData = raw.data(using: .utf8),
-              let root = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-              let oauth = root["claudeAiOauth"] as? [String: Any],
-              let token = oauth["accessToken"] as? String,
-              !token.isEmpty else {
-            return nil
-        }
-        return token
+        guard let creds = UsageService.readCredentials() else { return nil }
+        if let exp = creds.expiresAt, exp <= Date() { return nil }
+        return creds.token
     }
 
     // MARK: - Prompt

@@ -15,7 +15,7 @@ enum NotificationAuthState: Equatable {
 
 final class NotificationManager {
     private var lastByKey: [String: Date] = [:]
-    private let rateLimitCooldown: TimeInterval = 300
+    private let lock = NSLock()
     private let clawdCooldown: TimeInterval = 60
 
     /// Published-style callback invoked whenever auth state is refreshed.
@@ -147,29 +147,55 @@ final class NotificationManager {
 
     // MARK: - Rate limit
 
+    /// Thresholds already announced in the current 5-hour window. Notifies
+    /// once per threshold per window instead of every 5 minutes while high.
+    private var announcedWindow: Date?
+    private var announcedThresholds: Set<Int> = []
+    static let rateLimitThresholds = [80, 95]
+
     func checkAndNotify(rateLimit: RateLimitData) {
-        guard let percent = rateLimit.fiveHourPercent, percent >= 80 else { return }
-        if let last = lastByKey["rateLimit"],
-           Date().timeIntervalSince(last) < rateLimitCooldown { return }
-        sendRaw(
-            id: "rate-limit-\(Int(Date().timeIntervalSince1970))",
-            title: "oh-my-clawd - Rate Limit Warning",
-            body: "5-hour rate limit at \(Int(percent))%. Consider taking a break!"
-        )
-        lastByKey["rateLimit"] = Date()
+        guard let percent = rateLimit.fiveHourPercent else { return }
+        let window = UsageService.parseDate(rateLimit.fiveHourResetsAt)
+        lock.lock()
+        // Reset times jitter by seconds between responses: same window if
+        // within 10 minutes.
+        let sameWindow: Bool = {
+            guard let a = window, let b = self.announcedWindow else { return window == nil && self.announcedWindow == nil }
+            return abs(a.timeIntervalSince(b)) < 600
+        }()
+        if !sameWindow {
+            announcedThresholds = []
+            announcedWindow = window
+        }
+        let crossed = Self.rateLimitThresholds.filter { Int(percent) >= $0 && !announcedThresholds.contains($0) }
+        announcedThresholds.formUnion(crossed)
+        lock.unlock()
+
+        guard let level = crossed.max() else { return }
+        let body = level >= 95
+            ? "5시간 사용량이 \(Int(percent))%예요. 곧 한도에 닿아요."
+            : "5시간 사용량이 \(Int(percent))%예요. 잠깐 쉬어가도 좋아요."
+        sendRaw(id: "rate-limit-\(level)-\(Int(Date().timeIntervalSince1970))",
+                title: "Clawd 사용량 알림", body: body)
     }
 
     // MARK: - Clawd messages (reminders + memos)
 
+    /// Safe to call from any thread (the reminder scheduler calls it from
+    /// the memory store's queue).
     func sendClawdMessage(key: String, title: String, body: String) {
-        if let last = lastByKey[key],
-           Date().timeIntervalSince(last) < clawdCooldown { return }
+        lock.lock()
+        if let last = lastByKey[key], Date().timeIntervalSince(last) < clawdCooldown {
+            lock.unlock()
+            return
+        }
+        lastByKey[key] = Date()
+        lock.unlock()
         sendRaw(
             id: "clawd-\(key)-\(Int(Date().timeIntervalSince1970))",
             title: title,
             body: body
         )
-        lastByKey[key] = Date()
     }
 
     // MARK: - Private

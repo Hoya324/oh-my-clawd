@@ -1,16 +1,18 @@
 #!/bin/bash
-# oh-my-clawd Installer
-# Usage: ./pet/install.sh        (install)
-#        ./pet/install.sh remove  (uninstall)
+# oh-my-clawd menu bar app — build from source and install
+# Usage: ./pet/install.sh                 install / update
+#        ./pet/install.sh remove          uninstall (keeps memos and progress)
+#        ./pet/install.sh remove --purge  uninstall and delete all Clawd data
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_NAME="OhMyClawd"
 APP_BUNDLE="$HOME/Applications/$APP_NAME.app"
-AGGREGATOR_PLIST_NAME="com.claude.clawd-aggregator"
-AGGREGATOR_PLIST="$HOME/Library/LaunchAgents/$AGGREGATOR_PLIST_NAME.plist"
-NODE_PATH="$(which node 2>/dev/null || echo '/usr/local/bin/node')"
+AGENT_LABEL="com.claude.clawd-aggregator"
+AGENT_PLIST="$HOME/Library/LaunchAgents/$AGENT_LABEL.plist"
+PET_DIR="$HOME/.claude/pet"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -20,100 +22,40 @@ NC='\033[0m'
 if [[ "${1:-}" == "remove" ]]; then
   echo "Uninstalling oh-my-clawd..."
   killall "$APP_NAME" 2>/dev/null && echo "  Stopped $APP_NAME" || true
-  if [[ -f "$AGGREGATOR_PLIST" ]]; then
-    launchctl bootout "gui/$(id -u)/$AGGREGATOR_PLIST_NAME" 2>/dev/null || true
-    rm -f "$AGGREGATOR_PLIST"
+  if [[ -f "$AGENT_PLIST" ]]; then
+    launchctl bootout "gui/$(id -u)/$AGENT_LABEL" 2>/dev/null || true
+    rm -f "$AGENT_PLIST"
     echo "  Removed aggregator daemon"
   fi
   [[ -d "$APP_BUNDLE" ]] && rm -rf "$APP_BUNDLE" && echo "  Removed $APP_BUNDLE"
-  rm -rf "$HOME/.claude/pet"
+  rm -rf "$PET_DIR/runtime"
+  if [[ "${2:-}" == "--purge" ]]; then
+    rm -rf "$PET_DIR"
+    echo "  Deleted all Clawd data ($PET_DIR)"
+  else
+    echo -e "  ${YELLOW}Kept memos and progress in $PET_DIR (use 'remove --purge' to delete)${NC}"
+  fi
   echo -e "${GREEN}oh-my-clawd uninstalled.${NC}"
   exit 0
 fi
 
 echo "Installing oh-my-clawd..."
+command -v swiftc &>/dev/null || { echo -e "${RED}Error: Swift compiler required (xcode-select --install)${NC}"; exit 1; }
+command -v node &>/dev/null || echo -e "${YELLOW}  Node.js not found: usage still works, Claude Code session tracking needs Node (brew install node)${NC}"
 
-command -v node &>/dev/null || { echo -e "${RED}Error: Node.js required (brew install node)${NC}"; exit 1; }
-command -v swiftc &>/dev/null || { echo -e "${RED}Error: Swift compiler required${NC}"; exit 1; }
+BUILD_DIR="$SCRIPT_DIR/ClaudePet/build"
+"$REPO_ROOT/scripts/build-app.sh" --out "$BUILD_DIR" --native || { echo -e "${RED}Build failed${NC}"; exit 1; }
 
-# Build
-echo "  Building Swift app..."
-cd "$SCRIPT_DIR/ClaudePet"
-mkdir -p build
-swiftc -o "build/$APP_NAME" \
-  -target arm64-apple-macos13.0 \
-  Sources/main.swift \
-  Sources/AppDelegate.swift \
-  Sources/PetStateReader.swift \
-  Sources/PetStateMachine.swift \
-  Sources/AccessoryType.swift \
-  Sources/ProgressTracker.swift \
-  Sources/ClawdMemory.swift \
-  Sources/ReminderScheduler.swift \
-  Sources/ClawdAPIClient.swift \
-  Sources/ClawdChat.swift \
-  Sources/ClawdActionRunner.swift \
-  Sources/ClawdSection.swift \
-  Sources/NotificationManager.swift \
-  Sources/PixelArtRenderer.swift \
-  Sources/CollectionView.swift \
-  Sources/StatusMenuController.swift \
-  Sources/UpdateChecker.swift \
-  Sources/Sprites/ClaudeSprites.swift \
-  Sources/Sprites/ClaudeEffects.swift \
-  Sources/Sprites/AccessorySprites.swift \
-  Sources/PantsColorPalette.swift \
-  Sources/Sprites/PantsSprites.swift \
-  Sources/Sprites/InteractionSprites.swift \
-  Sources/Sprites/IdleMotionSprites.swift \
-  -framework Cocoa \
-  -framework ServiceManagement \
-  -framework SwiftUI \
-  -framework UserNotifications \
-  -O 2>&1 || { echo -e "${RED}Build failed${NC}"; exit 1; }
-
-# Install app bundle
+killall "$APP_NAME" 2>/dev/null || true
 mkdir -p "$HOME/Applications"
 rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
-cp "build/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
-cp "$SCRIPT_DIR/ClaudePet/Info.plist" "$APP_BUNDLE/Contents/"
-if [[ -f "$SCRIPT_DIR/ClaudePet/AppIcon.icns" ]]; then
-  cp "$SCRIPT_DIR/ClaudePet/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
-fi
-xattr -cr "$APP_BUNDLE"
+ditto "$BUILD_DIR/$APP_NAME.app" "$APP_BUNDLE"
+# Ad-hoc sign so macOS keeps notification / keychain permissions stable.
+codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || true
 echo -e "  ${GREEN}App → $APP_BUNDLE${NC}"
 
-# Install aggregator daemon
-mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.claude/pet"
-cat > "$AGGREGATOR_PLIST" << PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>$AGGREGATOR_PLIST_NAME</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>$NODE_PATH</string>
-        <string>$SCRIPT_DIR/pet-aggregator.mjs</string>
-    </array>
-    <key>KeepAlive</key>
-    <true/>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/claude-pet-aggregator.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/claude-pet-aggregator.err</string>
-</dict>
-</plist>
-PLIST
-
-launchctl bootout "gui/$(id -u)/$AGGREGATOR_PLIST_NAME" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$AGGREGATOR_PLIST"
-echo "  Aggregator daemon started"
-
+# The app installs the runtime scripts and the aggregator LaunchAgent on
+# launch (~/.claude/pet/runtime, $AGENT_LABEL).
 open "$APP_BUNDLE"
 echo ""
 echo -e "${GREEN}oh-my-clawd installed!${NC}"

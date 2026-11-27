@@ -49,6 +49,8 @@
         <div class="sidebar-section-title" data-i18n="docs.sidebar.features">Features</div>
         <a href="#clawd-system" class="sidebar-link" data-i18n="docs.sidebar.pet-system">Clawd System</a>
         <a href="#activity-levels" class="sidebar-link" data-i18n="docs.sidebar.activity-levels">Activity Levels</a>
+        <a href="#usage" class="sidebar-link">Usage &amp; Chat Detection</a>
+        <a href="#motions" class="sidebar-link">Motions</a>
         <a href="#hud" class="sidebar-link" data-i18n="docs.sidebar.hud">HUD Status Line</a>
       </div>
 
@@ -160,6 +162,11 @@ cd oh-my-clawd</code></pre>
             <td data-i18n="state.collab.trigger">2+ agents</td>
             <td>Multi-agent animation</td>
           </tr>
+          <tr>
+            <td data-i18n="state.chatting">Chatting with Claude</td>
+            <td data-i18n="state.chatting.trigger">Claude app in front or usage rising, no Claude Code session</td>
+            <td>Speech bubble with typing dots</td>
+          </tr>
         </tbody>
       </table>
 
@@ -195,6 +202,30 @@ cd oh-my-clawd</code></pre>
       </table>
 
       <!-- HUD Status Line -->
+      <h2 id="usage">Usage &amp; Chat Detection</h2>
+      <p>The menu bar shows your 5-hour usage next to Clawd (<code>42%</code>). Choose <strong>off / 5h / 5h + weekly</strong> under <em>메뉴바 사용량</em> in the popover. The popover shows your plan, the current session and weekly limits with their reset times, per-model weekly limits when your account has them, and a one-line pace check ("on track until Sunday's reset" or "at this pace you hit the limit around 3 PM").</p>
+      <ul>
+        <li>The app fetches usage itself, so it works without the HUD or a terminal session.</li>
+        <li>Limits are account-wide: claude.ai, the desktop app, mobile and Claude Code all count.</li>
+        <li>Needs a Claude Code login on this Mac. When the token has expired and Claude Code is not running, the app refreshes it and saves it back to Claude Code's keychain item, so Claude Code stays signed in. Disable with <code>defaults write com.hoya324.oh-my-clawd autoRefreshToken -bool false</code>.</li>
+        <li>Alerts fire once per 5-hour window at 80% and 95%.</li>
+      </ul>
+      <p>Without a Claude Code session Clawd still reacts: it switches to a <strong>chatting</strong> state while the Claude desktop app is in front, and stays awake for a few minutes whenever usage goes up (web, mobile, remote agents). No conversation content, app files or browser data are read.</p>
+
+      <h2 id="motions">Motions</h2>
+      <p>Each state has its own random motions, and every click gets a different reaction. Accessories move with the body.</p>
+      <table>
+        <thead><tr><th>Motion</th><th>When</th></tr></thead>
+        <tbody>
+          <tr><td>Hop, dance, look around, heart</td><td>Normal, collab, chatting; click reactions</td></tr>
+          <tr><td>Nod, sparkle</td><td>Working hard</td></tr>
+          <tr><td>Shiver, surprised</td><td>Usage warning, and the moment usage crosses 80%</td></tr>
+          <tr><td>Sigh</td><td>Context full, tired</td></tr>
+          <tr><td>Snuggle</td><td>Sleeping</td></tr>
+          <tr><td>Celebrate</td><td>Accessory unlocked, fresh 5-hour window</td></tr>
+        </tbody>
+      </table>
+
       <h2 id="hud" data-i18n="docs.hud.title">HUD Status Line</h2>
       <p data-i18n="docs.hud.desc">A real-time status line showing Claude Code metrics.</p>
 
@@ -306,7 +337,8 @@ cd oh-my-clawd</code></pre>
 
       <!-- Configuration -->
       <h2 id="configuration" data-i18n="docs.config.title">Configuration</h2>
-      <p>The HUD status line can be toggled on or off via the <code>install.sh</code> script. Run <code>./install.sh</code> to enable or <code>./uninstall.sh</code> to disable the HUD.</p>
+      <p>Toggle the HUD status line from the app popover (<strong>HUD ON/OFF</strong>), or run <code>./install.sh</code> to enable and <code>./install.sh remove</code> to disable it. A status line you had before is backed up and restored when the HUD is turned off, and an unreadable <code>settings.json</code> is never overwritten.</p>
+      <p>All data lives under <code>~/.claude/pet/</code> (state, progress, accessory selection, usage cache, memos with daily backups, and the installed runtime). Nothing is written into your project folders.</p>
       <p>Accessory selection is available through the app popover. Click the Clawd icon in the menu bar to open the popover, then choose the active accessory from the collection grid.</p>
 
       <!-- Companion -->
@@ -343,7 +375,8 @@ cd oh-my-clawd</code></pre>
 
       <!-- Update -->
       <h2 id="update" data-i18n="docs.update.title">Update</h2>
-      <p data-i18n="docs.update.desc">The app auto-installs updates in place. Click "설치" in the popover footer and Clawd downloads the latest DMG, replaces itself, and relaunches.</p>
+      <p data-i18n="docs.update.desc">Check for updates directly from the app popover, or download the latest DMG from GitHub Releases. Downloads are verified before installing.</p>
+      <p>Before replacing itself Clawd checks the download's SHA-256 against the release, the Developer ID signature (same team) and Gatekeeper notarization, then swaps in a verified copy. If any step fails the current app stays as it is.</p>
       <p>
         A few seconds after each launch Clawd checks GitHub for a newer release. If one exists, the footer shows <code>v&lt;current&gt; → v&lt;new&gt; 설치</code>. Click <strong>최신</strong> to manually re-check. The raw DMG is always available on the
         <a href="https://github.com/Hoya324/oh-my-clawd/releases/latest" target="_blank" rel="noopener">GitHub Releases</a>

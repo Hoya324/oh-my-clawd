@@ -14,6 +14,16 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const PROGRESS_PATH = join(homedir(), '.claude', 'pet', 'progress.json');
+// Since v2.2 the selection lives in its own file (written only by the app).
+const SELECTION_PATH = join(homedir(), '.claude', 'pet', 'selection.json');
+
+function loadSelection(progress) {
+  try {
+    return JSON.parse(readFileSync(SELECTION_PATH, 'utf-8'));
+  } catch {
+    return { selectedHat: progress.selectedHat ?? null, selectedGlasses: progress.selectedGlasses ?? null };
+  }
+}
 
 function loadProgress() {
   try {
@@ -79,8 +89,9 @@ function generateBadge() {
   const totalMinutes = progress.stats?.totalTimeMinutes || 0;
   const hours = Math.floor(totalMinutes / 60);
 
-  const hat = progress.selectedHat;
-  const glasses = progress.selectedGlasses;
+  const selection = loadSelection(progress);
+  const hat = selection.selectedHat;
+  const glasses = selection.selectedGlasses;
   const accessoryLabel = [hat, glasses].filter(Boolean).join(' + ') || 'No accessories';
 
   const width = 200;

@@ -80,6 +80,8 @@ struct AccessorySprites {
         case .collab:
             // Energetic bounce
             return (frameIndex == 1) ? -1 : 0
+        case .chatting:
+            return 0
         }
     }
 

@@ -26,11 +26,92 @@ struct ClawdAction: Codable {
     var typed: ClawdActionType {
         ClawdActionType(rawValue: type) ?? .unknown
     }
+
+    enum CodingKeys: String, CodingKey {
+        case type, text, dueAt, tags, id, kind, enabled, intervalMin, timeOfDay
+    }
+
+    init(type: String, text: String?, dueAt: String?, tags: [String]?, id: String?,
+         kind: String?, enabled: Bool?, intervalMin: Int?, timeOfDay: String?) {
+        self.type = type
+        self.text = text
+        self.dueAt = dueAt
+        self.tags = tags
+        self.id = id
+        self.kind = kind
+        self.enabled = enabled
+        self.intervalMin = intervalMin
+        self.timeOfDay = timeOfDay
+    }
+
+    /// The model is not a schema validator: accept the shapes it actually
+    /// emits ("tags": "점심", "intervalMin": "120", "enabled": "true",
+    /// "dueAt": "") instead of rejecting the whole reply.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        type = try c.decode(String.self, forKey: .type)
+        text = Self.string(c, .text)
+        let due = Self.string(c, .dueAt)
+        dueAt = (due?.isEmpty ?? true) ? nil : due
+        id = Self.string(c, .id)
+        kind = Self.string(c, .kind)?.lowercased()
+        timeOfDay = Self.string(c, .timeOfDay)
+
+        if let arr = try? c.decode([String].self, forKey: .tags) {
+            tags = arr
+        } else if let one = Self.string(c, .tags), !one.isEmpty {
+            tags = one.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        } else {
+            tags = nil
+        }
+
+        if let b = try? c.decode(Bool.self, forKey: .enabled) {
+            enabled = b
+        } else if let s = Self.string(c, .enabled)?.lowercased() {
+            enabled = ["true", "on", "yes", "1"].contains(s) ? true
+                : (["false", "off", "no", "0"].contains(s) ? false : nil)
+        } else {
+            enabled = nil
+        }
+
+        if let n = try? c.decode(Int.self, forKey: .intervalMin) {
+            intervalMin = n
+        } else if let d = try? c.decode(Double.self, forKey: .intervalMin) {
+            intervalMin = Int(d.rounded())
+        } else if let s = Self.string(c, .intervalMin), let n = Int(s) {
+            intervalMin = n
+        } else {
+            intervalMin = nil
+        }
+    }
+
+    private static func string(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> String? {
+        if let s = try? c.decode(String.self, forKey: key) { return s }
+        if let n = try? c.decode(Int.self, forKey: key) { return String(n) }
+        return nil
+    }
+}
+
+private struct LossyAction: Decodable {
+    let value: ClawdAction?
+    init(from decoder: Decoder) throws { value = try? ClawdAction(from: decoder) }
 }
 
 struct ClawdResponse: Codable {
     let actions: [ClawdAction]
     let reply: String
+
+    init(actions: [ClawdAction], reply: String) {
+        self.actions = actions
+        self.reply = reply
+    }
+
+    /// One malformed action no longer discards the reply and the others.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        actions = ((try? c.decode([LossyAction].self, forKey: .actions)) ?? []).compactMap { $0.value }
+        reply = (try? c.decode(String.self, forKey: .reply)) ?? ""
+    }
 }
 
 enum ClawdChatError: Error {

@@ -16,6 +16,10 @@ private let T: UInt32? = nil         // Transparent
 
 // MARK: - ClaudeSprites
 
+/// Chatting outside Claude Code: built from the normal sprite plus a
+/// speech bubble with typing dots (see ProceduralMotions.chattingLoop).
+private let claudeChatting: [[[UInt32?]]] = ProceduralMotions.chattingLoop(base: claudeNormal[0])
+
 struct ClaudeSprites {
     static func frames(state: PetState) -> [[[UInt32?]]] {
         switch state {
@@ -27,6 +31,7 @@ struct ClaudeSprites {
         case .stressed: return claudeStressed
         case .tired:    return claudeTired
         case .collab:   return claudeCollab
+        case .chatting: return claudeChatting
         }
     }
 }

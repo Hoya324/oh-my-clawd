@@ -112,6 +112,32 @@ enum AccessoryType: String, CaseIterable, Codable {
         }
     }
 
+    /// Unlock condition text built from runtime/unlocks.json (via the
+    /// aggregator's unlockProgress), so thresholds live in one place.
+    /// Falls back to the static text when the aggregator has not reported.
+    func unlockDescriptionKO(progress: UnlockProgress?) -> String {
+        guard let p = progress else { return unlockDescriptionKO }
+        return Self.describeKO(metric: p.metric, target: p.target) ?? unlockDescriptionKO
+    }
+
+    static func describeKO(metric: String, target: Int) -> String? {
+        func count(_ n: Int) -> String {
+            if n >= 10_000 && n % 10_000 == 0 { return "\(n / 10_000)만" }
+            return "\(n)"
+        }
+        switch metric {
+        case "totalSessions":         return "총 \(target)회 세션"
+        case "totalTimeMinutes":      return "총 \(target / 60)시간 사용"
+        case "totalTokens":           return "\(count(target)) 토큰 사용"
+        case "totalAgentRuns":        return "에이전트 \(target)회 실행"
+        case "maxConcurrentSessions": return "동시 \(target)개 이상 세션"
+        case "rateLimitHits":         return "사용량 80% 도달 \(target)회"
+        case "longSessions":          return "45분 이상 세션 \(target)회"
+        case "opusTimeMinutes":       return "Opus 모델 \(target / 60)시간"
+        default:                      return nil
+        }
+    }
+
     static var hats: [AccessoryType] {
         allCases.filter { $0.category == .hat }
     }

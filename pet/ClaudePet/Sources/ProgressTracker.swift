@@ -1,225 +1,159 @@
 import Foundation
 
-struct ProgressStats: Codable {
-    var totalSessions: Int
-    var totalTimeMinutes: Int
-    var totalTokens: Int
-    var totalAgentRuns: Int
-    var maxConcurrentSessions: Int
-    var maxConcurrentAgents: Int
-    var rateLimitHits: Int
-    var longSessions: Int
-    var opusTimeMinutes: Int
+// ============================================================================
+// MARK: - Progress (read-only: owned by the aggregator)
+// ============================================================================
+
+struct UnlockProgress: Codable, Equatable {
+    var metric: String
+    var current: Int
+    var target: Int
 }
 
-struct ProgressData: Codable {
-    var version: Int
-    var stats: ProgressStats
+struct ProgressData {
+    var stats: [String: Int]
     var unlockedAccessories: [String]
+    var unlockedAt: [String: String]
+    var unlockProgress: [String: UnlockProgress]
+}
+
+/// Reads ~/.claude/pet/progress.json. The app never writes this file; the
+/// aggregator is its only writer, which removes the read-modify-write race
+/// that used to drop accessory selections.
+final class ProgressTracker {
+    private let filePath: String
+
+    init(filePath: String = Paths.progress) {
+        self.filePath = filePath
+    }
+
+    func read() -> ProgressData? {
+        guard let root = JSONFile.readObject(filePath) else { return nil }
+
+        var stats: [String: Int] = [:]
+        if let raw = root["stats"] as? [String: Any] {
+            for (k, v) in raw {
+                if let n = v as? NSNumber { stats[k] = n.intValue }
+            }
+        }
+
+        var progress: [String: UnlockProgress] = [:]
+        if let raw = root["unlockProgress"] as? [String: Any] {
+            for (id, value) in raw {
+                guard let obj = value as? [String: Any],
+                      let current = (obj["current"] as? NSNumber)?.intValue,
+                      let target = (obj["target"] as? NSNumber)?.intValue else { continue }
+                progress[id] = UnlockProgress(
+                    metric: obj["metric"] as? String ?? "",
+                    current: current,
+                    target: target
+                )
+            }
+        }
+
+        return ProgressData(
+            stats: stats,
+            unlockedAccessories: root["unlockedAccessories"] as? [String] ?? [],
+            unlockedAt: root["unlockedAt"] as? [String: String] ?? [:],
+            unlockProgress: progress
+        )
+    }
+
+    func isUnlocked(_ accessory: AccessoryType) -> Bool {
+        read()?.unlockedAccessories.contains(accessory.rawValue) ?? false
+    }
+
+    func unlockProgress(for accessory: AccessoryType) -> UnlockProgress? {
+        read()?.unlockProgress[accessory.rawValue]
+    }
+
+    /// The locked accessory closest to unlocking.
+    func nextUnlock(in progress: ProgressData? = nil) -> (AccessoryType, UnlockProgress)? {
+        guard let progress = progress ?? read() else { return nil }
+        var best: (AccessoryType, UnlockProgress)?
+        var bestRatio = -1.0
+        for accessory in AccessoryType.allCases {
+            guard !progress.unlockedAccessories.contains(accessory.rawValue),
+                  let p = progress.unlockProgress[accessory.rawValue],
+                  p.target > 0 else { continue }
+            let ratio = Double(p.current) / Double(p.target)
+            if ratio > bestRatio {
+                bestRatio = ratio
+                best = (accessory, p)
+            }
+        }
+        return best
+    }
+}
+
+// ============================================================================
+// MARK: - Selection (owned by the app)
+// ============================================================================
+
+struct AccessorySelection: Codable, Equatable {
     var selectedHat: String?
     var selectedGlasses: String?
     var selectedPants: String?
-    var unlockedAt: [String: String]
+
+    static let none = AccessorySelection()
+
+    var hat: AccessoryType? { selectedHat.flatMap(AccessoryType.init(rawValue:)) }
+    var glasses: AccessoryType? { selectedGlasses.flatMap(AccessoryType.init(rawValue:)) }
+    var pants: AccessoryType? { selectedPants.flatMap(AccessoryType.init(rawValue:)) }
 }
 
-// v1 schema used before the single-character redesign
-private struct ProgressDataV1: Codable {
-    var stats: ProgressStats
-    var unlocked: [String]
-    var selectedPet: String
-    var unlockedAt: [String: String]
-}
-
-// Maps old pet raw values → accessory raw values.
-// Pets with no mapping (dragon, unicorn) are dropped.
-// "cat" was the default and requires no mapping.
-private let petToAccessoryMap: [String: String] = [
-    "hamster":  "cap",
-    "chick":    "partyHat",
-    "penguin":  "santaHat",
-    "fox":      "silkHat",
-    "rabbit":   "hornRimmed",
-    "goose":    "cowboyHat",
-    "capybara": "sunglasses",
-    "sloth":    "roundGlasses",
-    "owl":      "starGlasses"
-]
-
-class ProgressTracker {
+/// ~/.claude/pet/selection.json — written only by the app.
+/// Falls back to the selection fields of a pre-v3 progress.json until the
+/// aggregator (or the first user change) migrates them.
+final class SelectionStore {
     private let filePath: String
+    private let legacyProgressPath: String
+    private var cache: AccessorySelection?
+    private var cacheMTime: Date?
 
-    init() {
-        filePath = NSHomeDirectory() + "/.claude/pet/progress.json"
+    init(filePath: String = Paths.selection, legacyProgressPath: String = Paths.progress) {
+        self.filePath = filePath
+        self.legacyProgressPath = legacyProgressPath
     }
 
-    // MARK: - Read / Migration
+    func read() -> AccessorySelection {
+        let mtime = (try? FileManager.default.attributesOfItem(atPath: filePath))?[.modificationDate] as? Date
+        if let cache = cache, mtime != nil, mtime == cacheMTime { return cache }
 
-    func read() -> ProgressData? {
-        guard let rawData = FileManager.default.contents(atPath: filePath) else { return nil }
-
-        // Try decoding as v2 first
-        if let v2 = try? JSONDecoder().decode(ProgressData.self, from: rawData),
-           v2.version >= 2 {
-            return v2
+        if let data = JSONFile.read(filePath),
+           let decoded = try? JSONDecoder().decode(AccessorySelection.self, from: data) {
+            cache = decoded
+            cacheMTime = mtime
+            return decoded
         }
-
-        // Fall back to v1 and migrate
-        guard let v1 = try? JSONDecoder().decode(ProgressDataV1.self, from: rawData) else {
-            return nil
+        // Legacy: selection still lives inside progress.json.
+        if let root = JSONFile.readObject(legacyProgressPath) {
+            return AccessorySelection(
+                selectedHat: root["selectedHat"] as? String,
+                selectedGlasses: root["selectedGlasses"] as? String,
+                selectedPants: root["selectedPants"] as? String
+            )
         }
-
-        return migrateV1(v1)
+        return .none
     }
 
-    private func migrateV1(_ v1: ProgressDataV1) -> ProgressData {
-        // Convert old pet unlocks to accessory unlocks
-        var accessories: [String] = []
-        for petName in v1.unlocked {
-            if let accessoryName = petToAccessoryMap[petName] {
-                accessories.append(accessoryName)
-            }
-            // "cat" and unknown pets (dragon, unicorn) are silently dropped
+    func update(_ mutate: (inout AccessorySelection) -> Void) {
+        var selection = read()
+        mutate(&selection)
+        guard let data = try? JSONEncoder().encode(selection) else { return }
+        if JSONFile.writeAtomic(data, to: filePath) {
+            cache = selection
+            cacheMTime = (try? FileManager.default.attributesOfItem(atPath: filePath))?[.modificationDate] as? Date
         }
+    }
 
-        // Convert selected pet to hat/glasses selection
-        var selectedHat: String? = nil
-        var selectedGlasses: String? = nil
-        if let accessoryName = petToAccessoryMap[v1.selectedPet] {
-            if let accessory = AccessoryType(rawValue: accessoryName) {
-                if accessory.category == .hat {
-                    selectedHat = accessoryName
-                } else {
-                    selectedGlasses = accessoryName
-                }
-            }
-        }
-        // If selected pet was cat, dragon, or unicorn there is no accessory to select
-
-        // Build unlockedAt with remapped keys
-        var newUnlockedAt: [String: String] = [:]
-        for (petName, dateStr) in v1.unlockedAt {
-            if let accessoryName = petToAccessoryMap[petName] {
-                newUnlockedAt[accessoryName] = dateStr
+    func select(_ accessory: AccessoryType?, category: AccessoryCategory) {
+        update { s in
+            switch category {
+            case .hat:     s.selectedHat = accessory?.rawValue
+            case .glasses: s.selectedGlasses = accessory?.rawValue
+            case .pants:   s.selectedPants = accessory?.rawValue
             }
         }
-
-        let v2 = ProgressData(
-            version: 2,
-            stats: v1.stats,
-            unlockedAccessories: accessories,
-            selectedHat: selectedHat,
-            selectedGlasses: selectedGlasses,
-            unlockedAt: newUnlockedAt
-        )
-
-        // Persist immediately so subsequent reads are fast
-        writeBack(v2)
-        return v2
-    }
-
-    // MARK: - Write helpers
-
-    func writeBackPublic(_ data: ProgressData) { writeBack(data) }
-
-    private func writeBack(_ data: ProgressData) {
-        guard let encoded = try? JSONEncoder().encode(data) else { return }
-        let tmpPath = filePath + ".tmp"
-        FileManager.default.createFile(atPath: tmpPath, contents: encoded)
-        let _ = try? FileManager.default.replaceItemAt(
-            URL(fileURLWithPath: filePath),
-            withItemAt: URL(fileURLWithPath: tmpPath)
-        )
-    }
-
-    // MARK: - Unlock queries
-
-    func isUnlocked(_ accessory: AccessoryType) -> Bool {
-        guard let progress = read() else { return false }
-        return progress.unlockedAccessories.contains(accessory.rawValue)
-    }
-
-    // MARK: - Selection queries
-
-    func selectedHat() -> AccessoryType? {
-        guard let progress = read(),
-              let raw = progress.selectedHat else { return nil }
-        return AccessoryType(rawValue: raw)
-    }
-
-    func selectedGlasses() -> AccessoryType? {
-        guard let progress = read(),
-              let raw = progress.selectedGlasses else { return nil }
-        return AccessoryType(rawValue: raw)
-    }
-
-    // MARK: - Selection setters
-
-    func selectHat(_ hat: AccessoryType?) {
-        guard var progress = read() else { return }
-        progress.selectedHat = hat?.rawValue
-        writeBack(progress)
-    }
-
-    func selectGlasses(_ glasses: AccessoryType?) {
-        guard var progress = read() else { return }
-        progress.selectedGlasses = glasses?.rawValue
-        writeBack(progress)
-    }
-
-    // MARK: - Pants selection
-
-    func selectedPants() -> AccessoryType? {
-        guard let progress = read(),
-              let raw = progress.selectedPants else { return nil }
-        return AccessoryType(rawValue: raw)
-    }
-
-    func selectPants(_ pants: AccessoryType?) {
-        guard var progress = read() else { return }
-        progress.selectedPants = pants?.rawValue
-        writeBack(progress)
-    }
-
-    // MARK: - Unlock progress
-
-    func unlockProgress(for accessory: AccessoryType) -> (current: Int, target: Int)? {
-        guard let progress = read() else { return nil }
-        let stats = progress.stats
-
-        switch accessory {
-        case .cap:          return (stats.totalSessions, 10)
-        case .partyHat:     return (stats.totalTimeMinutes, 300)
-        case .santaHat:     return (stats.totalTokens, 500_000)
-        case .silkHat:      return (stats.totalAgentRuns, 50)
-        case .cowboyHat:    return (stats.totalTimeMinutes, 1800)
-        case .hornRimmed:   return (stats.maxConcurrentSessions, 3)
-        case .sunglasses:   return (stats.rateLimitHits, 10)
-        case .roundGlasses: return (stats.longSessions, 20)
-        case .starGlasses:  return (stats.opusTimeMinutes, 600)
-        case .jeans:        return (stats.totalTimeMinutes, 900)
-        case .shorts:       return (stats.totalSessions, 100)
-        case .slacks:       return (stats.totalTokens, 1_000_000)
-        case .joggers:      return (stats.totalAgentRuns, 100)
-        case .cargo:        return (stats.totalTimeMinutes, 3000)
-        }
-    }
-
-    // MARK: - Next unlock
-
-    func nextUnlock() -> AccessoryType? {
-        guard let progress = read() else { return nil }
-        var bestAccessory: AccessoryType?
-        var bestRatio: Double = -1
-
-        for accessory in AccessoryType.allCases {
-            guard !progress.unlockedAccessories.contains(accessory.rawValue) else { continue }
-            guard let (current, target) = unlockProgress(for: accessory), target > 0 else { continue }
-            let ratio = Double(current) / Double(target)
-            if ratio > bestRatio {
-                bestRatio = ratio
-                bestAccessory = accessory
-            }
-        }
-        return bestAccessory
     }
 }

@@ -153,6 +153,23 @@ struct PixelArtRenderer {
         return renderComposited(base: base, overlays: overlays, effect: effect)
     }
 
+    /// Render one motion frame: body and accessories move together by
+    /// (dx, dy); particles and the activity effect stay put on top.
+    static func renderMotionFrame(
+        _ frame: MotionFrame,
+        overlays: [[[UInt32?]]?],
+        effect: [[UInt32?]]?
+    ) -> NSImage {
+        var character = frame.body
+        for overlay in overlays {
+            character = Pixels.overlay(character, overlay)
+        }
+        var composed = Pixels.shift(character, dx: frame.dx, dy: frame.dy)
+        composed = Pixels.overlay(composed, frame.particles)
+        composed = Pixels.overlay(composed, effect)
+        return render(pixels: composed)
+    }
+
     /// Get total frame count for a state.
     static func frameCount(state: PetState) -> Int {
         return ClaudeSprites.frames(state: state).count

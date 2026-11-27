@@ -10,7 +10,7 @@ class ClawdViewModel: ObservableObject {
     @Published var activityLevel: ActivityLevel = .normal
     @Published var activeSessions: Int = 0
     @Published var activeAgents: Int = 0
-    @Published var activeProjectNames: [String] = []
+    @Published var activeProjects: [ProjectGroup] = []
     @Published var unlockedAccessories: [AccessoryType] = []
     @Published var selectedHat: AccessoryType? = nil
     @Published var selectedGlasses: AccessoryType? = nil
@@ -18,11 +18,18 @@ class ClawdViewModel: ObservableObject {
     @Published var nextUnlockAccessory: AccessoryType? = nil
     @Published var nextUnlockCurrent: Int = 0
     @Published var nextUnlockTarget: Int = 1
-    @Published var fiveHourPercent: Double?
-    @Published var weeklyPercent: Double?
-    @Published var fiveHourResetsAt: String?
-    @Published var weeklyResetsAt: String?
+    @Published var unlockProgress: [String: UnlockProgress] = [:]
+
+    // Usage (UsageService: works for every Claude surface)
+    @Published var usage: UsageSnapshot?
+    @Published var usageStatus: UsageStatus = .loading
+    @Published var plan: String?
+    @Published var usageDisplayMode: UsageDisplayMode = UsageDisplayMode.load()
+    @Published var chatSource: ChatActivityMonitor.Source = .none
+    @Published var aggregatorStatus: RuntimeInstaller.AggregatorStatus = .unknown
+
     @Published var isHudEnabled: Bool = false
+    @Published var hudError: String? = nil
     @Published var updateStatus: UpdateStatus = .idle
 
     // Companion
@@ -38,60 +45,64 @@ class ClawdViewModel: ObservableObject {
     @Published var aiEnabled: Bool = true
     @Published var notifAuthState: NotificationAuthState = .unknown
     @Published var testNotifStatus: String? = nil
+    // UI state for ClawdSection (see the note there about @State)
+    @Published var chatInput: String = ""
+    @Published var remindersExpanded: Bool = false
 
     private let progressTracker = ProgressTracker()
-    private let clawdMemory = ClawdMemoryStore()
+    private let selectionStore = SelectionStore()
+    private let clawdMemory = ClawdMemoryStore.shared
+    /// Set by AppDelegate: re-render the status item after a mode change.
+    var onUsageDisplayModeChange: ((UsageDisplayMode) -> Void)?
+    /// Set by AppDelegate: refresh usage immediately (popover button).
+    var onRefreshUsage: (() -> Void)?
     private lazy var actionRunner = ClawdActionRunner(memory: clawdMemory)
     private lazy var chat = ClawdChat(memory: clawdMemory)
     weak var notificationManager: NotificationManager?
-    private static let hudSettingsPath = NSHomeDirectory() + "/.claude/settings.json"
 
-    func refresh(stateData: PetStateData?) {
-        if let data = stateData {
-            currentState = PetState.resolve(from: data)
-            activityLevel = PetState.resolveActivityLevel(from: data)
-            activeSessions = data.activeSessions
-            activeAgents = data.aggregate.totalRunningAgents
-            activeProjectNames = data.sessions.map { $0.project }
-            fiveHourPercent = data.rateLimit.fiveHourPercent
-            weeklyPercent = data.rateLimit.weeklyPercent
-            fiveHourResetsAt = data.rateLimit.fiveHourResetsAt
-            weeklyResetsAt = data.rateLimit.weeklyResetsAt
-        } else {
-            currentState = .idle
-            activityLevel = .normal
-            activeSessions = 0
-            activeAgents = 0
-            activeProjectNames = []
-            fiveHourPercent = nil
-            weeklyPercent = nil
-            fiveHourResetsAt = nil
-            weeklyResetsAt = nil
+    func refresh(stateData: PetStateData?, petState: PetState) {
+        currentState = petState
+        activityLevel = PetState.resolveActivityLevel(from: stateData)
+        activeSessions = stateData?.activeSessions ?? 0
+        activeAgents = stateData?.aggregate.totalRunningAgents ?? 0
+        activeProjects = stateData?.projects ?? []
+
+        let progress = progressTracker.read()
+        unlockedAccessories = AccessoryType.allCases.filter {
+            progress?.unlockedAccessories.contains($0.rawValue) ?? false
         }
+        unlockProgress = progress?.unlockProgress ?? [:]
 
-        if let progress = progressTracker.read() {
-            unlockedAccessories = AccessoryType.allCases.filter {
-                progress.unlockedAccessories.contains($0.rawValue)
-            }
-        } else {
-            unlockedAccessories = []
-        }
+        let selection = selectionStore.read()
+        selectedHat = selection.hat
+        selectedGlasses = selection.glasses
+        selectedPants = selection.pants
 
-        selectedHat = progressTracker.selectedHat()
-        selectedGlasses = progressTracker.selectedGlasses()
-        selectedPants = progressTracker.selectedPants()
-
-        if let next = progressTracker.nextUnlock(),
-           let (current, target) = progressTracker.unlockProgress(for: next) {
+        if let (next, p) = progressTracker.nextUnlock(in: progress) {
             nextUnlockAccessory = next
-            nextUnlockCurrent = current
-            nextUnlockTarget = target
+            nextUnlockCurrent = p.current
+            nextUnlockTarget = p.target
         } else {
             nextUnlockAccessory = nil
         }
 
-        isHudEnabled = Self.readHudEnabled()
+        isHudEnabled = HudSettings.isEnabled()
         loadCompanionState()
+    }
+
+    func applyUsage(_ snapshot: UsageSnapshot?, status: UsageStatus) {
+        usage = snapshot
+        usageStatus = status
+    }
+
+    func setUsageDisplayMode(_ mode: UsageDisplayMode) {
+        usageDisplayMode = mode
+        mode.save()
+        onUsageDisplayModeChange?(mode)
+    }
+
+    func refreshUsage() {
+        onRefreshUsage?()
     }
 
     // MARK: - Companion
@@ -216,40 +227,17 @@ class ClawdViewModel: ObservableObject {
 
     // MARK: - HUD Toggle
 
-    static func readHudEnabled() -> Bool {
-        guard let data = FileManager.default.contents(atPath: hudSettingsPath),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let statusLine = json["statusLine"] as? [String: Any],
-              let command = statusLine["command"] as? String else {
-            return false
-        }
-        return command.contains("hud.mjs")
-    }
-
     func toggleHud() {
-        isHudEnabled.toggle()
-        let url = URL(fileURLWithPath: Self.hudSettingsPath)
-
-        var json: [String: Any]
-        if let data = try? Data(contentsOf: url),
-           let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            json = parsed
-        } else {
-            json = [:]
+        let target = !isHudEnabled
+        do {
+            try HudSettings.setEnabled(target)
+            hudError = nil
+        } catch HudSettings.ToggleError.unreadableSettings {
+            hudError = "settings.json을 읽을 수 없어서 건드리지 않았어요"
+        } catch {
+            hudError = "settings.json 저장 실패"
         }
-
-        if isHudEnabled {
-            json["statusLine"] = [
-                "type": "command",
-                "command": "bash -c 'node \"$HOME/.claude-hud/hud.mjs\"'"
-            ]
-        } else {
-            json.removeValue(forKey: "statusLine")
-        }
-
-        if let newData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
-            try? newData.write(to: url)
-        }
+        isHudEnabled = HudSettings.isEnabled()
     }
 
     func checkForUpdates() {
@@ -293,7 +281,7 @@ class ClawdViewModel: ObservableObject {
         // Tapping the currently selected hat deselects it
         let newHat: AccessoryType? = (hat == selectedHat) ? nil : hat
         selectedHat = newHat
-        progressTracker.selectHat(newHat)
+        selectionStore.select(newHat, category: .hat)
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
 
@@ -301,14 +289,14 @@ class ClawdViewModel: ObservableObject {
         // Tapping the currently selected glasses deselects them
         let newGlasses: AccessoryType? = (glasses == selectedGlasses) ? nil : glasses
         selectedGlasses = newGlasses
-        progressTracker.selectGlasses(newGlasses)
+        selectionStore.select(newGlasses, category: .glasses)
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
 
     func selectPants(_ pants: AccessoryType?) {
         let newPants: AccessoryType? = (pants == selectedPants) ? nil : pants
         selectedPants = newPants
-        progressTracker.selectPants(newPants)
+        selectionStore.select(newPants, category: .pants)
         NotificationCenter.default.post(name: .accessoryChanged, object: nil)
     }
 }
@@ -345,27 +333,28 @@ struct CollectionPopoverView: View {
 
     // MARK: - Header
     private var headerSection: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             HStack {
                 Text("Clawd")
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                Text(viewModel.activityLevel.displayName)
+                Text(viewModel.currentState.displayNameKO)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(viewModel.activityLevel == .supercharged ? .yellow : .secondary)
             }
+            usageCard
             HStack {
-                Text("Sessions: \(viewModel.activeSessions)")
+                Text("세션 \(viewModel.activeSessions)")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("Agents: \(viewModel.activeAgents)")
+                Text("에이전트 \(viewModel.activeAgents)")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
-            if !viewModel.activeProjectNames.isEmpty {
+            if !viewModel.activeProjects.isEmpty {
                 HStack {
-                    Text(projectNamesSummary(viewModel.activeProjectNames))
+                    Text(projectSummary(viewModel.activeProjects))
                         .font(.system(size: 10))
                         .foregroundColor(.secondary.opacity(0.75))
                         .lineLimit(1)
@@ -373,80 +362,175 @@ struct CollectionPopoverView: View {
                     Spacer()
                 }
             }
-            if viewModel.fiveHourPercent != nil || viewModel.weeklyPercent != nil {
-                rateLimitSection
+            if let line = activityLine {
+                HStack(spacing: 4) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 9))
+                    Text(line)
+                        .font(.system(size: 10))
+                    Spacer()
+                }
+                .foregroundColor(.secondary)
+            }
+            if let warning = aggregatorWarning {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 9))
+                    Text(warning)
+                        .font(.system(size: 10))
+                        .lineLimit(2)
+                    Spacer()
+                }
+                .foregroundColor(.orange)
             }
         }
         .padding(12)
     }
 
-    // MARK: - Rate Limit
-    private var rateLimitSection: some View {
-        HStack(spacing: 0) {
-            if let pct5h = viewModel.fiveHourPercent {
-                let intPct = Int(pct5h.rounded())
-                Text("5h:")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+    private var activityLine: String? {
+        switch viewModel.chatSource {
+        case .claudeApp:   return "Claude 앱에서 대화 중"
+        case .usageRising: return viewModel.activeSessions == 0 ? "다른 곳에서 Claude 사용 중" : nil
+        case .none:        return nil
+        }
+    }
+
+    private var aggregatorWarning: String? {
+        switch viewModel.aggregatorStatus {
+        case .nodeMissing:
+            return "Node.js가 없어 Claude Code 세션 추적이 꺼져 있어요"
+        case .failed(let msg):
+            return msg
+        default:
+            return nil
+        }
+    }
+
+    // MARK: - Usage
+    @ViewBuilder
+    private var usageCard: some View {
+        VStack(spacing: 5) {
+            switch (viewModel.usage, viewModel.usageStatus) {
+            case (.some(let u), _):
+                usageHeader(u)
+                usageRow(label: "현재 세션", percent: u.fiveHourPercent, resetsAt: u.fiveHourResetsAt)
+                usageRow(label: "이번 주", percent: u.weeklyPercent, resetsAt: u.weeklyResetsAt)
+                ForEach(u.modelLimits, id: \.model) { m in
+                    usageRow(label: "이번 주 (\(m.label))", percent: m.percent, resetsAt: m.resetsAt)
+                }
+                HStack {
+                    Text(usageFootnote(u))
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.8))
+                    Spacer()
+                    Button(action: { viewModel.refreshUsage() }) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 9))
+                    }
+                    .buttonStyle(.plain)
                     .foregroundColor(.secondary)
-                Text("\(intPct)%")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundColor(rateLimitColor(intPct))
-                if let reset = formatResetTime(viewModel.fiveHourResetsAt) {
-                    Text("(\(reset))")
-                        .font(.system(size: 10, design: .monospaced))
+                    .help("사용량 새로고침")
+                }
+            case (.none, .loading):
+                usagePlaceholder("사용량 불러오는 중…")
+            case (.none, .noCredentials):
+                usagePlaceholder("이 Mac에서 Claude Code에 로그인하면 사용량이 보여요")
+            case (.none, .tokenExpired):
+                usagePlaceholder("로그인 갱신을 기다리는 중이에요. Claude Code를 쓰면 바로 갱신돼요")
+            case (.none, _):
+                usagePlaceholder("사용량을 불러오지 못했어요")
+            }
+        }
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+    }
+
+    private func usageHeader(_ u: UsageSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text("사용량")
+                    .font(.system(size: 11, weight: .semibold))
+                if let plan = viewModel.plan {
+                    Text(plan)
+                        .font(.system(size: 10))
                         .foregroundColor(.secondary)
                 }
+                Spacer()
             }
-            if viewModel.fiveHourPercent != nil && viewModel.weeklyPercent != nil {
-                Text(" | ")
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.5))
+            if let pace = UsagePace.summary(u) {
+                Text(pace)
+                    .font(.system(size: 10))
+                    .foregroundColor(.primary.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            if let pctWk = viewModel.weeklyPercent {
-                let intPct = Int(pctWk.rounded())
-                Text("wk:")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary)
-                Text("\(intPct)%")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundColor(rateLimitColor(intPct))
-                if let reset = formatResetTime(viewModel.weeklyResetsAt) {
-                    Text("(\(reset))")
-                        .font(.system(size: 10, design: .monospaced))
+        }
+    }
+
+    private func usageRow(label: String, percent: Double?, resetsAt: Date?) -> some View {
+        let pct = percent.map { Int($0.rounded()) }
+        return VStack(spacing: 2) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+                Spacer()
+                if let reset = UsagePace.resetLabel(resetsAt) {
+                    Text(reset)
+                        .font(.system(size: 9))
                         .foregroundColor(.secondary)
+                        .help(formatReset(resetsAt).map { "\($0) 남음" } ?? "")
                 }
+                Text(pct.map { "\($0)%" } ?? "–")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundColor(pct.map(rateLimitColor) ?? .secondary)
             }
+            ProgressView(value: min(100, max(0, percent ?? 0)), total: 100)
+                .tint(pct.map(rateLimitColor) ?? .secondary)
+                .scaleEffect(x: 1, y: 0.7, anchor: .center)
+        }
+    }
+
+    private func usagePlaceholder(_ text: String) -> some View {
+        HStack {
+            Text(text)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
         }
     }
 
+    private func usageFootnote(_ u: UsageSnapshot) -> String {
+        let age = Int(Date().timeIntervalSince(u.fetchedAt))
+        let when = age < 60 ? "방금" : "\(age / 60)분 전"
+        let stale = viewModel.usageStatus == .tokenExpired ? " (로그인 만료, 마지막 값)" : ""
+        return "\(when) 갱신\(stale)"
+    }
+
     private func rateLimitColor(_ percent: Int) -> Color {
         if percent >= 90 { return .red }
-        if percent >= 70 { return .yellow }
+        if percent >= 70 { return .orange }
         return .green
     }
 
-    private func projectNamesSummary(_ names: [String]) -> String {
-        let shown = names.prefix(3)
-        let extra = names.count - shown.count
+    /// "navi-api ×2, web" — duplicates are grouped instead of repeated.
+    private func projectSummary(_ groups: [ProjectGroup]) -> String {
+        let label = { (g: ProjectGroup) in g.count > 1 ? "\(g.name) ×\(g.count)" : g.name }
+        let shown = groups.prefix(3).map(label)
+        let extra = groups.count - shown.count
         let head = shown.joined(separator: ", ")
-        return extra > 0 ? "\(head) +\(extra) more" : head
+        return extra > 0 ? "\(head) 외 \(extra)개" : head
     }
 
-    private func formatResetTime(_ isoString: String?) -> String? {
-        guard let isoString = isoString, !isoString.isEmpty else { return nil }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: isoString) ?? ISO8601DateFormatter().date(from: isoString) else { return nil }
-        let diffSeconds = date.timeIntervalSinceNow
-        guard diffSeconds > 0 else { return nil }
-        let diffMinutes = Int(diffSeconds / 60)
-        let diffHours = diffMinutes / 60
-        let diffDays = diffHours / 24
-        if diffDays > 0 {
-            return "\(diffDays)d\(diffHours % 24)h"
-        }
-        return "\(diffHours)h\(diffMinutes % 60)m"
+    private func formatReset(_ date: Date?) -> String? {
+        guard let date = date else { return nil }
+        let diff = date.timeIntervalSinceNow
+        guard diff > 0 else { return nil }
+        let minutes = Int(diff / 60)
+        let hours = minutes / 60
+        let days = hours / 24
+        if days > 0 { return "\(days)일 \(hours % 24)시간" }
+        if hours > 0 { return "\(hours)시간 \(minutes % 60)분" }
+        return "\(minutes)분"
     }
 
     // MARK: - Hat Grid
@@ -465,6 +549,7 @@ struct CollectionPopoverView: View {
                         accessory: hat,
                         isUnlocked: viewModel.unlockedAccessories.contains(hat),
                         isSelected: viewModel.selectedHat == hat,
+                        unlockHint: hat.unlockDescriptionKO(progress: viewModel.unlockProgress[hat.rawValue]),
                         onSelect: { viewModel.selectHat(hat) }
                     )
                 }
@@ -490,6 +575,7 @@ struct CollectionPopoverView: View {
                         accessory: glasses,
                         isUnlocked: viewModel.unlockedAccessories.contains(glasses),
                         isSelected: viewModel.selectedGlasses == glasses,
+                        unlockHint: glasses.unlockDescriptionKO(progress: viewModel.unlockProgress[glasses.rawValue]),
                         onSelect: { viewModel.selectGlasses(glasses) }
                     )
                 }
@@ -515,6 +601,7 @@ struct CollectionPopoverView: View {
                         accessory: pants,
                         isUnlocked: viewModel.unlockedAccessories.contains(pants),
                         isSelected: viewModel.selectedPants == pants,
+                        unlockHint: pants.unlockDescriptionKO(progress: viewModel.unlockProgress[pants.rawValue]),
                         onSelect: { viewModel.selectPants(pants) }
                     )
                 }
@@ -541,7 +628,7 @@ struct CollectionPopoverView: View {
                     total: Double(max(1, viewModel.nextUnlockTarget))
                 )
                 .tint(.cyan)
-                Text(accessory.unlockDescription)
+                Text(accessory.unlockDescriptionKO(progress: viewModel.unlockProgress[accessory.rawValue]))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }
@@ -568,6 +655,30 @@ struct CollectionPopoverView: View {
                         )
                 }
                 .buttonStyle(.plain)
+            }
+            if let err = viewModel.hudError {
+                HStack {
+                    Text(err)
+                        .font(.system(size: 9))
+                        .foregroundColor(.orange)
+                    Spacer()
+                }
+            }
+            HStack {
+                Text("메뉴바 사용량")
+                    .font(.system(size: 11, weight: .medium))
+                Spacer()
+                Picker("", selection: Binding(
+                    get: { viewModel.usageDisplayMode },
+                    set: { viewModel.setUsageDisplayMode($0) }
+                )) {
+                    ForEach(UsageDisplayMode.allCases, id: \.self) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 140)
             }
             updateButton
             Button("Quit oh-my-clawd") {
@@ -680,6 +791,7 @@ struct AccessoryGridCell: View {
     let accessory: AccessoryType
     let isUnlocked: Bool
     let isSelected: Bool
+    var unlockHint: String? = nil
     let onSelect: () -> Void
 
     var body: some View {
@@ -714,7 +826,7 @@ struct AccessoryGridCell: View {
             }
         }
         .buttonStyle(.plain)
-        .help(isUnlocked ? accessory.displayName : accessory.unlockDescription)
+        .help(isUnlocked ? accessory.displayName : (unlockHint ?? accessory.unlockDescriptionKO))
     }
 }
 

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  runtime:
+    name: Runtime tests (Node)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+
+  app:
+    name: Build app (macOS)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal app (unsigned)
+        run: scripts/build-app.sh --out build
+      - name: Bundle contains the runtime
+        run: test -f build/OhMyClawd.app/Contents/Resources/runtime/pet-aggregator.mjs

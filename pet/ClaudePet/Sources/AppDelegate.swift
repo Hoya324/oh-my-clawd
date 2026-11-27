@@ -5,69 +5,81 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     }()
 
+    // Animation state
     private var frameTimer: Timer?
     private var stateTimer: Timer?
     private var wakeUpTimer: Timer?
+    private var motionTimer: Timer?
+    private var randomMotionTimer: Timer?
     private var currentState: PetState = .idle
     private var currentActivity: ActivityLevel = .normal
-    private var currentHat: AccessoryType? = nil
-    private var currentGlasses: AccessoryType? = nil
-    private var currentPants: AccessoryType? = nil
-    private var isWakingUp: Bool = false
+    private var selection: AccessorySelection = .none
+    private var isWakingUp = false
     private var frameIndex = 0
     private var currentFrames: [NSImage] = []
-    private var activeSessions: Int = 0
-    private var stateReader = PetStateReader()
-    private var progressTracker = ProgressTracker()
+    private var motionFrames: [NSImage] = []
+    private var motionFrameIndex = 0
+    private var isPlayingMotion = false
+
+    // Services
+    private let stateReader = PetStateReader()
+    private let progressTracker = ProgressTracker()
+    private let selectionStore = SelectionStore()
+    private let usageService = UsageService()
+    private let chatMonitor = ChatActivityMonitor()
+    private let runtimeInstaller = RuntimeInstaller()
     private var menuController: StatusMenuController!
-    private var notificationManager = NotificationManager()
-    private let clawdMemory = ClawdMemoryStore()
+    private let notificationManager = NotificationManager()
+    private let clawdMemory = ClawdMemoryStore.shared
+    private var lastPetData: PetStateData?
     private lazy var reminderScheduler = ReminderScheduler(
         memory: clawdMemory,
-        stateReader: stateReader,
-        notifications: notificationManager
+        notifications: notificationManager,
+        isUserActive: { [weak self] in
+            guard let self = self else { return false }
+            return (self.lastPetData?.activeSessions ?? 0) > 0 || self.chatMonitor.isChatting
+        }
     )
 
-    // Interaction animation state
-    private var isPlayingInteraction: Bool = false
-    private var interactionTimer: Timer?
-    private var interactionFrameIndex: Int = 0
-    private var interactionFrames: [NSImage] = []
-
-    // Idle motion state
-    private var isPlayingIdleMotion: Bool = false
-    private var idleMotionTimer: Timer?
-    private var idleMotionFrameIndex: Int = 0
-    private var idleMotionFrames: [NSImage] = []
-    private var idleMotionFrameInterval: TimeInterval = 0.2
-    private var randomIdleTimer: Timer?
+    // Change detection for reactions
+    private var knownUnlocks: Set<String>?
+    private var lastFiveHour: Double?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Paths.ensurePetDir()
         notificationManager.requestPermission()
-
-        // Load selected hat and glasses from progress
-        currentHat = progressTracker.selectedHat()
-        currentGlasses = progressTracker.selectedGlasses()
-        currentPants = progressTracker.selectedPants()
+        selection = selectionStore.read()
 
         menuController = StatusMenuController()
-        let _ = menuController.setupPopover()
-        menuController.viewModel.notificationManager = notificationManager
+        _ = menuController.setupPopover()
+        let vm = menuController.viewModel
+        vm.notificationManager = notificationManager
+        vm.onUsageDisplayModeChange = { [weak self] _ in self?.updateStatusTitle() }
+        vm.onRefreshUsage = { [weak self] in self?.usageService.refresh(force: true) }
         notificationManager.onAuthStateChange = { [weak self] state in
             self?.menuController.viewModel.notifAuthState = state
         }
         notificationManager.refreshAuthState()
 
         setupStatusItem()
+
+        usageService.onUpdate = { [weak self] snapshot, status in
+            self?.handleUsage(snapshot, status: status)
+        }
+        usageService.start()
+
+        chatMonitor.onChange = { [weak self] in self?.pollState() }
+        chatMonitor.start()
+
+        runtimeInstaller.ensureInstalled { [weak self] status in
+            self?.menuController.viewModel.aggregatorStatus = status
+        }
+
         startStatePolling()
         reminderScheduler.start()
         reloadFramesAndAnimate()
-        scheduleRandomIdleMotion()
+        scheduleRandomMotion()
 
-        // Warm up Clawd's connection (API token first, CLI fallback) so the
-        // first user message is instant and the UI shows live state.
-        // Check for updates shortly after launch so the popover opens with
-        // a concrete state (최신 / 설치 버튼) instead of the Check button.
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             self?.menuController.viewModel.checkForUpdates()
         }
@@ -88,6 +100,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(onAccessoryChanged),
+            name: .accessoryChanged, object: nil
+        )
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(onSleep),
             name: NSWorkspace.willSleepNotification, object: nil
@@ -98,22 +114,65 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    // MARK: - Status item
+
     private func setupStatusItem() {
-        if let button = statusItem.button {
-            button.action = #selector(togglePopover)
-            button.target = self
-            // Remove menu so click triggers action instead
-            statusItem.menu = nil
+        guard let button = statusItem.button else { return }
+        button.action = #selector(togglePopover)
+        button.target = self
+        button.imagePosition = .imageLeft
+        statusItem.menu = nil
+        updateStatusTitle()
+    }
+
+    private func updateStatusTitle() {
+        guard let button = statusItem.button else { return }
+        let mode = menuController?.viewModel.usageDisplayMode ?? UsageDisplayMode.load()
+        if let title = StatusBarUsage.title(usageService.snapshot, mode: mode) {
+            button.attributedTitle = title
+        } else {
+            button.attributedTitle = NSAttributedString(string: "")
         }
+        button.toolTip = StatusBarUsage.tooltip(usageService.snapshot, status: usageService.status)
     }
 
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
-        playInteraction()
+        playClickReaction()
         menuController.togglePopover(relativeTo: button)
     }
 
+    // MARK: - Usage
+
+    private func handleUsage(_ snapshot: UsageSnapshot?, status: UsageStatus) {
+        menuController.viewModel.applyUsage(snapshot, status: status)
+        menuController.viewModel.plan = usageService.plan
+        chatMonitor.observe(usage: snapshot)
+        if let snapshot = snapshot {
+            notificationManager.checkAndNotify(rateLimit: snapshot.rateLimit)
+            reactToUsage(snapshot)
+        }
+        updateStatusTitle()
+        pollState()
+    }
+
+    /// Small reactions to usage changes: alarm when crossing 80%, a happy
+    /// dance when a fresh 5-hour window starts after heavy use.
+    private func reactToUsage(_ snapshot: UsageSnapshot) {
+        guard let now = snapshot.fiveHourPercent else { return }
+        defer { lastFiveHour = now }
+        guard let prev = lastFiveHour else { return }
+        if prev < 80 && now >= 80 {
+            playMotion(.surprised)
+        } else if prev >= 50 && now < 10 {
+            playMotion(.celebrate)
+        }
+    }
+
+    // MARK: - State polling
+
     private func startStatePolling() {
+        stateTimer?.invalidate()
         stateTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             self?.pollState()
         }
@@ -121,40 +180,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func pollState() {
         let data = stateReader.read()
+        lastPetData = data
+        let chatting = chatMonitor.isChatting
 
-        let newState: PetState
-        let newActivity: ActivityLevel
-        if let data = data {
-            newState = PetState.resolve(from: data)
-            newActivity = PetState.resolveActivityLevel(from: data)
-            notificationManager.checkAndNotify(rateLimit: data.rateLimit)
-        } else {
-            newState = .idle
-            newActivity = .normal
-        }
+        let newState = PetState.resolve(data: data, usage: usageService.snapshot, chatting: chatting)
+        let newActivity = PetState.resolveActivityLevel(from: data)
+        let newSelection = selectionStore.read()
 
-        let newSessions = data?.activeSessions ?? 0
+        checkForNewUnlocks()
 
-        // Load current hat, glasses, and pants selections
-        let newHat = progressTracker.selectedHat()
-        let newGlasses = progressTracker.selectedGlasses()
-        let newPants = progressTracker.selectedPants()
-
-        // Capture old values for change detection before updating
         let oldState = currentState
-        let oldActivity = currentActivity
-        let oldHat = currentHat
-        let oldGlasses = currentGlasses
-        let oldPants = currentPants
-
+        let needsReload = newActivity != currentActivity || newSelection != selection
         currentActivity = newActivity
-        currentHat = newHat
-        currentGlasses = newGlasses
-        currentPants = newPants
-        activeSessions = newSessions
+        selection = newSelection
 
         if !isWakingUp && oldState == .idle && newState != .idle {
-            // Transition from idle to active: play wakeUp animation first
+            // idle → active: play the wake-up animation first
             isWakingUp = true
             currentState = .wakeUp
             frameIndex = 0
@@ -164,57 +205,78 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             wakeUpTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
                 guard let self = self else { return }
                 self.isWakingUp = false
-                // Re-resolve the actual state now (not the stale captured value)
-                let freshData = self.stateReader.read()
-                let freshState = freshData.map { PetState.resolve(from: $0) } ?? .idle
-                self.currentState = freshState
+                self.currentState = PetState.resolve(
+                    data: self.stateReader.read(),
+                    usage: self.usageService.snapshot,
+                    chatting: self.chatMonitor.isChatting
+                )
                 self.frameIndex = 0
                 self.reloadFramesAndAnimate()
             }
         } else if !isWakingUp {
-            // Normal state update — reload only if something changed
-            let needsReload = newState != oldState
-                           || newActivity != oldActivity
-                           || newHat?.rawValue != oldHat?.rawValue
-                           || newGlasses?.rawValue != oldGlasses?.rawValue
-                           || newPants?.rawValue != oldPants?.rawValue
             currentState = newState
-            if needsReload {
+            if newState != oldState || needsReload {
                 frameIndex = 0
                 reloadFramesAndAnimate()
             }
         }
-        // While isWakingUp, ignore state changes — the wakeUpTimer will apply them
 
-        menuController.updateState(data)
+        let vm = menuController.viewModel
+        vm.chatSource = chatMonitor.source()
+        vm.refresh(stateData: data, petState: isWakingUp ? newState : currentState)
+    }
+
+    private func checkForNewUnlocks() {
+        guard let unlocked = progressTracker.read()?.unlockedAccessories else { return }
+        let now = Set(unlocked)
+        defer { knownUnlocks = now }
+        guard let known = knownUnlocks else { return }   // first read: no fanfare
+        let fresh = now.subtracting(known).compactMap(AccessoryType.init(rawValue:))
+        guard let first = fresh.first else { return }
+        playMotion(.celebrate)
+        notificationManager.sendClawdMessage(
+            key: "unlock:\(first.rawValue)",
+            title: "새 액세서리를 얻었어요!",
+            body: "\(first.displayNameKO)을(를) 입어볼 수 있어요 🎉"
+        )
+    }
+
+    @objc private func onAccessoryChanged() {
+        selection = selectionStore.read()
+        if !isPlayingMotion { reloadFramesAndAnimate() }
+    }
+
+    // MARK: - Base animation
+
+    private func overlays(state: PetState, frameIndex: Int) -> [[[UInt32?]]?] {
+        // Glasses under pants under hat
+        [selection.glasses, selection.pants, selection.hat].compactMap { $0 }.map {
+            AccessorySprites.overlay(accessory: $0, state: state, frameIndex: frameIndex)
+        }
     }
 
     private func reloadFramesAndAnimate() {
+        guard !isPlayingMotion else { return }
         let count = PixelArtRenderer.frameCount(state: currentState)
         currentFrames = (0..<count).map { i in
             PixelArtRenderer.renderFrame(
                 state: currentState,
                 activity: currentActivity,
-                hat: currentHat,
-                glasses: currentGlasses,
-                pants: currentPants,
+                hat: selection.hat,
+                glasses: selection.glasses,
+                pants: selection.pants,
                 frameIndex: i
             )
         }
-
         if let first = currentFrames.first {
             statusItem.button?.image = first
         }
 
         frameTimer?.invalidate()
-        frameTimer = Timer.scheduledTimer(
-            timeInterval: currentState.frameInterval,
-            target: self,
-            selector: #selector(nextFrame),
-            userInfo: nil,
-            repeats: true
-        )
-        RunLoop.current.add(frameTimer!, forMode: .common)
+        let timer = Timer(timeInterval: currentState.frameInterval, target: self,
+                          selector: #selector(nextFrame), userInfo: nil, repeats: true)
+        RunLoop.main.add(timer, forMode: .common)
+        frameTimer = timer
     }
 
     @objc private func nextFrame() {
@@ -223,157 +285,104 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.image = currentFrames[frameIndex]
     }
 
-    // MARK: - Click Interaction Animation
+    // MARK: - Motions (click reactions, random idle motions, celebrations)
 
-    private func playInteraction() {
-        stopIdleMotion()
-        isPlayingInteraction = true
-        interactionFrameIndex = 0
-
-        let sprites = InteractionSprites.frames()
-        interactionFrames = sprites.map { baseFrame in
-            var overlays: [[[UInt32?]]?] = []
-            if let glasses = currentGlasses {
-                overlays.append(AccessorySprites.overlay(
-                    accessory: glasses, state: .normal, frameIndex: 0))
-            }
-            if let pants = currentPants {
-                overlays.append(AccessorySprites.overlay(
-                    accessory: pants, state: .normal, frameIndex: 0))
-            }
-            if let hat = currentHat {
-                overlays.append(AccessorySprites.overlay(
-                    accessory: hat, state: .normal, frameIndex: 0))
-            }
-            let effect = ClaudeEffects.effectOverlay(activity: currentActivity, frameIndex: 0)
-            return PixelArtRenderer.renderComposited(base: baseFrame, overlays: overlays, effect: effect)
+    private func playClickReaction() {
+        // Half the time the classic hand-drawn reaction, otherwise a random
+        // procedural one, so clicking Clawd stays surprising.
+        if Bool.random() {
+            playInteractionSprites()
+        } else if let motion = IdleMotionType.clickReactions.randomElement() {
+            playMotion(motion)
         }
+    }
 
+    private func playInteractionSprites() {
+        let frames = InteractionSprites.frames().map { MotionFrame(body: $0) }
+        startMotion(frames: frames, interval: InteractionSprites.frameInterval, overlayState: .normal)
+    }
+
+    func playMotion(_ motion: IdleMotionType) {
+        guard !isWakingUp else { return }
+        let base = ClaudeSprites.frames(state: currentState).first ?? ClaudeSprites.frames(state: .normal)[0]
+        let frames = IdleMotionSprites.motionFrames(motion: motion, base: base)
+        startMotion(frames: frames, interval: motion.frameInterval,
+                    overlayState: motion.isHandDrawn ? .normal : currentState)
+    }
+
+    private func startMotion(frames: [MotionFrame], interval: TimeInterval, overlayState: PetState) {
+        guard !frames.isEmpty else { return }
+        let accessoryOverlays = overlays(state: overlayState, frameIndex: 0)
+        let effect = ClaudeEffects.effectOverlay(activity: currentActivity, frameIndex: 0)
+        motionFrames = frames.map {
+            PixelArtRenderer.renderMotionFrame($0, overlays: accessoryOverlays, effect: effect)
+        }
+        motionFrameIndex = 0
+        isPlayingMotion = true
         frameTimer?.invalidate()
-        if let first = interactionFrames.first {
-            statusItem.button?.image = first
-        }
+        statusItem.button?.image = motionFrames[0]
 
-        interactionTimer?.invalidate()
-        interactionTimer = Timer.scheduledTimer(
-            timeInterval: InteractionSprites.frameInterval,
-            target: self, selector: #selector(nextInteractionFrame),
-            userInfo: nil, repeats: true)
-        RunLoop.current.add(interactionTimer!, forMode: .common)
+        motionTimer?.invalidate()
+        let timer = Timer(timeInterval: interval, target: self,
+                          selector: #selector(nextMotionFrame), userInfo: nil, repeats: true)
+        RunLoop.main.add(timer, forMode: .common)
+        motionTimer = timer
     }
 
-    @objc private func nextInteractionFrame() {
-        interactionFrameIndex += 1
-        if interactionFrameIndex >= interactionFrames.count {
-            interactionTimer?.invalidate()
-            interactionTimer = nil
-            isPlayingInteraction = false
+    @objc private func nextMotionFrame() {
+        motionFrameIndex += 1
+        guard motionFrameIndex < motionFrames.count else {
+            motionTimer?.invalidate()
+            motionTimer = nil
+            isPlayingMotion = false
             reloadFramesAndAnimate()
-            scheduleRandomIdleMotion()
+            scheduleRandomMotion()
             return
         }
-        statusItem.button?.image = interactionFrames[interactionFrameIndex]
+        statusItem.button?.image = motionFrames[motionFrameIndex]
     }
 
-    // MARK: - Random Idle Motions
-
-    private func scheduleRandomIdleMotion() {
-        randomIdleTimer?.invalidate()
-        let delay = TimeInterval.random(in: 60...180)
-        randomIdleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-            self?.triggerRandomIdleMotion()
+    private func scheduleRandomMotion() {
+        randomMotionTimer?.invalidate()
+        // Livelier while something is happening, calmer while asleep.
+        let range: ClosedRange<TimeInterval> = currentState == .idle ? 90...240 : 35...110
+        randomMotionTimer = Timer.scheduledTimer(withTimeInterval: .random(in: range), repeats: false) { [weak self] _ in
+            self?.triggerRandomMotion()
         }
     }
 
-    private func triggerRandomIdleMotion() {
-        guard !isPlayingInteraction && !isPlayingIdleMotion && !isWakingUp else {
-            scheduleRandomIdleMotion()
+    private func triggerRandomMotion() {
+        guard !isPlayingMotion && !isWakingUp else {
+            scheduleRandomMotion()
             return
         }
-        let allowed = IdleMotionType.allCases.filter { $0.allowedStates.contains(currentState) }
-        // Weighted selection: wave 3x, blink 1x, others 2x
-        let weighted: [IdleMotionType] = allowed.flatMap { motion -> [IdleMotionType] in
-            switch motion {
-            case .wave:    return [motion, motion, motion]
-            case .blink:   return [motion]
-            default:       return [motion, motion]
-            }
-        }
-        guard let motion = weighted.randomElement() else {
-            scheduleRandomIdleMotion()
+        let pool = IdleMotionType.allCases
+            .filter { $0.allowedStates.contains(currentState) }
+            .flatMap { Array(repeating: $0, count: $0.weight) }
+        guard let motion = pool.randomElement() else {
+            scheduleRandomMotion()
             return
         }
-        playIdleMotion(motion)
+        playMotion(motion)
     }
 
-    private func playIdleMotion(_ motion: IdleMotionType) {
-        isPlayingIdleMotion = true
-        idleMotionFrameIndex = 0
-        idleMotionFrameInterval = motion.frameInterval
-
-        let sprites = IdleMotionSprites.frames(motion: motion)
-        idleMotionFrames = sprites.map { baseFrame in
-            var overlays: [[[UInt32?]]?] = []
-            if let glasses = currentGlasses {
-                overlays.append(AccessorySprites.overlay(
-                    accessory: glasses, state: currentState, frameIndex: 0))
-            }
-            if let pants = currentPants {
-                overlays.append(AccessorySprites.overlay(
-                    accessory: pants, state: currentState, frameIndex: 0))
-            }
-            if let hat = currentHat {
-                overlays.append(AccessorySprites.overlay(
-                    accessory: hat, state: currentState, frameIndex: 0))
-            }
-            let effect = ClaudeEffects.effectOverlay(activity: currentActivity, frameIndex: 0)
-            return PixelArtRenderer.renderComposited(base: baseFrame, overlays: overlays, effect: effect)
-        }
-
-        frameTimer?.invalidate()
-        if let first = idleMotionFrames.first {
-            statusItem.button?.image = first
-        }
-
-        idleMotionTimer?.invalidate()
-        idleMotionTimer = Timer.scheduledTimer(
-            timeInterval: idleMotionFrameInterval,
-            target: self, selector: #selector(nextIdleMotionFrame),
-            userInfo: nil, repeats: true)
-        RunLoop.current.add(idleMotionTimer!, forMode: .common)
-    }
-
-    @objc private func nextIdleMotionFrame() {
-        idleMotionFrameIndex += 1
-        if idleMotionFrameIndex >= idleMotionFrames.count {
-            stopIdleMotion()
-            reloadFramesAndAnimate()
-            scheduleRandomIdleMotion()
-            return
-        }
-        statusItem.button?.image = idleMotionFrames[idleMotionFrameIndex]
-    }
-
-    private func stopIdleMotion() {
-        idleMotionTimer?.invalidate()
-        idleMotionTimer = nil
-        isPlayingIdleMotion = false
-    }
-
-    // MARK: - Sleep/Wake
+    // MARK: - Sleep / Wake
 
     @objc private func onSleep() {
         frameTimer?.invalidate()
         stateTimer?.invalidate()
         wakeUpTimer?.invalidate()
-        interactionTimer?.invalidate()
-        idleMotionTimer?.invalidate()
-        randomIdleTimer?.invalidate()
+        motionTimer?.invalidate()
+        randomMotionTimer?.invalidate()
+        isPlayingMotion = false
+        isWakingUp = false
+        usageService.stop()
     }
 
     @objc private func onWake() {
         startStatePolling()
+        usageService.start()
         reloadFramesAndAnimate()
-        scheduleRandomIdleMotion()
+        scheduleRandomMotion()
     }
 }

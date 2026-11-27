@@ -2,16 +2,19 @@ import Foundation
 
 final class ReminderScheduler {
     private let memory: ClawdMemoryStore
-    private let stateReader: PetStateReader
     private let notifications: NotificationManager
+    /// True while the user is using Claude anywhere: a Claude Code session
+    /// or chat activity (desktop app, web, mobile). Water/stretch reminders
+    /// only fire while active.
+    private let isUserActive: () -> Bool
     private var timer: Timer?
 
     init(memory: ClawdMemoryStore,
-         stateReader: PetStateReader,
-         notifications: NotificationManager) {
+         notifications: NotificationManager,
+         isUserActive: @escaping () -> Bool) {
         self.memory = memory
-        self.stateReader = stateReader
         self.notifications = notifications
+        self.isUserActive = isUserActive
     }
 
     func start() {
@@ -31,7 +34,7 @@ final class ReminderScheduler {
     private func tick() {
         let now = Date()
         let nowMs = now.timeIntervalSince1970 * 1000
-        let activeSessions = stateReader.read()?.activeSessions ?? 0
+        let activeSessions = isUserActive() ? 1 : 0
 
         memory.update { file in
             fireInterval(key: "water",
@@ -49,16 +52,30 @@ final class ReminderScheduler {
 
             fireDiary(config: &file.reminders.diary, now: now)
 
-            for i in file.memos.indices {
+            let dueIndices = file.memos.indices.filter { i in
                 guard !file.memos[i].done,
-                      let dueIso = file.memos[i].dueAt,
-                      let due = ClawdMemoryStore.parseIso(dueIso),
-                      due <= now else { continue }
+                      let due = ClawdMemoryStore.parseIso(file.memos[i].dueAt) else { return false }
+                return due <= now
+            }
+            // After a long sleep many memos can be due at once: one summary
+            // notification instead of a burst.
+            if dueIndices.count > 3 {
+                let first = file.memos[dueIndices[0]].text
                 notifications.sendClawdMessage(
-                    key: "memo:\(file.memos[i].id)",
+                    key: "memo:batch:\(Int(nowMs))",
                     title: "Clawd 알림",
-                    body: file.memos[i].text
+                    body: "놓친 메모 \(dueIndices.count)개가 있어요: \(first) 외"
                 )
+            } else {
+                for i in dueIndices {
+                    notifications.sendClawdMessage(
+                        key: "memo:\(file.memos[i].id)",
+                        title: "Clawd 알림",
+                        body: file.memos[i].text
+                    )
+                }
+            }
+            for i in dueIndices {
                 file.memos[i].done = true
                 file.memos[i].completedAt = ClawdMemoryStore.isoNow()
             }

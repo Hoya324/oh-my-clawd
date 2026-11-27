@@ -47,15 +47,32 @@ struct UpdateChecker {
 
             if compareVersions(remoteVersion, isNewerThan: local) {
                 let assets = json["assets"] as? [[String: Any]] ?? []
-                let dmgURL = assets
-                    .first(where: { ($0["name"] as? String)?.hasSuffix(".dmg") == true })
-                    .flatMap { $0["browser_download_url"] as? String } ?? ""
+                let dmg = assets.first(where: { ($0["name"] as? String)?.hasSuffix(".dmg") == true })
+                let dmgURL = dmg.flatMap { $0["browser_download_url"] as? String } ?? ""
+                // GitHub publishes "sha256:<hex>" per asset; keep it so the
+                // installer can verify the download.
+                if let digest = dmg?["digest"] as? String, digest.hasPrefix("sha256:") {
+                    setDigest(String(digest.dropFirst("sha256:".count)), for: dmgURL)
+                }
                 completion(.available(remoteVersion, dmgURL))
             } else {
                 completion(.upToDate(local))
             }
         }
         task.resume()
+    }
+
+    private static let digestLock = NSLock()
+    private static var digests: [String: String] = [:]
+
+    static func setDigest(_ hex: String, for url: String) {
+        digestLock.lock(); defer { digestLock.unlock() }
+        digests[url] = hex.lowercased()
+    }
+
+    static func digest(for url: String) -> String? {
+        digestLock.lock(); defer { digestLock.unlock() }
+        return digests[url]
     }
 
     private static func compareVersions(_ lhs: String, isNewerThan rhs: String) -> Bool {
@@ -106,7 +123,7 @@ final class UpdateInstaller {
                     }
                     DispatchQueue.global(qos: .userInitiated).async {
                         do {
-                            try installFromDMG(path: dmgPath)
+                            try installFromDMG(path: dmgPath, expectedSHA256: UpdateChecker.digest(for: dmgURL))
                             DispatchQueue.main.async {
                                 relaunch()
                                 completion(.success(version))
@@ -127,87 +144,123 @@ final class UpdateInstaller {
         case mountFailed(String)
         case copyFailed(String)
         case appNotFound
+        case checksumMismatch
+        case signatureInvalid(String)
         var errorDescription: String? {
             switch self {
             case .badURL: return "잘못된 다운로드 주소"
             case .mountFailed(let m): return "DMG 마운트 실패: \(m)"
             case .copyFailed(let m): return "설치 실패: \(m)"
             case .appNotFound: return "DMG에서 앱을 찾지 못했어요"
+            case .checksumMismatch: return "다운로드 파일이 손상됐어요 (체크섬 불일치)"
+            case .signatureInvalid(let m): return "서명 검증 실패: \(m)"
             }
         }
     }
 
-    private static func installFromDMG(path: String) throws {
-        let mountPoint = "/tmp/OhMyClawd-mount-\(UUID().uuidString.prefix(8))"
-        try FileManager.default.createDirectory(
-            atPath: mountPoint, withIntermediateDirectories: true
-        )
+    /// Developer ID team that signs official releases (scripts/build-dmg.sh).
+    static let expectedTeamID = "H7825NYH4G"
 
-        let attach = Process()
-        attach.launchPath = "/usr/bin/hdiutil"
-        attach.arguments = ["attach", path, "-nobrowse", "-mountpoint", mountPoint]
-        let attachErr = Pipe()
-        attach.standardError = attachErr
-        attach.standardOutput = Pipe()
-        try attach.run()
-        attach.waitUntilExit()
-        guard attach.terminationStatus == 0 else {
-            let msg = String(
-                data: attachErr.fileHandleForReading.readDataToEndOfFile(),
-                encoding: .utf8
-            ) ?? ""
-            throw InstallError.mountFailed(msg.prefix(200).description)
+    @discardableResult
+    private static func run(_ path: String, _ args: [String]) -> (status: Int32, output: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: path)
+        p.arguments = args
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = pipe
+        do { try p.run() } catch { return (-1, error.localizedDescription) }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        return (p.terminationStatus, String(data: data, encoding: .utf8) ?? "")
+    }
+
+    static func sha256(ofFile path: String) -> String? {
+        let r = run("/usr/bin/shasum", ["-a", "256", path])
+        guard r.status == 0 else { return nil }
+        return r.output.split(separator: " ").first.map { String($0).lowercased() }
+    }
+
+    static func teamIdentifier(ofApp path: String) -> String? {
+        let r = run("/usr/bin/codesign", ["-dv", "--verbose=2", path])
+        for line in r.output.split(separator: "\n") where line.hasPrefix("TeamIdentifier=") {
+            let id = line.dropFirst("TeamIdentifier=".count)
+            return id == "not set" ? nil : String(id)
+        }
+        return nil
+    }
+
+    /// The new app must carry a valid Developer ID signature from the same
+    /// team, and pass Gatekeeper (notarization). Nothing is stripped from
+    /// it (the old installer ran `xattr -cr`, bypassing Gatekeeper).
+    static func verifyApp(at path: String) throws {
+        let sig = run("/usr/bin/codesign", ["--verify", "--deep", "--strict", path])
+        guard sig.status == 0 else {
+            throw InstallError.signatureInvalid(String(sig.output.prefix(160)))
+        }
+        guard teamIdentifier(ofApp: path) == expectedTeamID else {
+            throw InstallError.signatureInvalid("다른 개발자 서명")
+        }
+        let gk = run("/usr/sbin/spctl", ["--assess", "--type", "execute", path])
+        guard gk.status == 0 else {
+            throw InstallError.signatureInvalid("Gatekeeper 거부: \(gk.output.prefix(120))")
+        }
+    }
+
+    private static func installFromDMG(path: String, expectedSHA256: String?) throws {
+        if let expected = expectedSHA256 {
+            guard sha256(ofFile: path) == expected else {
+                try? FileManager.default.removeItem(atPath: path)
+                throw InstallError.checksumMismatch
+            }
+        }
+
+        let fm = FileManager.default
+        let mountPoint = NSTemporaryDirectory() + "OhMyClawd-mount-\(UUID().uuidString.prefix(8))"
+        try fm.createDirectory(atPath: mountPoint, withIntermediateDirectories: true)
+
+        let attach = run("/usr/bin/hdiutil", ["attach", path, "-nobrowse", "-readonly", "-mountpoint", mountPoint])
+        guard attach.status == 0 else {
+            throw InstallError.mountFailed(String(attach.output.prefix(200)))
         }
         defer {
-            let detach = Process()
-            detach.launchPath = "/usr/bin/hdiutil"
-            detach.arguments = ["detach", mountPoint, "-force"]
-            detach.standardOutput = Pipe()
-            detach.standardError = Pipe()
-            _ = try? detach.run()
-            detach.waitUntilExit()
+            run("/usr/bin/hdiutil", ["detach", mountPoint, "-force"])
+            try? fm.removeItem(atPath: mountPoint)
         }
 
         let srcApp = mountPoint + "/OhMyClawd.app"
-        guard FileManager.default.fileExists(atPath: srcApp) else {
-            throw InstallError.appNotFound
-        }
+        guard fm.fileExists(atPath: srcApp) else { throw InstallError.appNotFound }
+        try verifyApp(at: srcApp)
 
         let destApp: String = {
             let bundle = Bundle.main.bundlePath
             if bundle.hasSuffix("OhMyClawd.app") { return bundle }
             return NSHomeDirectory() + "/Applications/OhMyClawd.app"
         }()
+        let destDir = (destApp as NSString).deletingLastPathComponent
+        try? fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
 
-        try? FileManager.default.removeItem(atPath: destApp)
-        try? FileManager.default.createDirectory(
-            atPath: (destApp as NSString).deletingLastPathComponent,
-            withIntermediateDirectories: true
-        )
-
-        let cp = Process()
-        cp.launchPath = "/bin/cp"
-        cp.arguments = ["-R", srcApp, destApp]
-        let cpErr = Pipe()
-        cp.standardError = cpErr
-        cp.standardOutput = Pipe()
-        try cp.run()
-        cp.waitUntilExit()
-        guard cp.terminationStatus == 0 else {
-            let msg = String(
-                data: cpErr.fileHandleForReading.readDataToEndOfFile(),
-                encoding: .utf8
-            ) ?? ""
-            throw InstallError.copyFailed(msg.prefix(200).description)
+        // Copy next to the destination first, verify the copy, then swap.
+        // If anything fails the current app is left untouched.
+        let staging = destDir + "/.OhMyClawd-update-\(UUID().uuidString.prefix(8)).app"
+        let cp = run("/usr/bin/ditto", [srcApp, staging])
+        guard cp.status == 0 else {
+            try? fm.removeItem(atPath: staging)
+            throw InstallError.copyFailed(String(cp.output.prefix(200)))
         }
-
-        let xattr = Process()
-        xattr.launchPath = "/usr/bin/xattr"
-        xattr.arguments = ["-cr", destApp]
-        xattr.standardOutput = Pipe()
-        xattr.standardError = Pipe()
-        _ = try? xattr.run()
-        xattr.waitUntilExit()
+        do {
+            try verifyApp(at: staging)
+            if fm.fileExists(atPath: destApp) {
+                _ = try fm.replaceItemAt(URL(fileURLWithPath: destApp),
+                                         withItemAt: URL(fileURLWithPath: staging))
+            } else {
+                try fm.moveItem(atPath: staging, toPath: destApp)
+            }
+        } catch {
+            try? fm.removeItem(atPath: staging)
+            if error is InstallError { throw error }
+            throw InstallError.copyFailed(error.localizedDescription)
+        }
     }
 
     private static func relaunch() {

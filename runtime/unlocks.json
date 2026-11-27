@@ -1,0 +1,16 @@
+{
+  "cap":          { "metric": "totalSessions",         "threshold": 10 },
+  "partyHat":     { "metric": "totalTimeMinutes",      "threshold": 300 },
+  "santaHat":     { "metric": "totalTokens",           "threshold": 500000 },
+  "silkHat":      { "metric": "totalAgentRuns",        "threshold": 50 },
+  "cowboyHat":    { "metric": "totalTimeMinutes",      "threshold": 1800 },
+  "hornRimmed":   { "metric": "maxConcurrentSessions", "threshold": 3 },
+  "sunglasses":   { "metric": "rateLimitHits",         "threshold": 10 },
+  "roundGlasses": { "metric": "longSessions",          "threshold": 20 },
+  "starGlasses":  { "metric": "opusTimeMinutes",       "threshold": 600 },
+  "jeans":        { "metric": "totalTimeMinutes",      "threshold": 900 },
+  "shorts":       { "metric": "totalSessions",         "threshold": 100 },
+  "slacks":       { "metric": "totalTokens",           "threshold": 1000000 },
+  "joggers":      { "metric": "totalAgentRuns",        "threshold": 100 },
+  "cargo":        { "metric": "totalTimeMinutes",      "threshold": 3000 }
+}

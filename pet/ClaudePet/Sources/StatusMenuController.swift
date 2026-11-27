@@ -25,8 +25,4 @@ class StatusMenuController {
             NSApp.activate(ignoringOtherApps: true)
         }
     }
-
-    func updateState(_ stateData: PetStateData?) {
-        viewModel.refresh(stateData: stateData)
-    }
 }

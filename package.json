@@ -1,0 +1,11 @@
+{
+  "name": "oh-my-clawd",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test runtime/test/aggregator.test.mjs runtime/test/hud.test.mjs runtime/test/usage.test.mjs"
+  }
+}

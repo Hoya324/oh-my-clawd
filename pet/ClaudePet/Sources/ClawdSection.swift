@@ -2,8 +2,9 @@ import SwiftUI
 
 struct ClawdSection: View {
     @ObservedObject var viewModel: ClawdViewModel
-    @State private var input: String = ""
-    @State private var remindersExpanded: Bool = false
+    // Kept in the view model instead of @State: in the macOS 26+ SDKs
+    // @State is a macro whose plugin ships only with Xcode, so it does not
+    // compile with the Command Line Tools alone.
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -47,7 +48,7 @@ struct ClawdSection: View {
                 TextField(viewModel.aiEnabled
                           ? "Clawd에게 말하기…"
                           : "메모 입력…",
-                          text: $input, onCommit: submit)
+                          text: $viewModel.chatInput, onCommit: submit)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                     .focused($inputFocused)
@@ -60,7 +61,7 @@ struct ClawdSection: View {
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.plain)
-                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(viewModel.chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
 
@@ -98,7 +99,7 @@ struct ClawdSection: View {
 
             notifDiagnosticRow
 
-            DisclosureGroup(isExpanded: $remindersExpanded) {
+            DisclosureGroup(isExpanded: $viewModel.remindersExpanded) {
                 VStack(spacing: 6) {
                     reminderRow(
                         emoji: "💧", label: "물",
@@ -139,8 +140,8 @@ struct ClawdSection: View {
     }
 
     private func submit() {
-        let text = input
-        input = ""
+        let text = viewModel.chatInput
+        viewModel.chatInput = ""
         viewModel.sendChat(text)
     }
 
