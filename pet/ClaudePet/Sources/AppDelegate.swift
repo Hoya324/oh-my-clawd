@@ -71,6 +71,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         chatMonitor.onChange = { [weak self] in self?.pollState() }
         chatMonitor.start()
 
+        runtimeInstaller.onLegacyHudMigrated = { [weak self] in
+            guard let self = self else { return }
+            self.menuController.viewModel.isHudEnabled = HudSettings.isEnabled()
+            self.usageService.refresh(force: true)
+            self.notificationManager.sendClawdMessage(
+                key: "hud-migrated",
+                title: "HUD를 새 버전으로 바꿨어요",
+                body: "Claude Code를 다시 열거나 메시지를 하나 보내면 사용량이 갱신돼요."
+            )
+        }
         runtimeInstaller.ensureInstalled { [weak self] status in
             self?.menuController.viewModel.aggregatorStatus = status
         }

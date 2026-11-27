@@ -101,6 +101,8 @@ Your 5-hour usage sits right next to Clawd (`[Clawd] 42%`). Pick `끔 / 5h / 5h+
 - Values are the **official usage Claude Code passes to the status line** (`rate_limits`), so the HUD must be on and numbers update while you use Claude Code. Pro and Max only.
 - Limits are account-wide, so claude.ai, desktop and mobile usage count too; they show up with the next Claude Code reply.
 - Old values are dimmed in the menu bar and labelled "n min ago"; a window whose reset time has passed shows as reset.
+- Not using Claude Code, or need the exact number now? **claude.ai에서 보기** in the usage card opens claude.ai's official Settings > Usage page.
+- A status line left over from an older oh-my-clawd HUD is switched to the bundled HUD automatically.
 
 > **Why not fetch usage directly?** Anthropic's terms reserve subscription OAuth for Claude Code and Claude.ai, so a third-party app must not call the API with that token or refresh it. Clawd never reads Claude Code's login; it only uses what Claude Code reports.
 - Alerts fire once per 5-hour window at 80% and 95%.

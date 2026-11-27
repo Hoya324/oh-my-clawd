@@ -15,6 +15,8 @@ final class RuntimeInstaller {
     }
 
     private let fm = FileManager.default
+    /// Called on the main queue after a legacy status line was replaced.
+    var onLegacyHudMigrated: (() -> Void)?
     private let queue = DispatchQueue(label: "clawd.runtime", qos: .utility)
 
     /// Copy scripts and make sure the LaunchAgent runs. Completion on main.
@@ -35,6 +37,10 @@ final class RuntimeInstaller {
         }
         guard fm.fileExists(atPath: Paths.aggregatorScript) else {
             return .failed("aggregator 스크립트를 찾지 못했어요")
+        }
+        if HudSettings.migrateLegacyCommand() {
+            NSLog("[Clawd] status line switched from a legacy HUD to the bundled one")
+            DispatchQueue.main.async { self.onLegacyHudMigrated?() }
         }
         guard let node = Self.resolveNodePath() else { return .nodeMissing }
         return ensureLaunchAgent(node: node, restart: updated)
@@ -235,6 +241,24 @@ enum HudSettings {
 
     private static func currentCommand(_ json: [String: Any]) -> String? {
         (json["statusLine"] as? [String: Any])?["command"] as? String
+    }
+
+    /// Points Claude Code at the bundled HUD when the status line still
+    /// runs an older oh-my-clawd HUD (e.g. `~/.claude-hud/hud.mjs`, written
+    /// by the ≤ v2.1.8 app toggle). Those versions refreshed Claude Code's
+    /// login token without saving it, which can sign Claude Code out, and
+    /// they do not record usage for the app. Returns true when it changed.
+    @discardableResult
+    static func migrateLegacyCommand() -> Bool {
+        guard FileManager.default.fileExists(atPath: Paths.hudScript),
+              var json = try? loadSettings(),
+              let cmd = currentCommand(json),
+              isOurs(cmd), !cmd.contains(".claude/pet/runtime/hud.mjs") else { return false }
+        var statusLine = (json["statusLine"] as? [String: Any]) ?? [:]
+        statusLine["type"] = "command"
+        statusLine["command"] = command
+        json["statusLine"] = statusLine
+        return (try? save(json)) != nil
     }
 
     static func isEnabled() -> Bool {

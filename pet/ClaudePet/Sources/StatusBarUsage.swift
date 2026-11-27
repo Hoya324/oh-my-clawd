@@ -84,7 +84,9 @@ enum StatusBarUsage {
         for m in u.modelLimits {
             lines.append("주간 \(m.label) \(Int(m.percent.rounded()))%" + reset(m.resetsAt))
         }
-        if status == .stale {
+        if !u.isFromClaudeCode {
+            lines.append("이전 버전에서 받은 값이에요. Claude Code를 쓰면 갱신돼요")
+        } else if status == .stale {
             lines.append("\(Int(u.age / 60))분 전 Claude Code 기준 값이에요")
         } else if let pace = UsagePace.summary(u) {
             lines.append(pace)

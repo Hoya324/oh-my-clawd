@@ -427,18 +427,21 @@ struct CollectionPopoverView: View {
                         .foregroundColor(.secondary.opacity(0.8))
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
+                    if viewModel.usageStatus == .stale {
+                        usagePageLink
+                    }
                     usageInfoButton
                 }
             case (.none, .hudOff):
                 usageGuide(
                     title: "사용량을 보려면 HUD를 켜 주세요",
-                    detail: "Claude Code가 상태 표시줄(HUD)로 알려주는 공식 사용량을 받아와요. 켠 뒤 Claude Code에서 메시지를 한 번 보내면 표시돼요.",
+                    detail: "Claude Code가 상태 표시줄(HUD)로 알려주는 공식 사용량을 받아와요. 켠 뒤 Claude Code에서 메시지를 한 번 보내면 표시돼요. Claude Code를 쓰지 않는다면 claude.ai 사용량 페이지에서 볼 수 있어요.",
                     action: ("HUD 켜기", { viewModel.toggleHud() })
                 )
             case (.none, .waitingForData):
                 usageGuide(
                     title: "Claude Code를 한 번 쓰면 사용량이 보여요",
-                    detail: "Claude Code는 세션의 첫 응답 뒤에 사용량을 알려줘요. 열려 있는 세션에서 메시지를 한 번 보내 주세요. Pro, Max 구독에서만 제공돼요.",
+                    detail: "Claude Code는 세션의 첫 응답 뒤에 사용량을 알려줘요. 열려 있는 세션에서 메시지를 한 번 보내 주세요. Pro, Max 구독에서만 제공돼요. 지금 바로 보려면 claude.ai 사용량 페이지를 열어 보세요.",
                     action: nil
                 )
             case (.none, _):
@@ -447,6 +450,18 @@ struct CollectionPopoverView: View {
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.08)))
+    }
+
+    /// Opens claude.ai's official usage page (Settings > Usage): the way to
+    /// see exact numbers without Claude Code.
+    private var usagePageLink: some View {
+        Button(action: { NSWorkspace.shared.open(UsageService.usagePageURL) }) {
+            Text("claude.ai에서 보기")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(.accentColor)
+        }
+        .buttonStyle(.plain)
+        .help("claude.ai 설정 > 사용량 페이지를 열어요")
     }
 
     /// "?" with the reason usage is not live, for anyone who wonders.
@@ -476,18 +491,21 @@ struct CollectionPopoverView: View {
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            if let action = action {
-                Button(action: action.run) {
-                    Text(action.label)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 3)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor))
+            HStack(spacing: 10) {
+                if let action = action {
+                    Button(action: action.run) {
+                        Text(action.label)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 3)
+                            .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 2)
+                usagePageLink
             }
+            .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -555,6 +573,9 @@ struct CollectionPopoverView: View {
         case ..<60:   when = "\(minutes)분 전"
         case ..<1440: when = "\(minutes / 60)시간 전"
         default:      when = "\(minutes / 1440)일 전"
+        }
+        if !u.isFromClaudeCode {
+            return "\(when) 이전 버전에서 받은 값. Claude Code를 쓰면 갱신돼요"
         }
         if viewModel.usageStatus == .stale {
             return "\(when) Claude Code 기준. Claude Code를 쓰면 갱신돼요"

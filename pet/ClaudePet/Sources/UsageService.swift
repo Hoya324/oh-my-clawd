@@ -23,6 +23,11 @@ struct UsageSnapshot: Equatable {
     /// applies and the new one is unknown until Claude Code reports again.
     var fiveHourResetSinceUpdate = false
     var weeklyResetSinceUpdate = false
+    /// "statusline" when the HUD recorded it from Claude Code. Anything else
+    /// is a leftover from v2.2.0, which fetched usage itself.
+    var source: String = "statusline"
+
+    var isFromClaudeCode: Bool { source == "statusline" }
 
     var rateLimit: RateLimitData {
         let iso = ISO8601DateFormatter()
@@ -61,6 +66,8 @@ final class UsageService {
     static let pollInterval: TimeInterval = 10
     /// Older than this, the numbers are shown as "n분 전".
     static let staleAfter: TimeInterval = 30 * 60
+    /// Official usage page for people who do not use Claude Code.
+    static let usagePageURL = URL(string: "https://claude.ai/settings/usage")!
 
     private(set) var snapshot: UsageSnapshot?
     private(set) var status: UsageStatus = .loading
@@ -90,7 +97,8 @@ final class UsageService {
         let snap = Self.readCache(now: now)
         let newStatus: UsageStatus
         if let s = snap {
-            newStatus = now.timeIntervalSince(s.fetchedAt) > Self.staleAfter ? .stale : .ok
+            // A value not recorded from Claude Code is never "live".
+            newStatus = (!s.isFromClaudeCode || now.timeIntervalSince(s.fetchedAt) > Self.staleAfter) ? .stale : .ok
         } else {
             newStatus = HudSettings.isEnabled() ? .waitingForData : .hudOff
         }
@@ -125,7 +133,8 @@ final class UsageService {
             fetchedAt: Date(timeIntervalSince1970: ts / 1000),
             modelLimits: models,
             fiveHourResetSinceUpdate: fiveReset.map { $0 <= now } ?? false,
-            weeklyResetSinceUpdate: weekReset.map { $0 <= now } ?? false
+            weeklyResetSinceUpdate: weekReset.map { $0 <= now } ?? false,
+            source: root["source"] as? String ?? "unknown"
         )
     }
 
