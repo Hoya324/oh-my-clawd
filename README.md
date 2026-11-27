@@ -259,6 +259,10 @@ rm -rf ~/.oh-my-clawd
 
 Everything lives under `~/.claude/pet/`; nothing is written into your project folders.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for every release.
+
 ## License
 
 MIT

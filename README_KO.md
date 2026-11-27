@@ -290,6 +290,10 @@ rm -rf ~/.oh-my-clawd
 | `clawd-memory.json` | 앱 | 메모, 리마인더, 대화 (일별 백업: `backups/`) |
 | `runtime/` | 앱, install.sh | HUD, 집계 스크립트 |
 
+## 배포 기록
+
+버전별 변경 사항은 [CHANGELOG.md](CHANGELOG.md)에 있어요.
+
 ## 라이선스
 
 MIT
